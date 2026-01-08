@@ -6,11 +6,9 @@ Flask-based AI agent API with Azure cognitive services integration
 import os
 import json
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app)
 
 # Environment variables for Azure services
 AZURE_SPEECH_KEY = os.environ.get('AZURE_SPEECH_KEY', 'not-configured')
@@ -97,29 +95,6 @@ def agent_message():
         return jsonify(response), 200
 
 except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/chat', methods=['POST'])
-def chat():
-    """Chat endpoint for TrifectaAI chatbot"""
-    try:
-        data = request.get_json()
-        message = data.get('message', '')
-        conversation_history = data.get('conversationHistory', [])
-
-        if not message:
-            return jsonify({'error': 'Message is required'}), 400
-
-        # Placeholder response - integrate with Claude API later
-        reply = f"Thank you for sharing. I'm Dr. Lembe, your Sober Self Mentor. I hear you saying: '{message}'. Remember, every moment of awareness is building new neural pathways. What's one small step you can take right now to support your wellbeing?"
-
-        return jsonify({
-            'reply': reply,
-            'timestamp': datetime.utcnow().isoformat()
-        }), 200
-
-    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
