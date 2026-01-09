@@ -8,6 +8,7 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime
+from anthropic import Anthropic
 
 app = Flask(__name__)
 CORS(app)
@@ -21,6 +22,10 @@ MS_TENANT_ID = os.environ.get('MS_TENANT_ID', 'not-configured')
 GRAPH_CLIENT_SECRET = os.environ.get('GRAPH_CLIENT_SECRET', 'not-configured')
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
 DIALPOD_API_KEY = os.environ.get('DialpodApiKey', 'not-configured')
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', 'not-configured')
+
+# Initialize Anthropic client
+anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY != 'not-configured' else None
 
 app.secret_key = SECRET_KEY
 
@@ -43,7 +48,8 @@ def health():
       services = {
           'azure_speech': AZURE_SPEECH_KEY != 'not-configured',
           'microsoft_graph': MS_CLIENT_ID != 'not-configured',
-          'dialpod': DIALPOD_API_KEY != 'not-configured'
+          'dialpod': DIALPOD_API_KEY != 'not-configured',
+          'claude_api': ANTHROPIC_API_KEY != 'not-configured'
       }
 
     all_healthy = all(services.values())
@@ -70,6 +76,9 @@ def get_config():
               },
               'dialpod': {
                   'configured': DIALPOD_API_KEY != 'not-configured'
+              },
+              'claude_api': {
+                  'configured': ANTHROPIC_API_KEY != 'not-configured'
               }
           },
           'timestamp': datetime.utcnow().isoformat()
@@ -102,7 +111,7 @@ except Exception as e:
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """Chat endpoint for TrifectaAI chatbot"""
+    """Chat endpoint for TrifectaAI chatbot with Claude API integration"""
     try:
         data = request.get_json()
         message = data.get('message', '')
@@ -111,8 +120,46 @@ def chat():
         if not message:
             return jsonify({'error': 'Message is required'}), 400
 
-        # Placeholder response - integrate with Claude API later
-        reply = f"Thank you for sharing. I'm Dr. Lembe, your Sober Self Mentor. I hear you saying: '{message}'. Remember, every moment of awareness is building new neural pathways. What's one small step you can take right now to support your wellbeing?"
+        # Check if Anthropic client is configured
+        if not anthropic_client:
+            return jsonify({
+                'error': 'Claude API not configured',
+                'status': 'missing_credentials'
+            }), 503
+
+        # Build messages array from conversation history
+        messages = []
+        if conversation_history:
+            for entry in conversation_history:
+                if entry.get('role') and entry.get('content'):
+                    messages.append({
+                        'role': entry['role'],
+                        'content': entry['content']
+                    })
+
+        # Add current user message
+        messages.append({
+            'role': 'user',
+            'content': message
+        })
+
+        # System prompt for Dr. Lembe persona
+        system_prompt = """You are Dr. Lembe, a compassionate Sober Self Mentor and recovery coach.
+Your role is to provide supportive, evidence-based guidance for individuals in recovery from substance use.
+You use neuroscience-informed approaches and focus on building awareness, resilience, and healthy coping strategies.
+Be warm, empathetic, and encouraging while maintaining professional boundaries.
+Focus on empowering the individual and celebrating their progress, no matter how small."""
+
+        # Call Claude API
+        response = anthropic_client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=messages
+        )
+
+        # Extract reply from Claude response
+        reply = response.content[0].text
 
         return jsonify({
             'reply': reply,
