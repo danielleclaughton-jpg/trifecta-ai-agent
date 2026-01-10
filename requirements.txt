@@ -1,8 +1,43 @@
+# Trifecta AI Agent - Production Requirements
+# Updated: 2026-01-10
+
+# Core Flask
 Flask==3.0.0
 Werkzeug==3.0.0
 flask-cors==4.0.0
-azure-cognitiveservices-speech==1.33.1
-azure-identity==1.14.0
-requests==2.31.0
-python-dotenv==1.0.0
 gunicorn==21.2.0
+
+# Azure Identity & Authentication
+azure-identity==1.14.0
+azure-keyvault-secrets==4.7.0
+
+# Azure Cognitive Services
+azure-cognitiveservices-speech==1.33.0
+
+# Azure Storage (Session Recordings)
+azure-storage-blob==12.19.0
+
+# Microsoft Graph SDK
+msgraph-sdk==1.2.0
+msgraph-core==1.0.0
+
+# Azure Application Insights
+opencensus-ext-azure==1.1.13
+opencensus-ext-flask==0.8.2
+
+# HTTP & API
+requests==2.31.0
+httpx==0.27.0
+
+# Environment & Config
+python-dotenv==1.0.0
+
+# QuickBooks Integration
+intuit-oauth==1.2.6
+
+# PDF Generation (for contracts/invoices)
+weasyprint==60.2
+jinja2==3.1.2
+
+# Data Processing
+pandas==2.1.4
