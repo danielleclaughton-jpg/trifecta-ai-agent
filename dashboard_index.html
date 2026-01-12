@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Trifecta Dashboard (Dev) - Root</title>
+  <style>body{font-family:Arial,Helvetica,sans-serif;margin:24px}button,input{margin:6px 0;padding:8px}pre{background:#f4f4f4;padding:12px;border-radius:6px}</style>
+</head>
+<body>
+  <h1>Trifecta Dashboard (Dev)</h1>
+  <p>This is the minimal dev dashboard served from the repo root as <code>/</code>.</p>
+  <section>
+    <h2>Instagram Post (test)</h2>
+    <label>Caption</label><br>
+    <input id="caption" type="text" value="Trifecta 28-Day Bootcamp $3777" style="width:60%" />
+    <br>
+    <button id="postBtn">Post to Instagram (POST /api/social/instagram/post)</button>
+    <pre id="postResult">Result will appear here</pre>
+  </section>
+
+  <section>
+    <h2>Portal Clients (risk=high)</h2>
+    <button id="clientsBtn">Get High Risk Clients (GET /api/portal/clients?risk=high)</button>
+    <pre id="clientsResult">Result will appear here</pre>
+  </section>
+
+  <script>
+    const API_BASE = 'http://localhost:5000';
+
+    document.getElementById('postBtn').addEventListener('click', async () => {
+      const caption = document.getElementById('caption').value;
+      try {
+        const resp = await fetch(API_BASE + '/api/social/instagram/post', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ caption })
+        });
+        const data = await resp.json();
+        document.getElementById('postResult').textContent = JSON.stringify({status: resp.status, body: data}, null, 2);
+      } catch (e) {
+        document.getElementById('postResult').textContent = 'Error: ' + e.message;
+      }
+    });
+
+    document.getElementById('clientsBtn').addEventListener('click', async () => {
+      try {
+        const resp = await fetch(API_BASE + '/api/portal/clients?risk=high');
+        const data = await resp.json();
+        document.getElementById('clientsResult').textContent = JSON.stringify({status: resp.status, body: data}, null, 2);
+      } catch (e) {
+        document.getElementById('clientsResult').textContent = 'Error: ' + e.message;
+      }
+    });
+  </script>
+</body>
+</html>
