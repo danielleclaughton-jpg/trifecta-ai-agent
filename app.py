@@ -14,13 +14,16 @@ from flask_cors import CORS
 from datetime import datetime, timedelta
 from pathlib import Path
 import requests
-from functools import wraps
 from requests.exceptions import Timeout, RequestException
 from werkzeug.exceptions import HTTPException
 
-# Azure SDK imports
-from azure.identity import DefaultAzureCredential, ClientSecretCredential
-from azure.keyvault.secrets import SecretClient
+# Azure SDK imports (optional - only needed if using Azure Key Vault directly)
+try:
+    from azure.identity import DefaultAzureCredential, ClientSecretCredential
+    from azure.keyvault.secrets import SecretClient
+    AZURE_SDK_AVAILABLE = True
+except ImportError:
+    AZURE_SDK_AVAILABLE = False
 
 # Application Insights
 try:
@@ -208,7 +211,7 @@ def call_anthropic(skill_context, message, max_tokens=2000):
     Adds a network timeout and raises network-related exceptions for the caller to handle.
     """
     api_key = Config.ANTHROPIC_API_KEY
-    if not api_key:
+    if not api_key or api_key.startswith('@Microsoft.KeyVault') or api_key.startswith('your_'):
         raise ValueError("ANTHROPIC_API_KEY not configured")
 
     url = 'https://api.anthropic.com/v1/messages'
@@ -239,6 +242,9 @@ def call_anthropic(skill_context, message, max_tokens=2000):
     except Timeout:
         logger.warning('Anthropic request timed out after %ss', DEFAULT_OUTBOUND_TIMEOUT)
         raise
+    except requests.exceptions.HTTPError as e:
+        logger.error('Anthropic HTTP error: %s - %s', e.response.status_code, e.response.text[:200] if e.response else 'No response')
+        raise RequestException(f"Anthropic API error: {e.response.status_code}")
     except RequestException as e:
         logger.error('Anthropic request failed: %s', e)
         raise
@@ -500,16 +506,29 @@ def reload_skills():
 def chat():
     """Chat endpoint with skill matching and Claude AI."""
     try:
+        # Validate content type
         if not request.is_json:
             return jsonify({'error': 'Expected application/json', 'code': 'invalid_content_type'}), 400
-        data = request.get_json()
+        
+        # Parse JSON with error handling
+        try:
+            data = request.get_json(force=False)
+        except Exception as e:
+            logger.warning(f"JSON parse error: {e}")
+            return jsonify({'error': 'Invalid JSON', 'code': 'invalid_json'}), 400
+        
+        # Validate payload
+        if data is None:
+            return jsonify({'error': 'Invalid payload', 'code': 'invalid_payload'}), 400
+        
         validation = _validate_message_payload(data)
         if validation:
             return validation
+        
         message = data.get('message', '').strip()
-
+        
         if not message:
-            return jsonify({'error': 'Message is required'}), 400
+            return jsonify({'error': 'Message is required', 'code': 'missing_message'}), 400
 
         # Match skill
         matched = match_skill(message)
@@ -523,15 +542,23 @@ def chat():
         # Call Claude
         try:
             response_text = call_anthropic(skill_context, message)
+        except ValueError as e:
+            # API key not configured
+            logger.error('Anthropic API key not configured: %s', e)
+            return jsonify({
+                'error': 'AI service not configured',
+                'code': 'service_unavailable',
+                'hint': 'ANTHROPIC_API_KEY is required'
+            }), 503
         except Timeout:
             logger.warning('Anthropic timed out for message: %s', message[:80])
             response_text = "Service timed out, please try again."
+        except RequestException as e:
+            logger.error('Anthropic request failed: %s', e)
+            response_text = "I'm unable to process your request right now. Please try again."
         except Exception as e:
-            logger.error('Anthropic call failed: %s', e)
-            if matched:
-                response_text = f"[Skill: {matched['title']}]\n\n{skill_context[:500]}..."
-            else:
-                response_text = "I'm unable to process your request right now. Please try again."
+            logger.error('Unexpected Anthropic error: %s', e)
+            response_text = "I'm unable to process your request right now. Please try again."
 
         return jsonify({
             'reply': response_text,
@@ -543,7 +570,11 @@ def chat():
     except Exception as e:
         err_id = str(uuid.uuid4())
         logger.exception('Chat error [%s]: %s', err_id, e)
-        return jsonify({'error': 'Internal server error', 'id': err_id}), 500
+        return jsonify({
+            'error': 'Internal server error',
+            'id': err_id,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
 
 # =============================================================================
 # API ENDPOINTS - Microsoft Graph (Task 3)
