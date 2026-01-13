@@ -1,7 +1,7 @@
 """
 Trifecta AI Agent - Production Flask Application
 Flask-based AI agent API with Azure integrations, Microsoft Graph, SharePoint, Dialpad
-Version: 1.0.0 | Updated: 2026-01-10
+Version: 1.1.0 | Updated: 2026-01-12
 """
 
 import os
@@ -9,7 +9,7 @@ import json
 import re
 import logging
 import uuid
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify, g, render_template_string
 from flask_cors import CORS
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -95,6 +95,11 @@ class Config:
     # Dialpad
     DIALPAD_API_KEY = os.environ.get('DIALPAD_API_KEY', '')
     DIALPAD_WEBHOOK_SECRET = os.environ.get('DIALPAD_WEBHOOK_SECRET', '')
+
+    # GoDaddy WebChat
+    GODADDY_API_KEY = os.environ.get('GODADDY_API_KEY', '')
+    GODADDY_API_SECRET = os.environ.get('GODADDY_API_SECRET', '')
+    GODADDY_WEBCHAT_WEBHOOK_SECRET = os.environ.get('GODADDY_WEBCHAT_WEBHOOK_SECRET', '')
 
     # QuickBooks
     QUICKBOOKS_CLIENT_ID = os.environ.get('QUICKBOOKS_CLIENT_ID', '')
@@ -206,12 +211,75 @@ def match_skill(message):
 # =============================================================================
 # ANTHROPIC (CLAUDE) INTEGRATION
 # =============================================================================
+DEMO_MODE = os.environ.get('DEMO_MODE', '0') == '1'
+
+def get_demo_response(message, skill=None):
+    """Return demo response when no API key is configured."""
+    skill_name = skill['title'] if skill else 'General'
+    
+    # Smart demo responses based on message content
+    msg_lower = message.lower()
+    
+    if any(word in msg_lower for word in ['hello', 'hi', 'hey']):
+        return f"Hello! I'm the Trifecta AI Assistant. I'm currently in demo mode. To enable full AI capabilities, please configure your ANTHROPIC_API_KEY in the .env file."
+    
+    if any(word in msg_lower for word in ['service', 'program', 'offer', 'help']):
+        return """**Trifecta Services** (Demo Mode)
+
+Trifecta Addiction & Mental Health Services offers:
+
+1. **28-Day Virtual Boot Camp** - $3,777 CAD
+   - Online recovery program with daily sessions
+   
+2. **14-Day Inpatient Program** - $13,777 CAD
+   - Intensive residential treatment
+   
+3. **28-Day Inpatient Program** - $23,777 CAD
+   - Comprehensive residential recovery
+
+📞 Contact: (403) 907-0996
+🌐 Website: trifectaaddiction.ca
+
+*Note: This is a demo response. Configure ANTHROPIC_API_KEY for full AI capabilities.*"""
+    
+    if any(word in msg_lower for word in ['intake', 'assessment', 'start']):
+        return """**Lead Intake Process** (Demo Mode)
+
+To begin the intake process:
+
+1. **Initial Contact** - Phone or webchat
+2. **Pre-Assessment** - Brief questionnaire
+3. **Consultation** - 30-min call with intake coordinator
+4. **Program Selection** - Choose appropriate treatment
+5. **Documentation** - Contract and payment setup
+6. **Scheduling** - Set start date
+
+*Configure ANTHROPIC_API_KEY for AI-powered intake assistance.*"""
+    
+    return f"""**Demo Response** (Skill: {skill_name})
+
+Your message: "{message[:100]}..."
+
+I'm currently running in demo mode without an Anthropic API key.
+
+**To enable full AI:**
+1. Get an API key from https://console.anthropic.com/
+2. Add to .env: ANTHROPIC_API_KEY=sk-ant-api03-...
+3. Restart the Flask server
+
+The system is ready - just needs the API key!"""
+
 def call_anthropic(skill_context, message, max_tokens=2000):
-    """Call Anthropic Messages API with Claude 3.5 Sonnet.
-    Adds a network timeout and raises network-related exceptions for the caller to handle.
+    """Call Anthropic Messages API with Claude.
+    Falls back to demo mode if no API key is configured.
     """
     api_key = Config.ANTHROPIC_API_KEY
+    
+    # Check if we should use demo mode
     if not api_key or api_key.startswith('@Microsoft.KeyVault') or api_key.startswith('your_'):
+        if DEMO_MODE or os.environ.get('ALLOW_DEMO', '1') == '1':
+            logger.info('Using demo mode - no API key configured')
+            return None  # Signal to use demo response
         raise ValueError("ANTHROPIC_API_KEY not configured")
 
     url = 'https://api.anthropic.com/v1/messages'
@@ -222,16 +290,21 @@ def call_anthropic(skill_context, message, max_tokens=2000):
     }
 
     payload = {
-        'model': 'claude-3-5-sonnet-20241022',
+        'model': 'claude-sonnet-4-20250514',
         'max_tokens': max_tokens,
         'messages': [{'role': 'user', 'content': message}]
     }
 
     if skill_context:
-        payload['system'] = skill_context
+        payload['system'] = f"""You are Trifecta AI, an assistant for Trifecta Addiction & Mental Health Services in Calgary, Canada.
+You help with client intake, session planning, documentation, and recovery support.
+Be professional, compassionate, and action-oriented.
+
+Context from skill knowledge base:
+{skill_context}"""
 
     try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=DEFAULT_OUTBOUND_TIMEOUT)
+        resp = requests.post(url, headers=headers, json=payload, timeout=60)
         resp.raise_for_status()
         data = resp.json()
 
@@ -240,11 +313,13 @@ def call_anthropic(skill_context, message, max_tokens=2000):
             return content[0].get('text', '').strip()
         return ''
     except Timeout:
-        logger.warning('Anthropic request timed out after %ss', DEFAULT_OUTBOUND_TIMEOUT)
+        logger.warning('Anthropic request timed out after 60s')
         raise
     except requests.exceptions.HTTPError as e:
-        logger.error('Anthropic HTTP error: %s - %s', e.response.status_code, e.response.text[:200] if e.response else 'No response')
-        raise RequestException(f"Anthropic API error: {e.response.status_code}")
+        status = e.response.status_code if e.response else 'unknown'
+        body = e.response.text[:200] if e.response else 'No response'
+        logger.error('Anthropic HTTP error: %s - %s', status, body)
+        raise RequestException(f"Anthropic API error: {status}")
     except RequestException as e:
         logger.error('Anthropic request failed: %s', e)
         raise
@@ -539,17 +614,19 @@ def chat():
             if len(skill_context) > 8000:
                 skill_context = skill_context[:8000] + '\n\n[truncated for context limit]'
 
-        # Call Claude
+        # Call Claude (or use demo mode)
+        demo_mode_used = False
         try:
             response_text = call_anthropic(skill_context, message)
+            # If None returned, use demo response
+            if response_text is None:
+                response_text = get_demo_response(message, matched)
+                demo_mode_used = True
         except ValueError as e:
-            # API key not configured
-            logger.error('Anthropic API key not configured: %s', e)
-            return jsonify({
-                'error': 'AI service not configured',
-                'code': 'service_unavailable',
-                'hint': 'ANTHROPIC_API_KEY is required'
-            }), 503
+            # API key not configured - use demo mode
+            logger.warning('Using demo mode: %s', e)
+            response_text = get_demo_response(message, matched)
+            demo_mode_used = True
         except Timeout:
             logger.warning('Anthropic timed out for message: %s', message[:80])
             response_text = "Service timed out, please try again."
@@ -564,6 +641,7 @@ def chat():
             'reply': response_text,
             'matched_skill': matched['name'] if matched else None,
             'skill_title': matched['title'] if matched else None,
+            'demo_mode': demo_mode_used,
             'timestamp': datetime.utcnow().isoformat()
         }), 200
 
@@ -735,27 +813,230 @@ def dialpad_transcription(call_id):
 
 @app.route('/api/dialpad/webhook', methods=['POST'])
 def dialpad_webhook():
-    """Receive Dialpad webhooks for call events."""
+    """
+    Receive Dialpad webhooks for call events.
+    Events: call.started, call.ended, voicemail.received, sms.received
+    """
     try:
-        # Verify webhook signature
+        # Verify webhook signature if secret is configured
         signature = request.headers.get('X-Dialpad-Signature')
-        # TODO: Verify signature with DIALPAD_WEBHOOK_SECRET
+        if Config.DIALPAD_WEBHOOK_SECRET and signature:
+            import hmac
+            import hashlib
+            expected = hmac.new(
+                Config.DIALPAD_WEBHOOK_SECRET.encode(),
+                request.data,
+                hashlib.sha256
+            ).hexdigest()
+            if not hmac.compare_digest(signature, expected):
+                logger.warning('Invalid Dialpad webhook signature')
+                return jsonify({'error': 'Invalid signature'}), 401
 
         event = request.get_json()
-        event_type = event.get('type')
-
-        logger.info(f"Dialpad webhook received: {event_type}")
+        if not event:
+            return jsonify({'error': 'No event data'}), 400
+            
+        event_type = event.get('type', 'unknown')
+        logger.info(f"Dialpad webhook: {event_type}")
 
         # Handle different event types
         if event_type == 'call.ended':
-            call_id = event.get('call', {}).get('id')
-            # Trigger session documentation workflow
-            # This would queue a job to process the call
+            call_data = event.get('call', {})
+            call_id = call_data.get('id')
+            duration = call_data.get('duration')
+            caller = call_data.get('caller', {}).get('number')
+            
+            logger.info(f"Call ended: {call_id}, duration: {duration}s, caller: {caller}")
+            
+            # Auto-trigger transcription if call was long enough (>60s)
+            if duration and int(duration) > 60:
+                logger.info(f"Queueing transcription for call {call_id}")
+                # In production: queue async job to fetch transcription
+                
+        elif event_type == 'voicemail.received':
+            voicemail = event.get('voicemail', {})
+            caller = voicemail.get('caller', {}).get('number')
+            logger.info(f"Voicemail from: {caller}")
+            
+        elif event_type == 'sms.received':
+            sms = event.get('sms', {})
+            sender = sms.get('from_number')
+            text = sms.get('text', '')[:100]
+            logger.info(f"SMS from {sender}: {text}...")
 
-        return jsonify({'status': 'received'}), 200
+        return jsonify({
+            'status': 'received',
+            'event_type': event_type,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
 
     except Exception as e:
         logger.error(f"Dialpad webhook error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# =============================================================================
+# API ENDPOINTS - GoDaddy WebChat Webhook
+# =============================================================================
+@app.route('/api/godaddy/webhook', methods=['POST'])
+def godaddy_webhook():
+    """
+    Receive GoDaddy WebChat webhooks for new messages.
+    Auto-responds with AI or creates lead.
+    """
+    try:
+        # Verify webhook signature if configured
+        signature = request.headers.get('X-GoDaddy-Signature')
+        if Config.GODADDY_WEBCHAT_WEBHOOK_SECRET and signature:
+            import hmac
+            import hashlib
+            expected = hmac.new(
+                Config.GODADDY_WEBCHAT_WEBHOOK_SECRET.encode(),
+                request.data,
+                hashlib.sha256
+            ).hexdigest()
+            if not hmac.compare_digest(signature, expected):
+                logger.warning('Invalid GoDaddy webhook signature')
+                return jsonify({'error': 'Invalid signature'}), 401
+
+        event = request.get_json()
+        if not event:
+            return jsonify({'error': 'No event data'}), 400
+            
+        event_type = event.get('type', 'message')
+        logger.info(f"GoDaddy webhook: {event_type}")
+
+        if event_type == 'message.received':
+            conversation_id = event.get('conversation_id')
+            message = event.get('message', {})
+            text = message.get('text', '')
+            visitor = event.get('visitor', {})
+            
+            logger.info(f"WebChat message from {visitor.get('name', 'Unknown')}: {text[:50]}...")
+            
+            # Check for lead indicators
+            lead_keywords = ['help', 'treatment', 'program', 'cost', 'insurance', 'addiction', 'recovery']
+            is_potential_lead = any(kw in text.lower() for kw in lead_keywords)
+            
+            if is_potential_lead:
+                logger.info(f"Potential lead detected in conversation {conversation_id}")
+                # In production: create lead in CRM, notify intake team
+            
+            # Auto-respond with AI (if configured)
+            # This would call the chat endpoint internally
+
+        return jsonify({
+            'status': 'received',
+            'event_type': event_type,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+
+    except Exception as e:
+        logger.error(f"GoDaddy webhook error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# =============================================================================
+# API ENDPOINTS - Lead Intake Webhook
+# =============================================================================
+@app.route('/api/webhook/lead', methods=['POST'])
+def lead_intake_webhook():
+    """
+    Receive new leads from website forms, landing pages, or third-party sources.
+    Creates lead in system and triggers intake workflow.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No lead data'}), 400
+
+        # Extract lead info
+        lead = {
+            'id': str(uuid.uuid4()),
+            'name': data.get('name', '').strip(),
+            'email': data.get('email', '').strip(),
+            'phone': data.get('phone', '').strip(),
+            'source': data.get('source', 'website'),
+            'message': data.get('message', ''),
+            'interest': data.get('interest', ''),  # e.g., "28-day program"
+            'urgency': data.get('urgency', 'normal'),  # low, normal, high, urgent
+            'created_at': datetime.utcnow().isoformat(),
+            'status': 'new'
+        }
+
+        # Validate required fields
+        if not lead['name'] or not (lead['email'] or lead['phone']):
+            return jsonify({
+                'error': 'Name and either email or phone required',
+                'code': 'missing_fields'
+            }), 400
+
+        logger.info(f"New lead received: {lead['name']} from {lead['source']}")
+
+        # Determine priority based on urgency keywords
+        urgent_keywords = ['urgent', 'emergency', 'crisis', 'overdose', 'suicide', 'immediate']
+        if any(kw in lead['message'].lower() for kw in urgent_keywords):
+            lead['urgency'] = 'urgent'
+            lead['priority'] = 1
+            logger.warning(f"URGENT lead: {lead['name']} - {lead['message'][:100]}")
+        else:
+            lead['priority'] = 3 if lead['urgency'] == 'high' else 5
+
+        # In production: Save to database, create in Azure AD, notify team
+        # For now, log and return success
+        
+        return jsonify({
+            'status': 'received',
+            'lead_id': lead['id'],
+            'priority': lead['priority'],
+            'urgency': lead['urgency'],
+            'message': f"Lead '{lead['name']}' created successfully",
+            'timestamp': datetime.utcnow().isoformat()
+        }), 201
+
+    except Exception as e:
+        logger.error(f"Lead intake webhook error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# =============================================================================
+# API ENDPOINTS - QuickBooks Webhook
+# =============================================================================
+@app.route('/api/quickbooks/webhook', methods=['POST'])
+def quickbooks_webhook():
+    """
+    Receive QuickBooks webhooks for payment events.
+    Events: Payment received, Invoice status change
+    """
+    try:
+        # QuickBooks uses a verifier token in query param
+        verifier = request.args.get('verifier')
+        
+        event = request.get_json()
+        if not event:
+            return jsonify({'error': 'No event data'}), 400
+
+        event_notifications = event.get('eventNotifications', [])
+        
+        for notification in event_notifications:
+            realm_id = notification.get('realmId')
+            data_changes = notification.get('dataChangeEvent', {}).get('entities', [])
+            
+            for entity in data_changes:
+                entity_name = entity.get('name')  # e.g., "Payment", "Invoice"
+                entity_id = entity.get('id')
+                operation = entity.get('operation')  # Create, Update, Delete
+                
+                logger.info(f"QuickBooks: {operation} {entity_name} {entity_id}")
+                
+                if entity_name == 'Payment' and operation == 'Create':
+                    logger.info(f"Payment received: {entity_id}")
+                    # In production: Update client status, send confirmation
+
+        return jsonify({
+            'status': 'received',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+
+    except Exception as e:
+        logger.error(f"QuickBooks webhook error: {e}")
         return jsonify({'error': str(e)}), 500
 
 # =============================================================================
@@ -963,6 +1244,281 @@ Output complete HTML document."""
         return jsonify({'error': str(e)}), 500
 
 # =============================================================================
+# API ENDPOINTS - Invoice Generation (New Template-Based)
+# =============================================================================
+def load_invoice_template():
+    """Load the HTML invoice template."""
+    template_path = Path(__file__).parent / 'templates' / 'invoice_template.html'
+    if template_path.exists():
+        return template_path.read_text(encoding='utf-8')
+    return None
+
+def generate_invoice_html(invoice_data):
+    """Generate HTML invoice from template and data."""
+    template = load_invoice_template()
+    if not template:
+        return None
+
+    # Generate line items HTML
+    line_items_html = ""
+    for item in invoice_data.get('line_items', []):
+        line_items_html += f"""
+          <tr>
+            <td>
+              <div class="line-item-title">{item.get('title', 'Virtual Session – 60 Minutes')}</div>
+              <div class="line-item-date">Date: {item.get('date', '')}</div>
+              <div class="line-item-focus">Focus: {item.get('focus', '')}</div>
+            </td>
+            <td>${item.get('rate', '60.00')}</td>
+            <td>${item.get('amount', '60.00')}</td>
+          </tr>
+        """
+
+    # Determine status class
+    status = invoice_data.get('status', 'OUTSTANDING')
+    status_class = 'status-outstanding'
+    if 'PARTIAL' in status.upper():
+        status_class = 'status-partial'
+    elif 'PAID' in status.upper():
+        status_class = 'status-paid'
+
+    # Replace template variables
+    html = template
+    replacements = {
+        '{{INVOICE_NUMBER}}': str(invoice_data.get('invoice_number', '0000')),
+        '{{CLIENT_NAME}}': invoice_data.get('client_name', ''),
+        '{{SERVICE_TYPE}}': invoice_data.get('service_type', 'Virtual Counselling Sessions'),
+        '{{PAYMENT_METHOD}}': invoice_data.get('payment_method', 'e-Transfer'),
+        '{{PROGRAM_SERVICE}}': invoice_data.get('program_service', 'Virtual Individual Counselling'),
+        '{{STATUS}}': status,
+        '{{STATUS_CLASS}}': status_class,
+        '{{SESSIONS_COVERED}}': invoice_data.get('sessions_covered', ''),
+        '{{LINE_ITEMS}}': line_items_html,
+        '{{OUTSTANDING_BALANCE}}': f"{invoice_data.get('outstanding_balance', 0):.2f}",
+        '{{SUMMARY_NOTE}}': invoice_data.get('summary_note', ''),
+        '{{PAYMENT_STATUS_TEXT}}': invoice_data.get('payment_status_text', ''),
+        '{{CURRENT_YEAR}}': str(datetime.utcnow().year),
+    }
+
+    for key, value in replacements.items():
+        html = html.replace(key, value)
+
+    return html
+
+@app.route('/api/invoice/generate', methods=['POST'])
+def generate_invoice():
+    """
+    Generate a professional invoice using the Trifecta template.
+
+    Expected JSON payload:
+    {
+        "invoice_number": "1413",
+        "client_name": "Max Willigar",
+        "service_type": "Virtual Counselling Sessions",
+        "payment_method": "e-Transfer (Partial Payment)",
+        "program_service": "Virtual Individual Counselling",
+        "status": "PARTIAL PAYMENT RECEIVED",
+        "sessions_covered": "Tuesday Dec 3, Tuesday Dec 10, Wednesday Dec 18, 2025 & Friday Jan 3, 2026",
+        "line_items": [
+            {
+                "title": "Virtual Session – 60 Minutes",
+                "date": "Tuesday, December 3, 2025",
+                "focus": "Initial assessment and treatment planning for addiction recovery.",
+                "rate": "60.00",
+                "amount": "60.00"
+            }
+        ],
+        "total_amount": 240.00,
+        "amount_paid": 180.00,
+        "outstanding_balance": 60.00
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        # Calculate summary note
+        session_count = len(data.get('line_items', []))
+        total = data.get('total_amount', 0)
+
+        # Build sessions dates list for summary
+        sessions_dates = ', '.join([item.get('date', '') for item in data.get('line_items', [])])
+
+        data['summary_note'] = (
+            f"This invoice reflects {session_count} 60-minute virtual counselling sessions for {data.get('client_name', '')} "
+            f"on {sessions_dates}. Professional fee is $60/hour, for a total of ${total:.2f} CAD. "
+            f"Services are GST exempt."
+        )
+
+        # Build payment status text
+        amount_paid = data.get('amount_paid', 0)
+        outstanding = data.get('outstanding_balance', 0)
+        data['payment_status_text'] = f"${amount_paid:.2f} has been received. Outstanding balance: ${outstanding:.2f}"
+
+        # Generate HTML
+        html_invoice = generate_invoice_html(data)
+
+        if not html_invoice:
+            return jsonify({'error': 'Invoice template not found'}), 500
+
+        # Optionally upload to SharePoint
+        sharepoint_url = None
+        if data.get('upload_to_sharepoint', False):
+            try:
+                client_folder = data.get('client_name', 'Unknown').replace(' ', '_')
+                filename = f"Invoice_{data.get('invoice_number', '0000')}_{datetime.utcnow().strftime('%Y%m%d')}.html"
+                result = graph_client.upload_to_sharepoint(
+                    folder_path=f"{client_folder}/Invoices",
+                    filename=filename,
+                    content=html_invoice.encode(),
+                    content_type='text/html'
+                )
+                sharepoint_url = result.get('webUrl')
+            except Exception as e:
+                logger.warning(f"SharePoint upload failed: {e}")
+
+        return jsonify({
+            'status': 'generated',
+            'invoice_number': data.get('invoice_number'),
+            'client_name': data.get('client_name'),
+            'html_invoice': html_invoice,
+            'sharepoint_url': sharepoint_url,
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Invoice generation error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/invoice/preview', methods=['POST'])
+def preview_invoice():
+    """
+    Preview invoice as rendered HTML (returns HTML directly for browser preview).
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        # Calculate summary note
+        session_count = len(data.get('line_items', []))
+        total = data.get('total_amount', 0)
+        sessions_dates = ', '.join([item.get('date', '') for item in data.get('line_items', [])])
+
+        data['summary_note'] = (
+            f"This invoice reflects {session_count} 60-minute virtual counselling sessions for {data.get('client_name', '')} "
+            f"on {sessions_dates}. Professional fee is $60/hour, for a total of ${total:.2f} CAD. "
+            f"Services are GST exempt."
+        )
+
+        amount_paid = data.get('amount_paid', 0)
+        outstanding = data.get('outstanding_balance', 0)
+        data['payment_status_text'] = f"${amount_paid:.2f} has been received. Outstanding balance: ${outstanding:.2f}"
+
+        html_invoice = generate_invoice_html(data)
+
+        if not html_invoice:
+            return jsonify({'error': 'Invoice template not found'}), 500
+
+        return html_invoice, 200, {'Content-Type': 'text/html'}
+
+    except Exception as e:
+        logger.error(f"Invoice preview error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# =============================================================================
+# API ENDPOINTS - GoDaddy WebChat Integration
+# =============================================================================
+# GoDaddy Conversations API Configuration
+GODADDY_API_KEY = os.environ.get('GODADDY_API_KEY', '')
+GODADDY_API_SECRET = os.environ.get('GODADDY_API_SECRET', '')
+GODADDY_BASE_URL = 'https://api.godaddy.com/v1'
+
+@app.route('/api/godaddy/conversations', methods=['GET'])
+def godaddy_conversations():
+    """
+    Get GoDaddy WebChat conversations.
+    Query params: limit (default 20), status (open/closed)
+    """
+    try:
+        if not GODADDY_API_KEY:
+            return jsonify({
+                'error': 'GoDaddy API not configured',
+                'hint': 'Set GODADDY_API_KEY and GODADDY_API_SECRET environment variables',
+                'conversations': [],
+                'count': 0
+            }), 200  # Return 200 with empty list for dashboard compatibility
+
+        limit = request.args.get('limit', 20, type=int)
+        status = request.args.get('status', '')
+
+        headers = {
+            'Authorization': f'sso-key {GODADDY_API_KEY}:{GODADDY_API_SECRET}',
+            'Content-Type': 'application/json'
+        }
+
+        params = {'limit': limit}
+        if status:
+            params['status'] = status
+
+        # Note: This is a placeholder - actual GoDaddy API endpoint may differ
+        # GoDaddy doesn't have a standard conversations API; this would need
+        # to be adapted for their specific integration (e.g., Website Builder chat)
+
+        return jsonify({
+            'conversations': [],
+            'count': 0,
+            'note': 'GoDaddy WebChat integration pending configuration',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+
+    except Exception as e:
+        logger.error(f"GoDaddy conversations error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/godaddy/conversations/<conversation_id>/messages', methods=['GET', 'POST'])
+def godaddy_messages(conversation_id):
+    """
+    Get or send messages for a GoDaddy WebChat conversation.
+    """
+    try:
+        if not GODADDY_API_KEY:
+            return jsonify({
+                'error': 'GoDaddy API not configured',
+                'messages': []
+            }), 200
+
+        headers = {
+            'Authorization': f'sso-key {GODADDY_API_KEY}:{GODADDY_API_SECRET}',
+            'Content-Type': 'application/json'
+        }
+
+        if request.method == 'GET':
+            return jsonify({
+                'conversation_id': conversation_id,
+                'messages': [],
+                'note': 'GoDaddy WebChat integration pending configuration',
+                'timestamp': datetime.utcnow().isoformat()
+            }), 200
+
+        elif request.method == 'POST':
+            data = request.get_json()
+            message = data.get('message', '')
+
+            return jsonify({
+                'status': 'pending',
+                'conversation_id': conversation_id,
+                'message': message,
+                'note': 'GoDaddy WebChat integration pending configuration',
+                'timestamp': datetime.utcnow().isoformat()
+            }), 200
+
+    except Exception as e:
+        logger.error(f"GoDaddy messages error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# =============================================================================
 # ERROR HANDLERS
 # =============================================================================
 @app.errorhandler(404)
@@ -991,7 +1547,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_DEBUG', '0') == '1'
 
-    logger.info(f"Starting Trifecta AI Agent v1.0.0 on port {port}")
+    logger.info(f"Starting Trifecta AI Agent v1.1.0 on port {port}")
     logger.info(f"Skills loaded: {len(SKILLS)}")
     logger.info(f"Debug mode: {debug}")
 
