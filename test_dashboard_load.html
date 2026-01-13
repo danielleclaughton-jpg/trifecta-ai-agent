@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Test</title>
+</head>
+<body>
+    <h1>Dashboard Server Test</h1>
+    <p>If you can see this, the server is working.</p>
+    <p><a href="http://localhost:3015/">Click here to open the dashboard</a></p>
+    <script>
+        fetch('http://localhost:3015/')
+            .then(r => r.text())
+            .then(html => {
+                console.log('Dashboard loaded:', html.length, 'bytes');
+                document.body.innerHTML += '<p style="color:green">✓ Dashboard server is accessible!</p>';
+            })
+            .catch(e => {
+                console.error('Error:', e);
+                document.body.innerHTML += '<p style="color:red">✗ Error: ' + e.message + '</p>';
+            });
+    </script>
+</body>
+</html>

@@ -13,8 +13,8 @@ INDEX_FILE = 'dashboard_index.html'
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        # Serve the dashboard_index.html at the root path
-        if self.path == '/' or self.path == '':
+        # Serve the dashboard_index.html at a few friendly entry paths
+        if self.path in ('/', '', '/index.html', '/dashboard', '/dashboard/', '/admin', '/admin/'):
             self.path = '/' + INDEX_FILE
         return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
