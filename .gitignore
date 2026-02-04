@@ -2,3 +2,8 @@
 __pycache__/
 *.pyc
 .venv/
+.vscode/
+*.ipynb
+*.zip
+nul
+Assets/skills/temp_extract/
