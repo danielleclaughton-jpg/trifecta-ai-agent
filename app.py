@@ -1006,7 +1006,7 @@ clients_db = {}
 sessions_db = {}
 appointments_db = {}
 
-@app.route('/leads', methods=['POST'])
+@app.route('/api/leads', methods=['POST'])
 def create_lead():
     """Create a new lead - called by MCP server."""
     try:
@@ -1045,7 +1045,7 @@ def get_lead(lead_id):
         return jsonify({'error': 'Lead not found'}), 404
     return jsonify(lead), 200
 
-@app.route('/clients', methods=['POST'])
+@app.route('/api/clients', methods=['POST'])
 def create_client():
     """Create a new client - called by MCP server."""
     try:
@@ -1089,7 +1089,7 @@ def get_client(client_id):
         return jsonify({'error': 'Client not found'}), 404
     return jsonify(client), 200
 
-@app.route('/sessions', methods=['POST'])
+@app.route('/api/sessions', methods=['POST'])
 def create_session():
     """Create a session note - called by MCP server."""
     try:
@@ -1120,7 +1120,7 @@ def create_session():
         logger.error(f"Create session error: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/appointments', methods=['POST'])
+@app.route('/api/appointments', methods=['POST'])
 def create_appointment():
     """Create an appointment - called by MCP server."""
     try:
@@ -1152,7 +1152,7 @@ def create_appointment():
         logger.error(f"Create appointment error:{e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/dashboard/metrics', methods=['GET'])
+@app.route('/api/dashboard/metrics', methods=['GET'])
 def get_metrics():
     """Get dashboard metrics - called by MCP server."""
     total_leads = len(leads_db)
