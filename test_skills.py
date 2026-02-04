@@ -6,7 +6,7 @@ import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-API_BASE = "http://localhost:8000"
+API_BASE = "http://localhost:5000"
 
 def test_skills():
     print("=" * 60)
