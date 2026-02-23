@@ -203,6 +203,7 @@ LEAD_STATUS = {
     'PROGRAM_INFO_SENT': 'PROGRAM_INFO_SENT',
     'NEEDS_HUMAN_REVIEW': 'NEEDS_HUMAN_REVIEW',
     'ERROR': 'ERROR',
+    'ARCHIVED': 'ARCHIVED',
 }
 
 LEAD_SOURCE = {
@@ -218,22 +219,27 @@ VALID_LEAD_TRANSITIONS = {
         LEAD_STATUS['DRAFT_CREATED'],
         LEAD_STATUS['NEEDS_HUMAN_REVIEW'],
         LEAD_STATUS['ERROR'],
+        LEAD_STATUS['ARCHIVED'],
     },
     LEAD_STATUS['DRAFT_CREATED']: {
         LEAD_STATUS['PROGRAM_INFO_SENT'],
         LEAD_STATUS['NEEDS_HUMAN_REVIEW'],
         LEAD_STATUS['ERROR'],
+        LEAD_STATUS['ARCHIVED'],
     },
     LEAD_STATUS['NEEDS_HUMAN_REVIEW']: {
         LEAD_STATUS['DRAFT_CREATED'],
         LEAD_STATUS['PROGRAM_INFO_SENT'],
         LEAD_STATUS['ERROR'],
+        LEAD_STATUS['ARCHIVED'],
     },
-    LEAD_STATUS['PROGRAM_INFO_SENT']: set(),
+    LEAD_STATUS['PROGRAM_INFO_SENT']: {LEAD_STATUS['ARCHIVED']},
     LEAD_STATUS['ERROR']: {
         LEAD_STATUS['INQUIRY_RECEIVED'],
         LEAD_STATUS['NEEDS_HUMAN_REVIEW'],
+        LEAD_STATUS['ARCHIVED'],
     },
+    LEAD_STATUS['ARCHIVED']: set(),
 }
 
 LEAD_SYSTEM_PROMPT = """You are Danielle B., Founder & Clinical Director of Trifecta Addiction Services.
@@ -618,6 +624,60 @@ class LeadPipelineStore:
                     json.dumps(after_obj) if after_obj is not None else None,
                     utcnow_iso()
                 )
+            )
+
+    def update_lead(self, lead_id, **fields):
+        allowed = {
+            'name': lambda v: v if v is not None else '',
+            'email': normalize_email,
+            'phone': normalize_phone,
+            'source': lambda v: v if v is not None else '',
+            'initial_question': lambda v: v if v is not None else '',
+            'program_interest': lambda v: v if v is not None else '',
+            'external_contact_key': lambda v: v if v is not None else '',
+        }
+        updates = []
+        params = []
+        for key, value in fields.items():
+            if key not in allowed:
+                continue
+            updates.append(f"{key} = ?")
+            params.append(allowed[key](value))
+        if not updates:
+            return self.get_lead_by_id(lead_id)
+        updates.append("updated_at = ?")
+        params.append(utcnow_iso())
+        params.append(lead_id)
+        with self._connect() as conn:
+            conn.execute(f"UPDATE leads SET {', '.join(updates)} WHERE id = ?", tuple(params))
+            return self._fetchone(conn, "SELECT * FROM leads WHERE id = ?", (lead_id,))
+
+    def archive_lead(self, lead_id):
+        with self._connect() as conn:
+            lead = self._fetchone(conn, "SELECT * FROM leads WHERE id = ?", (lead_id,))
+            if not lead:
+                return None
+            conn.execute(
+                "UPDATE leads SET status = ?, updated_at = ? WHERE id = ?",
+                (LEAD_STATUS['ARCHIVED'], utcnow_iso(), lead_id)
+            )
+            return self._fetchone(conn, "SELECT * FROM leads WHERE id = ?", (lead_id,))
+
+    def list_audit_for_lead(self, lead_id, limit=100, offset=0):
+        with self._connect() as conn:
+            return self._fetchall(
+                conn,
+                """SELECT * FROM audit_log
+                   WHERE (object_type = 'lead' AND object_id = ?)
+                      OR (object_type = 'email_draft' AND object_id IN (
+                          SELECT id FROM email_drafts WHERE lead_id = ?
+                      ))
+                      OR (object_type = 'outbound_message' AND object_id IN (
+                          SELECT id FROM outbound_messages WHERE lead_id = ?
+                      ))
+                   ORDER BY timestamp DESC
+                   LIMIT ? OFFSET ?""",
+                (lead_id, lead_id, lead_id, limit, offset)
             )
 
     def lead_event_exists(self, source, source_event_id):
@@ -2165,6 +2225,94 @@ def reject_lead_draft(lead_id):
     lead_store.set_lead_status(lead_id, LEAD_STATUS['NEEDS_HUMAN_REVIEW'])
     lead_store.add_audit(actor, 'draft_rejected', 'email_draft', draft['id'], before, after)
     return jsonify({'status': 'rejected', 'lead_id': lead_id, 'draft_id': draft['id']}), 200
+
+
+# =============================================================================
+# API ENDPOINTS - Lead Admin
+# =============================================================================
+@app.route('/api/leads/metrics', methods=['GET'])
+@require_api_key
+def lead_admin_metrics():
+    """Lead funnel metrics for dashboard admin."""
+    try:
+        metrics = lead_store.status_metrics()
+        return jsonify({**metrics, 'timestamp': utcnow_iso()}), 200
+    except Exception as exc:
+        logger.error("Lead admin metrics error: %s", exc)
+        return jsonify({'error': str(exc)}), 500
+
+
+@app.route('/api/leads/<lead_id>', methods=['PATCH'])
+@require_api_key
+def update_lead_admin(lead_id):
+    """Manually update lead status and core lead info."""
+    lead = lead_store.get_lead_by_id(lead_id)
+    if not lead:
+        return jsonify({'error': 'Lead not found'}), 404
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    actor = data.get('updated_by', 'operator')
+    requested_status = data.get('status')
+    update_fields = {
+        k: v for k, v in data.items()
+        if k in {'name', 'email', 'phone', 'source', 'initial_question', 'program_interest', 'external_contact_key'}
+    }
+
+    before = dict(lead)
+    if update_fields:
+        lead = lead_store.update_lead(lead_id, **update_fields)
+
+    if requested_status:
+        lead_after_status, status_err = lead_store.set_lead_status(lead_id, requested_status)
+        if status_err == 'invalid_transition':
+            return jsonify({
+                'error': 'Invalid status transition',
+                'current_status': before.get('status'),
+                'requested_status': requested_status
+            }), 400
+        if status_err == 'not_found':
+            return jsonify({'error': 'Lead not found'}), 404
+        lead = lead_after_status
+
+    lead_store.add_audit(actor, 'lead_admin_updated', 'lead', lead_id, before, lead)
+    return jsonify({'status': 'updated', 'lead': _serialize_lead(lead)}), 200
+
+
+@app.route('/api/leads/<lead_id>/audit', methods=['GET'])
+@require_api_key
+def get_lead_audit(lead_id):
+    """Fetch audit trail for a lead and related draft/message records."""
+    lead = lead_store.get_lead_by_id(lead_id)
+    if not lead:
+        return jsonify({'error': 'Lead not found'}), 404
+
+    limit = min(max(int(request.args.get('limit', 100)), 1), 500)
+    offset = max(int(request.args.get('offset', 0)), 0)
+    rows = lead_store.list_audit_for_lead(lead_id, limit=limit, offset=offset)
+    return jsonify({
+        'lead_id': lead_id,
+        'count': len(rows),
+        'limit': limit,
+        'offset': offset,
+        'audit': rows
+    }), 200
+
+
+@app.route('/api/leads/<lead_id>', methods=['DELETE'])
+@require_api_key
+def archive_lead(lead_id):
+    """Soft delete a lead by marking status as archived."""
+    lead = lead_store.get_lead_by_id(lead_id)
+    if not lead:
+        return jsonify({'error': 'Lead not found'}), 404
+    actor = (request.get_json(silent=True) or {}).get('archived_by', 'operator')
+    before = dict(lead)
+    after = lead_store.archive_lead(lead_id)
+    lead_store.add_audit(actor, 'lead_archived', 'lead', lead_id, before, after)
+    return jsonify({'status': 'archived', 'lead_id': lead_id, 'lead': _serialize_lead(after)}), 200
+
 
 @app.route('/api/clients', methods=['POST'])
 def create_client():
