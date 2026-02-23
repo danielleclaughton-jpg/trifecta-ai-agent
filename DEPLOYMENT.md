@@ -52,20 +52,15 @@ az keyvault set-policy --name trifecta-keyvault \
   --secret-permissions get list
 ```
 
-### Day 2 (Jan 12): Azure App Service Deployment
+### Day 2 (Jan 12): Azure App Service Deployment (Windows wfastcgi)
 ```bash
 # 1. Create App Service (if not exists)
 az webapp create \
   --name trifecta-agent \
   --resource-group TrifectaRG \
   --plan TrifectaPlan \
-  --runtime "PYTHON:3.11"
-
-# 2. Configure startup command
-az webapp config set \
-  --name trifecta-agent \
-  --resource-group TrifectaRG \
-  --startup-file "gunicorn --bind=0.0.0.0:8000 --workers=4 --threads=2 --timeout=120 app:app"
+  --runtime "PYTHON:3.11" \
+  --os-type Windows
 
 # 3. Set environment variables (Key Vault references)
 az webapp config appsettings set --name trifecta-agent --resource-group TrifectaRG --settings \
@@ -78,7 +73,7 @@ az webapp config appsettings set --name trifecta-agent --resource-group Trifecta
   SKILL_DIR="Assets/skills" \
   FLASK_ENV="production"
 
-# 4. Deploy code
+# 3. Deploy code
 az webapp deployment source config-local-git --name trifecta-agent --resource-group TrifectaRG
 git remote add azure <deployment-url>
 git push azure main

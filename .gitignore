@@ -1,4 +1,14 @@
 .env
+.env.local
 __pycache__/
 *.pyc
+venv/
 .venv/
+.vscode/
+*.ipynb
+*.zip
+*.msi
+AzureCLI.msi
+nul
+Assets/skills/temp_extract/
+lead_pipeline.db

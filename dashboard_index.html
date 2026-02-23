@@ -3,53 +3,976 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Trifecta Dashboard (Dev) - Root</title>
-  <style>body{font-family:Arial,Helvetica,sans-serif;margin:24px}button,input{margin:6px 0;padding:8px}pre{background:#f4f4f4;padding:12px;border-radius:6px}</style>
+  <title>Trifecta Admin Dashboard</title>
+  <style>
+    :root{
+      --bg: #0a0e1a;
+      --surface: #131722;
+      --surface-elevated: #1a1f2e;
+      --border: rgba(255,255,255,.08);
+      --border-hover: rgba(255,255,255,.15);
+      --text: rgba(255,255,255,.95);
+      --text-muted: rgba(255,255,255,.65);
+      --text-subtle: rgba(255,255,255,.45);
+      --teal: #00c2c7;
+      --teal-dark: #00a9ad;
+      --teal-glow: rgba(0,194,199,.2);
+      --success: #39d98a;
+      --warning: #ffcc66;
+      --danger: #ff5c77;
+      --radius: 12px;
+      --radius-lg: 16px;
+      --shadow: 0 4px 20px rgba(0,0,0,.3);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,.4);
+    }
+
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    html, body{ height:100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+    body{
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .container{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Header */
+    .header{
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow);
+    }
+
+    .brand{
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-container{
+      display: flex;
+      gap: 8px;
+    }
+
+    .logo{
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .logo img{ width:100%; height:100%; object-fit:contain; }
+
+    .brand-text h1{
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      letter-spacing: -0.3px;
+      color: var(--teal);
+    }
+
+    .brand-text .subtitle{
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .header-controls{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge{
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .status-dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-subtle);
+    }
+    .status-dot.ok{ background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .status-dot.warn{ background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+    .status-dot.danger{ background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+    .api-input-group{
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .api-input{
+      padding: 8px 12px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      min-width: 280px;
+      outline: none;
+      transition: all .2s;
+    }
+
+    .api-input.short{ min-width: 150px; width: 150px; }
+    .api-input:focus{
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px var(--teal-glow);
+    }
+
+    .btn{
+      padding: 8px 16px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      outline: none;
+    }
+
+    .btn:hover{
+      background: var(--surface);
+      border-color: var(--border-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary{
+      background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+      border-color: var(--teal);
+      color: #0a0e1a;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover{
+      filter: brightness(1.1);
+      box-shadow: 0 4px 12px var(--teal-glow);
+    }
+
+    /* Service Status Grid */
+    .services-grid{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .service-card{
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all .2s;
+    }
+
+    .service-card:hover{
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .service-info{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .service-name{
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Main Grid */
+    .main-grid{
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+      gap: 20px;
+    }
+
+    @media (max-width: 1200px){
+      .main-grid{ grid-template-columns: 1fr; }
+    }
+
+    /* Card */
+    .card{
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: all .2s;
+    }
+
+    .card:hover{
+      border-color: var(--border-hover);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .card-header{
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .card-title{
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--teal);
+    }
+
+    .card-desc{
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .card-body{
+      padding: 20px;
+    }
+
+    .form-group{
+      margin-bottom: 16px;
+    }
+
+    .form-group:last-child{ margin-bottom: 0; }
+
+    label{
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, textarea, select{
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: all .2s;
+    }
+
+    input:focus, textarea:focus, select:focus{
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px var(--teal-glow);
+    }
+
+    textarea{
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .form-row{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .output-box{
+      margin-top: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .output-header{
+      padding: 8px 12px;
+      background: var(--surface-elevated);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Monaco', 'Courier New', monospace;
+    }
+
+    .output-content{
+      padding: 14px;
+      max-height: 400px;
+      overflow: auto;
+    }
+
+    pre{
+      margin: 0;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .code{
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 11px;
+      padding: 2px 6px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--teal);
+    }
+
+    .notice{
+      background: rgba(255, 204, 102, .1);
+      border: 1px solid rgba(255, 204, 102, .3);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .notice strong{ color: var(--warning); }
+    .notice code{ font-family: 'Monaco', 'Courier New', monospace; font-size: 11px; }
+
+    .mr-sm{ margin-right: 8px; }
+    .mt-xs{ margin-top: 4px; }
+
+    .footer{
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-subtle);
+    }
+  </style>
 </head>
 <body>
-  <h1>Trifecta Dashboard (Dev)</h1>
-  <p>This is the minimal dev dashboard served from the repo root as <code>/</code>.</p>
-  <section>
-    <h2>Instagram Post (test)</h2>
-    <label>Caption</label><br>
-    <input id="caption" type="text" value="Trifecta 28-Day Bootcamp $3777" style="width:60%" />
-    <br>
-    <button id="postBtn">Post to Instagram (POST /api/social/instagram/post)</button>
-    <pre id="postResult">Result will appear here</pre>
-  </section>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="brand">
+        <div class="logo-container">
+          <div class="logo" title="Trifecta">
+            <img src="./dashboard_assets/trifecta-logo.png" alt="Trifecta"
+                 onerror="this.parentElement.dataset.missing='trifecta-logo.png'; this.parentElement.innerHTML='<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:rgba(255,255,255,.9);background:linear-gradient(135deg,#00c2c7,#00a9ad);border-radius:12px;&quot;>T</div>';">
+          </div>
+          <div class="logo" title="Illuminate">
+            <img src="./dashboard_assets/illuminate-logo.png" alt="Illuminate"
+                 onerror="this.parentElement.dataset.missing='illuminate-logo.png'; this.parentElement.innerHTML='<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:rgba(255,255,255,.9);background:rgba(255,255,255,.08);border-radius:12px;&quot;>I</div>';">
+          </div>
+        </div>
+        <div class="brand-text">
+          <h1>Trifecta Admin Dashboard</h1>
+          <div class="subtitle">Mind • Body • Soul</div>
+        </div>
+      </div>
 
-  <section>
-    <h2>Portal Clients (risk=high)</h2>
-    <button id="clientsBtn">Get High Risk Clients (GET /api/portal/clients?risk=high)</button>
-    <pre id="clientsResult">Result will appear here</pre>
-  </section>
+      <div class="header-controls">
+        <div class="status-badge" id="apiStatus">
+          <span class="status-dot" id="apiDot"></span>
+          <span id="apiLabel">Checking...</span>
+        </div>
+        <div class="api-input-group">
+          <input type="password" id="authToken" class="api-input short" placeholder="Auth Token" />
+          <input type="text" id="apiBase" class="api-input" placeholder="http://localhost:5000" />
+          <button class="btn" id="useLocal">Local</button>
+          <button class="btn" id="useProd">Azure</button>
+          <button class="btn btn-primary" id="pingBtn">Health</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notice -->
+    <div class="notice" id="assetNotice">
+      <strong>Brand assets missing.</strong> Add logos to <code>dashboard_assets/</code>: <span id="assetNoticeList"></span>
+    </div>
+
+    <!-- Service Status -->
+    <div class="services-grid" id="servicesGrid"></div>
+
+    <!-- Main Content Grid -->
+    <div class="main-grid">
+      <!-- Chat -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">AI Chat (Claude)</div>
+            <div class="card-desc">POST <span class="code">/api/chat</span> — Chat with AI agent</div>
+          </div>
+          <button class="btn btn-primary" id="chatBtn">Send</button>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="chatMsg">Message</label>
+            <textarea id="chatMsg">Hello — can you explain Trifecta services and the 28-day program?</textarea>
+          </div>
+          <div class="output-box">
+            <div class="output-header">
+              <span id="chatMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="chatOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Skills</div>
+            <div class="card-desc">GET <span class="code">/api/skills</span> — List loaded skills</div>
+          </div>
+          <div>
+            <button class="btn mr-sm" id="skillsReloadBtn">Reload</button>
+            <button class="btn btn-primary" id="skillsBtn">Load</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="output-box">
+            <div class="output-header">
+              <span id="skillsMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="skillsOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GoDaddy WebChat -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">GoDaddy WebChat</div>
+            <div class="card-desc">GET <span class="code">/api/godaddy/conversations</span> — Fetch conversations</div>
+          </div>
+          <button class="btn btn-primary" id="godaddyBtn">Fetch</button>
+        </div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="godaddyLimit">Limit</label>
+              <input type="number" id="godaddyLimit" value="20" min="1" max="100" />
+            </div>
+            <div class="form-group">
+              <label for="godaddyStatus">Status</label>
+              <select id="godaddyStatus">
+                <option value="">All</option>
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+          </div>
+          <div class="output-box">
+            <div class="output-header">
+              <span id="godaddyMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="godaddyOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Portal Sync -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Portal Sync</div>
+            <div class="card-desc">GET <span class="code">/api/portal-sync</span> — Client analysis</div>
+          </div>
+          <button class="btn btn-primary" id="portalBtn">Run</button>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="portalRisk">Risk Level</label>
+            <select id="portalRisk">
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="output-box">
+            <div class="output-header">
+              <span id="portalMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="portalOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graph Clients -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Microsoft Graph Clients</div>
+            <div class="card-desc">GET <span class="code">/api/graph/clients</span> — Fetch Azure AD clients</div>
+          </div>
+          <button class="btn btn-primary" id="graphBtn">Fetch</button>
+        </div>
+        <div class="card-body">
+          <div class="output-box">
+            <div class="output-header">
+              <span id="graphMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="graphOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dialpad Calls -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Dialpad Calls</div>
+            <div class="card-desc">GET <span class="code">/api/dialpad/calls</span> — Recent calls</div>
+          </div>
+          <button class="btn btn-primary" id="dialpadBtn">Fetch</button>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="dialpadLimit">Limit</label>
+            <input type="number" id="dialpadLimit" value="10" min="1" max="200" />
+          </div>
+          <div class="output-box">
+            <div class="output-header">
+              <span id="dialpadMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="dialpadOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dialpad Transcription -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Dialpad Transcription</div>
+            <div class="card-desc">GET <span class="code">/api/dialpad/transcription/&lt;id&gt;</span> — Get call transcription</div>
+          </div>
+          <button class="btn btn-primary" id="dialpadTransBtn">Get</button>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="dialpadCallId">Call ID</label>
+            <input type="text" id="dialpadCallId" placeholder="Enter call ID" />
+          </div>
+          <div class="output-box">
+            <div class="output-header">
+              <span id="dialpadTransMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="dialpadTransOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SharePoint Upload -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">SharePoint Upload</div>
+            <div class="card-desc">POST <span class="code">/api/sharepoint/upload</span> — Upload document</div>
+          </div>
+          <button class="btn btn-primary" id="sharepointBtn">Upload</button>
+        </div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="spClientName">Client Name</label>
+              <input type="text" id="spClientName" value="Test_Client" />
+            </div>
+            <div class="form-group">
+              <label for="spDocType">Document Type</label>
+              <select id="spDocType">
+                <option value="contract">Contract</option>
+                <option value="invoice">Invoice</option>
+                <option value="session_report">Session Report</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="spFilename">Filename</label>
+            <input type="text" id="spFilename" value="test_document.html" />
+          </div>
+          <div class="form-group">
+            <label for="spContent">Content</label>
+            <textarea id="spContent">&lt;html&gt;&lt;body&gt;&lt;h1&gt;Test Document&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;</textarea>
+          </div>
+          <div class="output-box">
+            <div class="output-header">
+              <span id="spMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="spOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contract Generator -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Contract Generator</div>
+            <div class="card-desc">POST <span class="code">/api/contract/&lt;id&gt;</span> — Generate invoice</div>
+          </div>
+          <button class="btn btn-primary" id="contractBtn">Generate</button>
+        </div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="clientId">Client ID</label>
+              <input type="text" id="clientId" value="test-client" />
+            </div>
+            <div class="form-group">
+              <label for="program">Program</label>
+              <select id="program">
+                <option value="28_DAY_VIRTUAL">28-Day Virtual</option>
+                <option value="14_DAY_INPATIENT">14-Day Inpatient</option>
+                <option value="28_DAY_INPATIENT">28-Day Inpatient</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="clientName">Client Name</label>
+              <input type="text" id="clientName" value="Demo Client" />
+            </div>
+            <div class="form-group">
+              <label for="clientEmail">Email</label>
+              <input type="email" id="clientEmail" value="demo@example.com" />
+            </div>
+          </div>
+          <div class="output-box">
+            <div class="output-header">
+              <span id="contractMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="contractOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Dev dashboard served by <span class="code">python dashboard_dev.py</span> (port 3015)</div>
+      <div class="mt-xs">API should run separately on <span class="code">localhost:5000</span> or Azure URL</div>
+    </div>
+  </div>
 
   <script>
-    const API_BASE = 'http://localhost:5000';
+    const STORAGE_KEY = 'trifecta_admin_api_base';
+    const TOKEN_KEY = 'trifecta_admin_auth_token';
+    const DEFAULT_LOCAL = 'http://localhost:5000';
+    const DEFAULT_LOCAL_ALT = 'http://localhost:5000';
 
-    document.getElementById('postBtn').addEventListener('click', async () => {
-      const caption = document.getElementById('caption').value;
+    function normalizeBase(url) {
+      if (!url) return DEFAULT_LOCAL;
+      url = url.trim();
+      if (url.endsWith('/')) url = url.slice(0, -1);
+      return url;
+    }
+
+    function getApiBase() {
+      return normalizeBase(localStorage.getItem(STORAGE_KEY) || DEFAULT_LOCAL);
+    }
+
+    function setApiBase(url) {
+      const normalized = normalizeBase(url);
+      localStorage.setItem(STORAGE_KEY, normalized);
+      document.getElementById('apiBase').value = normalized;
+      setApiStatus('unknown', `API: ${normalized}`);
+    }
+
+    function setApiStatus(kind, label) {
+      const dot = document.getElementById('apiDot');
+      const text = document.getElementById('apiLabel');
+      dot.className = 'status-dot' + (kind ? (' ' + kind) : '');
+      text.textContent = label;
+    }
+
+    function showMissingBrandAssetsIfAny() {
+      const missing = Array.from(document.querySelectorAll('.logo[data-missing]'))
+        .map(el => el.dataset.missing)
+        .filter(Boolean);
+      if (!missing.length) return;
+      const notice = document.getElementById('assetNotice');
+      const list = document.getElementById('assetNoticeList');
+      list.textContent = missing.join(', ');
+      notice.style.display = 'block';
+    }
+
+    function pretty(obj) {
+      try { return JSON.stringify(obj, null, 2); } catch { return String(obj); }
+    }
+
+    function setOut(metaEl, outEl, status, ms, body) {
+      metaEl.textContent = `status=${status}  time=${ms}ms`;
+      outEl.textContent = typeof body === 'string' ? body : pretty(body);
+    }
+
+    async function fetchJson(path, options = {}) {
+      const apiBase = options.baseUrl || getApiBase();
+      const token = document.getElementById('authToken').value.trim();
+      const url = apiBase + path;
+      const timeoutMs = options.timeoutMs ?? 20000;
+      const controller = new AbortController();
+      const t0 = performance.now();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+
       try {
-        const resp = await fetch(API_BASE + '/api/social/instagram/post', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ caption })
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const resp = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+          headers,
         });
-        const data = await resp.json();
-        document.getElementById('postResult').textContent = JSON.stringify({status: resp.status, body: data}, null, 2);
+        const ms = Math.round(performance.now() - t0);
+        let data;
+        const text = await resp.text();
+        try { data = text ? JSON.parse(text) : null; }
+        catch { data = text; }
+        return { ok: resp.ok, status: resp.status, ms, data };
       } catch (e) {
-        document.getElementById('postResult').textContent = 'Error: ' + e.message;
+        const ms = Math.round(performance.now() - t0);
+        return { ok: false, status: 0, ms, data: { error: e.name === 'AbortError' ? 'Request timed out' : e.message } };
+      } finally {
+        clearTimeout(timer);
       }
+    }
+
+    async function ping() {
+      const apiBase = getApiBase();
+      setApiStatus('warn', `Checking...`);
+      const res = await fetchJson('/health', { method: 'GET', timeoutMs: 6000 });
+      if (res.status === 0) {
+        // Try alternate port
+        const altRes = await fetchJson('/health', { method: 'GET', timeoutMs: 3000, baseUrl: DEFAULT_LOCAL_ALT });
+        if (altRes.status === 200 || altRes.status === 503) {
+          setApiBase(DEFAULT_LOCAL_ALT);
+          setApiStatus('ok', `API: ${DEFAULT_LOCAL_ALT} (online)`);
+          updateServicesStatus(altRes.data);
+          return altRes;
+        }
+        setApiStatus('danger', `API offline`);
+      } else if (res.ok || res.status === 503) {
+        setApiStatus('ok', `API: ${apiBase} (online)`);
+        updateServicesStatus(res.data);
+      } else if (res.status === 401 || res.status === 403) {
+        setApiStatus('warn', `Azure Connected (Auth Required)`);
+        document.getElementById('authToken').style.borderColor = 'var(--warning)';
+        document.getElementById('authToken').focus();
+      } else {
+        setApiStatus('warn', `API: ${apiBase} (error ${res.status})`);
+      }
+      return res;
+    }
+
+    function updateServicesStatus(healthData) {
+      if (!healthData || !healthData.services) return;
+      const grid = document.getElementById('servicesGrid');
+      grid.innerHTML = '';
+      const services = healthData.services;
+      const names = {
+        anthropic: 'Claude AI',
+        microsoft_graph: 'Microsoft Graph',
+        sharepoint: 'SharePoint',
+        dialpad: 'Dialpad',
+        quickbooks: 'QuickBooks',
+        skills: 'Skills'
+      };
+      for (const [key, enabled] of Object.entries(services)) {
+        const card = document.createElement('div');
+        card.className = 'service-card';
+        card.innerHTML = `
+          <div class="service-info">
+            <span class="status-dot ${enabled ? 'ok' : 'danger'}"></span>
+            <span class="service-name">${names[key] || key}</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    // Helper to bind buttons to API actions
+    function bindAction(btnId, metaId, outId, loadingText, actionFn) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
+        const meta = document.getElementById(metaId);
+        const out = document.getElementById(outId);
+        meta.textContent = loadingText;
+        try {
+          const res = await actionFn();
+          setOut(meta, out, res.status, res.ms, res.data);
+        } catch (err) {
+          setOut(meta, out, 0, 0, { error: err.message });
+        }
+      });
+    }
+
+    // Wire UI
+    document.getElementById('apiBase').value = getApiBase();
+    document.getElementById('apiBase').addEventListener('change', () => setApiBase(document.getElementById('apiBase').value));
+    
+    // Auth Token Persistence
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+    if (savedToken) document.getElementById('authToken').value = savedToken;
+    document.getElementById('authToken').addEventListener('input', (e) => localStorage.setItem(TOKEN_KEY, e.target.value));
+
+    document.getElementById('useLocal').addEventListener('click', () => setApiBase(DEFAULT_LOCAL));
+    document.getElementById('useProd').addEventListener('click', () => {
+      const current = getApiBase();
+      const isDefault = current.includes('localhost') || current.includes('YOUR-APP');
+      const hint = isDefault ? 'https://YOUR-APP.azurewebsites.net' : current;
+      const next = prompt('Paste your Azure App Service URL', hint);
+      if (next) setApiBase(next);
+    });
+    document.getElementById('pingBtn').addEventListener('click', () => ping());
+
+    // Chat
+    bindAction('chatBtn', 'chatMeta', 'chatOut', 'sending...', async () => {
+      const message = document.getElementById('chatMsg').value;
+      return await fetchJson('/api/chat', { method: 'POST', body: JSON.stringify({ message }), timeoutMs: 30000 });
     });
 
-    document.getElementById('clientsBtn').addEventListener('click', async () => {
-      try {
-        const resp = await fetch(API_BASE + '/api/portal/clients?risk=high');
-        const data = await resp.json();
-        document.getElementById('clientsResult').textContent = JSON.stringify({status: resp.status, body: data}, null, 2);
-      } catch (e) {
-        document.getElementById('clientsResult').textContent = 'Error: ' + e.message;
-      }
+    // Skills
+    bindAction('skillsBtn', 'skillsMeta', 'skillsOut', 'loading...', async () => {
+      return await fetchJson('/api/skills', { method: 'GET', timeoutMs: 12000 });
     });
+
+    bindAction('skillsReloadBtn', 'skillsMeta', 'skillsOut', 'reloading...', async () => {
+      return await fetchJson('/api/skills/reload', { method: 'POST', timeoutMs: 12000 });
+    });
+
+    // GoDaddy
+    bindAction('godaddyBtn', 'godaddyMeta', 'godaddyOut', 'fetching...', async () => {
+      const limit = document.getElementById('godaddyLimit').value;
+      const status = document.getElementById('godaddyStatus').value;
+      let path = `/api/godaddy/conversations?limit=${limit}`;
+      if (status) path += `&status=${encodeURIComponent(status)}`;
+      return await fetchJson(path, { method: 'GET', timeoutMs: 20000 });
+    });
+
+    // Portal Sync
+    bindAction('portalBtn', 'portalMeta', 'portalOut', 'running...', async () => {
+      const risk = document.getElementById('portalRisk').value;
+      return await fetchJson(`/api/portal-sync?risk=${encodeURIComponent(risk)}`, { method: 'GET', timeoutMs: 45000 });
+    });
+
+    // Graph Clients
+    bindAction('graphBtn', 'graphMeta', 'graphOut', 'fetching...', async () => {
+      return await fetchJson('/api/graph/clients', { method: 'GET', timeoutMs: 20000 });
+    });
+
+    // Dialpad Calls
+    bindAction('dialpadBtn', 'dialpadMeta', 'dialpadOut', 'fetching...', async () => {
+      const limit = parseInt(document.getElementById('dialpadLimit').value || '10', 10);
+      return await fetchJson(`/api/dialpad/calls?limit=${encodeURIComponent(String(limit))}`, { method: 'GET', timeoutMs: 20000 });
+    });
+
+    // Dialpad Transcription
+    bindAction('dialpadTransBtn', 'dialpadTransMeta', 'dialpadTransOut', 'fetching...', async () => {
+      const callId = document.getElementById('dialpadCallId').value.trim();
+      if (!callId) return { status: 400, ms: 0, data: { error: 'Call ID is required' } };
+      return await fetchJson(`/api/dialpad/transcription/${encodeURIComponent(callId)}`, { method: 'GET', timeoutMs: 20000 });
+    });
+
+    // SharePoint Upload
+    bindAction('sharepointBtn', 'spMeta', 'spOut', 'uploading...', async () => {
+      const clientName = document.getElementById('spClientName').value.trim();
+      const docType = document.getElementById('spDocType').value;
+      const filename = document.getElementById('spFilename').value.trim();
+      const content = document.getElementById('spContent').value;
+      if (!clientName || !filename || !content) return { status: 400, ms: 0, data: { error: 'Client name, filename, and content are required' } };
+      return await fetchJson('/api/sharepoint/upload', {
+        method: 'POST',
+        body: JSON.stringify({ client_name: clientName, document_type: docType, filename, content }),
+        timeoutMs: 30000
+      });
+    });
+
+    // Contract Generation
+    bindAction('contractBtn', 'contractMeta', 'contractOut', 'generating...', async () => {
+      const clientId = document.getElementById('clientId').value.trim() || 'test-client';
+      const program = document.getElementById('program').value;
+      const client_name = document.getElementById('clientName').value;
+      const email = document.getElementById('clientEmail').value;
+      return await fetchJson(`/api/contract/${encodeURIComponent(clientId)}`, {
+        method: 'POST',
+        body: JSON.stringify({ program, client_name, email }),
+        timeoutMs: 60000
+      });
+    });
+
+    // Initialize
+    setApiBase(getApiBase());
+    ping();
+    setInterval(ping, 15000);
+    window.addEventListener('load', showMissingBrandAssetsIfAny);
   </script>
 </body>
 </html>
