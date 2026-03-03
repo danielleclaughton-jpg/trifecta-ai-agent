@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Client_A – Weekly Recovery Session & Holiday Action Plan (DEAR MAN Edition)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+      color: #06222b;
+    }
+    .page {
+      client_a-width: 900px;
+      margin: 0 auto;
+      padding: 24px 24px 48px 24px;
+    }
+    h1, h2, h3 {
+      color: #005f73;
+    }
+    h1 {
+      text-align: center;
+      border-bottom: 3px solid #0a9396;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 0.95rem;
+      color: #335c67;
+      margin-bottom: 24px;
+    }
+    .section {
+      border: 1px solid #e0f2f1;
+      border-left: 6px solid #0a9396;
+      border-radius: 8px;
+      padding: 16px 16px 20px 16px;
+      margin-bottom: 18px;
+      background: #f7fbfc;
+    }
+    .section-header {
+      display: flex;
+      justify-content-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .time-box {
+      font-size: 0.8rem;
+      color: #546e7a;
+      font-style: italic;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 6px;
+      margin-bottom: 4px;
+      color: #07414f;
+    }
+    textarea, input[type="text"], input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px;
+      border-radius: 4px;
+      border: 1px solid #b0bec5;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+      resize: vertical;
+    }
+    textarea {
+      min-height: 60px;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .col-half {
+      flex: 1 1 48%;
+    }
+    .pill {
+      display: inline-block;
+      background: #0a9396;
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      margin-right: 6px;
+    }
+    .prompt {
+      font-size: 0.9rem;
+      color: #37474f;
+      margin-bottom: 4px;
+    }
+    .small-note {
+      font-size: 0.8rem;
+      color: #607d8b;
+      font-style: italic;
+      margin-top: 2px;
+      margin-bottom: 6px;
+    }
+    .scale-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+    .scale-row span.label {
+      min-width: 140px;
+      color: #07414f;
+      font-weight: 600;
+    }
+    .highlight-box {
+      border-radius: 6px;
+      border: 1px dashed #0a9396;
+      padding: 10px;
+      background: #e0f7fa;
+      margin-top: 6px;
+    }
+    .two-col-dearman {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .two-col-dearman .col-half {
+      flex: 1 1 48%;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Client_A – Weekly Recovery & Holiday Action Plan</h1>
+    <div class="subtitle">
+      Guided session with Danielle • Focus: breakup processing, emotional regulation, boundaries with Katie, and sober holiday planning
+    </div>
+
+    <!-- SECTION 1: QUICK CHECK-IN -->
+    <div class="section">
+      <div class="section-header">
+        <h2>1. Quick Check-In (Emotions & Body)</h2>
+        <div class="time-box">Approx. 10–15 minutes</div>
+      </div>
+      <p class="prompt">
+        Client_A, let’s start by checking in on how you’re doing right now. There’s been a lot of change in a short time. This is a safe place to be honest.
+      </p>
+
+      <div class="row">
+        <div class="col-half">
+          <label>Right now I feel… (emotion words)</label>
+          <textarea placeholder="Example: sad, confused, rejected, numb, angry, tired, relieved, scared..."></textarea>
+        </div>
+        <div class="col-half">
+          <label>Where do I feel it in my body?</label>
+          <textarea placeholder="Example: tight chest, heavy stomach, tense jaw, headache, low energy..."></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-half">
+          <label>Emotion Intensity (0–10)</label>
+          <div class="scale-row">
+            <span class="label">Sadness / grief:</span>
+            <input type="number" min="0" client_a="10" placeholder="0–10">
+          </div>
+          <div class="scale-row">
+            <span class="label">Anxiety / worry:</span>
+            <input type="number" min="0" client_a="10" placeholder="0–10">
+          </div>
+          <div class="scale-row">
+            <span class="label">Anger / frustration:</span>
+            <input type="number" min="0" client_a="10" placeholder="0–10">
+          </div>
+          <div class="scale-row">
+            <span class="label">Loneliness:</span>
+            <input type="number" min="0" client_a="10" placeholder="0–10">
+          </div>
+        </div>
+        <div class="col-half">
+          <label>Wise Mind vs Emotion Mind (percentages)</label>
+          <div class="scale-row">
+            <span class="label">Wise Mind online:</span>
+            <input type="number" min="0" client_a="100" placeholder="%"> %
+          </div>
+          <div class="scale-row">
+            <span class="label">Emotion Mind running the show:</span>
+            <input type="number" min="0" client_a="100" placeholder="%"> %
+          </div>
+          <p class="small-note">These don’t have to add up to 100%. This is just a snapshot of how it feels.</p>
+        </div>
+      </div>
+
+      <label>If I had to describe today in one sentence, I’d say:</label>
+      <textarea placeholder="Example: It feels like everything just shifted and I’m trying to keep my feet on the ground."></textarea>
+    </div>
+
+    <!-- SECTION 2: WHAT HAPPENED WITH KATIE -->
+    <div class="section">
+      <div class="section-header">
+        <h2>2. What Happened With Katie? (Story + Mixed Signals)</h2>
+        <div class="time-box">Approx. 15–20 minutes</div>
+      </div>
+      <p class="prompt">
+        Let’s walk through the story of what happened, from your perspective. We are not blaming you or her – we are checking the facts and honouring your feelings.
+      </p>
+
+      <label>2.1 Timeline (from Mexico return → Edmonton → last night)</label>
+      <textarea placeholder="Write the sequence: when she came back from Mexico, how Edmonton went, what she said or did, and what happened last night."></textarea>
+
+      <label>2.2 What mixed signals did you notice?</label>
+      <textarea placeholder="Example: excited to see you then pulling back, talking about Christmas gifts but not committing, saying she can’t do this in a small town, no treatment for herself yet, etc."></textarea>
+
+      <label>2.3 How did it land on you when she said she didn’t want to continue the relationship?</label>
+      <textarea placeholder="Let yourself be honest: What were your first thoughts, emotions, and body reactions?"></textarea>
+
+      <label>2.4 Clarifying Questions About the Split</label>
+      <textarea placeholder="Did she say if she is staying at the house, moving to her parents’ place, or something else? Did she say anything specific about Christmas, holidays, or how she sees contact going?"></textarea>
+
+      <div class="highlight-box">
+        <span class="pill">Danielle reflection</span>
+        <p class="prompt">
+          It hurts a lot right now, but it is actually safer for your recovery to know this now rather than five years down the road, after more damage and more confusion. You’re getting this information early, while you are sober and strong enough to rebuild.
+        </p>
+      </div>
+    </div>
+
+    <!-- SECTION 3: THOUGHTS • FEELINGS • STORIES -->
+    <div class="section">
+      <div class="section-header">
+        <h2>3. Emotional Intelligence Map – Staying on Top of Your Emotions</h2>
+        <div class="time-box">Approx. 15–20 minutes</div>
+      </div>
+      <p class="prompt">
+        Let’s map what your brain is telling you and what your emotions are doing – so you stay in charge, not the stories.
+      </p>
+
+      <div class="row">
+        <div class="col-half">
+          <label>3.1 Automatic Thoughts</label>
+          <textarea placeholder="What thoughts showed up after the breakup? (Example: 'I’m not enough', 'No one stays', 'I’ll be alone at Christmas', 'Her family will never accept me', etc.)"></textarea>
+        </div>
+        <div class="col-half">
+          <label>3.2 Feelings Linked to Those Thoughts</label>
+          <textarea placeholder="For each thought, what feeling shows up? (Example: shame, sadness, fear, anger, hopelessness.)"></textarea>
+        </div>
+      </div>
+
+      <label>3.3 What does Emotion Mind say about this situation?</label>
+      <textarea placeholder="Example: 'This is hopeless', 'I’ll always be the one left', 'I should chase harder', 'I should numb this feeling.'"></textarea>
+
+      <label>3.4 What does Wise Mind say about this situation?</label>
+      <textarea placeholder="Example: 'She’s unwell and scared too', 'I can’t fix her bipolar', 'My recovery has to stay first', 'Space might actually be healthiest for both of us right now.'"></textarea>
+
+      <label>3.5 If your Sober Self could send you one text right now, what would it say?</label>
+      <textarea placeholder="Write it like a text message to yourself."></textarea>
+
+      <div class="highlight-box">
+        <span class="pill">Danielle reflection</span>
+        <p class="prompt">
+          You will always be okay, even if it doesn’t feel like it in this moment. You have skills, support, and a strong sober foundation. This is a painful chapter, not the whole book.
+        </p>
+      </div>
+    </div>
+
+    <!-- SECTION 4: BOUNDARIES & SPACE WITH KATIE -->
+    <div class="section">
+      <div class="section-header">
+        <h2>4. Boundaries & Space With Katie (Without All-or-Nothing)</h2>
+        <div class="time-box">Approx. 15–20 minutes</div>
+      </div>
+      <p class="prompt">
+        We are not deciding your entire future with Katie today. We are giving both of you breathing room and protecting your recovery while she is not in treatment and is feeling unsure.
+      </p>
+
+      <label>4.1 What are you hoping for long term with Katie (if things were healthy)?</label>
+      <textarea placeholder="Be honest – even if it feels painful."></textarea>
+
+      <label>4.2 Right now, what hurts the most about how things ended last night?</label>
+      <textarea></textarea>
+
+      <div class="row">
+        <div class="col-half">
+          <label>4.3 What do you actually control in this situation?</label>
+          <textarea placeholder="Your contact level, your self-care, your recovery work, your boundaries, where you spend the holidays, who you reach out to, etc."></textarea>
+        </div>
+        <div class="col-half">
+          <label>4.4 What do you NOT control?</label>
+          <textarea placeholder="Her feelings, her bipolar disorder, her family’s opinions, small-town gossip, whether she chooses treatment, etc."></textarea>
+        </div>
+      </div>
+
+      <label>4.5 Space Plan (for the next 1–2 weeks)</label>
+      <p class="small-note">
+        This is an experiment, not a punishment. Space is to protect your heart and your sobriety while she is unstable and undecided.
+      </p>
+      <textarea placeholder="Example: 'For the next 7–14 days, I will not initiate contact. If she reaches out, I will respond calmly but keep it brief. I will not beg, chase, or re-argue the relationship. I will focus on my program and my supports.'"></textarea>
+
+      <label>4.6 How will you remind yourself that space is an act of self-respect, not rejection?</label>
+      <textarea></textarea>
+    </div>
+
+    <!-- SECTION 5: HOLIDAY SOBRIETY PLAN -->
+    <div class="section">
+      <div class="section-header">
+        <h2>5. Holiday Sobriety & Support Plan</h2>
+        <div class="time-box">Approx. 20–25 minutes</div>
+      </div>
+      <p class="prompt">
+        The holidays can be intense – especially with breakup pain, family dynamics, and distance. We’re going to build a concrete plan so you don’t feel blindsided by the season.
+      </p>
+
+      <label>5.1 What do the holidays usually look like for you?</label>
+      <textarea placeholder="Past holidays in Ontario, with family, with Katie’s family, alone, using vs sober, etc."></textarea>
+
+      <label>5.2 What are the possible options THIS year?</label>
+      <textarea placeholder="Examples: travel to Ontario, invite your sister to visit, spend it with friends here, join a meeting on Christmas Eve/Day, quiet holiday alone with a strong plan, time with Katie’s family if appropriate, etc."></textarea>
+
+      <div class="row">
+        <div class="col-half">
+          <label>5.3 If you could design your ideal *sober* holiday, what would it look like?</label>
+          <textarea></textarea>
+        </div>
+        <div class="col-half">
+          <label>5.4 What are your biggest fears about the holidays this year?</label>
+          <textarea></textarea>
+        </div>
+      </div>
+
+      <label>5.5 People & Supports I Can Reach Out To</label>
+      <textarea placeholder="List names: family in Ontario, stepmom, sister, sober friends, supports, meetings, crisis lines if needed."></textarea>
+
+      <div class="row">
+        <div class="col-half">
+          <label>5.6 High-Risk Situations to Watch For</label>
+          <textarea placeholder="Example: being alone too long, hearing about Katie with someone else, family drinking environments, feeling like 'everyone else has someone' etc."></textarea>
+        </div>
+        <div class="col-half">
+          <label>5.7 My Emergency Plan (if urges spike)</label>
+          <textarea placeholder="Example: call someone, leave the environment, go for a walk, shower, grounding tools, text Danielle, meeting, sleep, etc."></textarea>
+        </div>
+      </div>
+
+      <label>5.8 Holiday Daily Non-Negotiables (for sobriety)</label>
+      <textarea placeholder="Example: short check-in, food + sleep, one connection per day, 10–15 minutes of movement, one small thing that feels good and sober."></textarea>
+
+      <label>5.9 Big Picture Question</label>
+      <textarea placeholder="Would you ever consider moving back to Ontario at some point, or do you see yourself staying here long-term? What would each option mean for your recovery, support system, and mental health?"></textarea>
+    </div>
+
+    <!-- SECTION 6: RECOVERY-FIRST ACTION PLAN (NEXT 7 DAYS) -->
+    <div class="section">
+      <div class="section-header">
+        <h2>6. Recovery-First Action Plan (Next 7 Days)</h2>
+        <div class="time-box">Approx. 15–20 minutes</div>
+      </div>
+      <p class="prompt">
+        You’ve put a huge amount of energy into the relationship. For the next week, we’re going to intentionally put that energy back into you and your recovery.
+      </p>
+
+      <label>6.1 Daily Check-In Plan</label>
+      <textarea placeholder="Example: 'Every day I will send Danielle a brief check-in: mood (0–10), cravings (0–10), one win, one challenge, one intention for tomorrow.'"></textarea>
+
+      <div class="row">
+        <div class="col-half">
+          <label>6.2 Activities That Strengthen My Sober Self</label>
+          <textarea placeholder="Hockey, hunting, time with sober friends, time with supportive family, walks, projects, work responsibilities, etc."></textarea>
+        </div>
+        <div class="col-half">
+          <label>6.3 Things I Will Put on Pause for 7 Days</label>
+          <textarea placeholder="Rumination about Katie, checking her socials, replaying conversations, self-blame loops, etc."></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-half">
+          <label>6.4 Percentage Check – Where’s My Energy Going?</label>
+          <div class="scale-row">
+            <span class="label">Thinking about Katie:</span>
+            <input type="number" min="0" client_a="100" placeholder="%"> %
+          </div>
+          <div class="scale-row">
+            <span class="label">Thinking about my recovery:</span>
+            <input type="number" min="0" client_a="100" placeholder="%"> %
+          </div>
+          <div class="scale-row">
+            <span class="label">Thinking about my future life:</span>
+            <input type="number" min="0" client_a="100" placeholder="%"> %
+          </div>
+          <p class="small-note">Danielle will help you rebalance these numbers in session.</p>
+        </div>
+        <div class="col-half">
+          <label>6.5 One Small Goal Per Day</label>
+          <textarea placeholder="Example: Monday – hockey; Tuesday – call family; Wednesday – clean space; Thursday – meeting; Friday – plan weekend; Saturday – outdoors; Sunday – review this workbook."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 7: NEUROPLASTICITY & SELF-WORTH -->
+    <div class="section">
+      <div class="section-header">
+        <h2>7. Neuroplasticity & Self-Worth – Your Brain Is Still Rewiring</h2>
+        <div class="time-box">Approx. 10–15 minutes</div>
+      </div>
+      <p class="prompt">
+        A breakup does not erase your progress. Your brain is still building new pathways. Let’s name the evidence.
+      </p>
+
+      <label>7.1 Evidence That My Sober Self Is Still Winning</label>
+      <textarea placeholder="List at least 5 pieces of evidence from the last 2–4 weeks: showing up to sessions, managing work stress, not using, honest check-ins, healthy choices, etc."></textarea>
+
+      <label>7.2 Old Pathway vs New Pathway</label>
+      <div class="row">
+        <div class="col-half">
+          <label>Old Pathway (Before Recovery)</label>
+          <textarea placeholder="Example: Pain → numb with substances → shame → isolation → more use."></textarea>
+        </div>
+        <div class="col-half">
+          <label>New Pathway (Now)</label>
+          <textarea placeholder="Example: Pain → talk about it → use skills → stay sober → feel proud → stronger next time."></textarea>
+        </div>
+      </div>
+
+      <label>7.3 If I imagine myself 6 months from now staying sober through this, what do I hope is true?</label>
+      <textarea></textarea>
+    </div>
+
+    <!-- SECTION 8: CLOSING REFLECTION & COMMITMENT -->
+    <div class="section">
+      <div class="section-header">
+        <h2>8. Closing Reflection & Commitment</h2>
+        <div class="time-box">Approx. 5–10 minutes</div>
+      </div>
+
+      <label>8.1 The most important thing I’m taking from today’s session is:</label>
+      <textarea></textarea>
+
+      <label>8.2 One thing I commit to doing in the next 24 hours that supports my recovery:</label>
+      <textarea></textarea>
+
+      <label>8.3 What support do I need from Danielle between now and our next session?</label>
+      <textarea></textarea>
+
+      <div class="highlight-box">
+        <span class="pill">Reminder</span>
+        <p class="prompt">
+          This breakup is painful, but it is not the end of your story. Your recovery is still strong. Your brain is still changing. Your sober self is still here. We are going to get you through the holidays with a solid plan, one day at a time.
+        </p>
+      </div>
+    </div>
+
+    <!-- SECTION 9: DEAR MAN SCRIPT – IF KATIE REACHES OUT -->
+    <div class="section">
+      <div class="section-header">
+        <h2>9. DEAR MAN – If Katie Reaches Out</h2>
+        <div class="time-box">Approx. 15–20 minutes (role-play with Danielle)</div>
+      </div>
+      <p class="prompt">
+        This section is to help you stay calm, clear, and self-respecting if Katie contacts you. Danielle will role-play this with you in session.
+      </p>
+
+      <div class="two-col-dearman">
+        <div class="col-half">
+          <label>D – Describe (just the facts)</label>
+          <textarea placeholder="Example: 'Katie, we talked last week and you said you didn’t want to continue the relationship. Since then we haven’t had a clear plan, and I’ve been giving you space.'"></textarea>
+
+          <label>E – Express (how this impacts you)</label>
+          <textarea placeholder="Example: 'I feel hurt and confused by the mixed signals, and I also care about you and your recovery.'"></textarea>
+
+          <label>A – Assert (what you need now)</label>
+          <textarea placeholder="Example: 'Right now I need to protect my recovery and my mental health. I need clarity and consistency, not on-and-off contact.'"></textarea>
+
+          <label>R – Reinforce (why this boundary matters)</label>
+          <textarea placeholder="Example: 'Having clearer boundaries will help me stay sober and handle this respectfully. That’s better for both of us in the long run.'"></textarea>
+        </div>
+
+        <div class="col-half">
+          <label>M – Stay Mindful</label>
+          <textarea placeholder="What will you say to yourself in the moment to stay on track and not get pulled into old patterns?"></textarea>
+
+          <label>A – Appear Confident</label>
+          <textarea placeholder="How will you hold your body, tone, and pace so you sound steady and grounded, even if you feel emotional inside?"></textarea>
+
+          <label>N – Negotiate (if needed)</label>
+          <textarea placeholder="Example: 'If you decide to get help and work on your own recovery, we can revisit what a relationship might look like. For now, I think some space is healthiest for me.'"></textarea>
+
+          <label>Optional: One Sentence You Want to Remember</label>
+          <textarea placeholder="Example: 'I care about you, and I’m choosing my recovery first.'"></textarea>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <span class="pill">Danielle reflection</span>
+        <p class="prompt">
+          Remember: giving Katie space and choosing clear boundaries is not abandoning her – it is protecting you. If she ever wants to meet you in a healthy, committed way, she will need to do her own work too. You are allowed to rebuild now, not wait years hoping things change.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -14,9 +14,9 @@
       --text: rgba(255,255,255,.95);
       --text-muted: rgba(255,255,255,.65);
       --text-subtle: rgba(255,255,255,.45);
-      --teal: #00c2c7;
-      --teal-dark: #00a9ad;
-      --teal-glow: rgba(0,194,199,.2);
+      --teal: #2dced3;
+      --teal-dark: #26c8cb;
+      --teal-glow: rgba(32, 156, 160, 0.47) 0.2);
       --success: #39d98a;
       --warning: #ffcc66;
       --danger: #ff5c77;
@@ -382,6 +382,91 @@
       font-size: 12px;
       color: var(--text-subtle);
     }
+
+    .leads-layout{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 900px){
+      .leads-layout{
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .leads-list{
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      max-height: 260px;
+      overflow: auto;
+      background: var(--bg);
+    }
+
+    .lead-row{
+      width: 100%;
+      text-align: left;
+      border: 0;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      padding: 10px 12px;
+      transition: background .15s;
+    }
+
+    .lead-row:hover{
+      background: rgba(255,255,255,.03);
+    }
+
+    .lead-row.active{
+      background: rgba(0,194,199,.12);
+      border-left: 3px solid var(--teal);
+      padding-left: 9px;
+    }
+
+    .lead-row:last-child{
+      border-bottom: 0;
+    }
+
+    .lead-row-main{
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .lead-row-sub{
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .lead-detail{
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      min-height: 260px;
+      padding: 10px;
+      overflow: auto;
+    }
+
+    .lead-actions{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 700px){
+      .lead-actions{
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
 </head>
 <body>
@@ -476,6 +561,95 @@
             </div>
             <div class="output-content">
               <pre id="skillsOut">Result will appear here.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leads Pipeline -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Leads Pipeline</div>
+            <div class="card-desc">List, inspect, approve/send, reject leads</div>
+          </div>
+          <button class="btn btn-primary" id="leadsLoadBtn">Load Leads</button>
+        </div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="leadStatusFilter">Status</label>
+              <select id="leadStatusFilter">
+                <option value="">All</option>
+                <option value="INQUIRY_RECEIVED">INQUIRY_RECEIVED</option>
+                <option value="DRAFT_CREATED">DRAFT_CREATED</option>
+                <option value="NEEDS_HUMAN_REVIEW">NEEDS_HUMAN_REVIEW</option>
+                <option value="PROGRAM_INFO_SENT">PROGRAM_INFO_SENT</option>
+                <option value="ERROR">ERROR</option>
+                <option value="ARCHIVED">ARCHIVED</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="leadSourceFilter">Source</label>
+              <select id="leadSourceFilter">
+                <option value="">All</option>
+                <option value="MANUAL">MANUAL</option>
+                <option value="GODADDY_CHAT">GODADDY_CHAT</option>
+                <option value="DIALPAD_SMS">DIALPAD_SMS</option>
+                <option value="DIALPAD_CALL">DIALPAD_CALL</option>
+                <option value="OUTLOOK_FORM">OUTLOOK_FORM</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="leadLimit">Limit</label>
+              <input type="number" id="leadLimit" value="20" min="1" max="200" />
+            </div>
+            <div class="form-group">
+              <label for="leadOffset">Offset</label>
+              <input type="number" id="leadOffset" value="0" min="0" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="leadActor">Actor</label>
+              <input type="text" id="leadActor" value="dashboard-operator" />
+            </div>
+            <div class="form-group">
+              <label for="leadRejectReason">Reject Reason</label>
+              <input type="text" id="leadRejectReason" value="Requires manual rewrite" />
+            </div>
+          </div>
+
+          <div class="leads-layout">
+            <div>
+              <label>Lead List</label>
+              <div id="leadsList" class="leads-list">
+                <div style="padding:10px 12px;color:var(--text-muted);font-size:12px;">Load leads to begin.</div>
+              </div>
+            </div>
+            <div>
+              <label>Lead Detail</label>
+              <div id="leadDetail" class="lead-detail">
+                <pre id="leadDetailPre">Select a lead to view detail.</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="lead-actions">
+            <button class="btn" id="leadRefreshBtn" disabled>Refresh Lead</button>
+            <button class="btn btn-primary" id="leadApproveSendBtn" disabled>Approve + Send</button>
+            <button class="btn" id="leadRejectBtn" disabled>Reject</button>
+            <button class="btn" id="leadAuditBtn" disabled>View Audit</button>
+          </div>
+
+          <div class="output-box">
+            <div class="output-header">
+              <span id="leadsMeta">idle</span>
+              <span class="code">JSON</span>
+            </div>
+            <div class="output-content">
+              <pre id="leadsOut">Lead query and action results appear here.</pre>
             </div>
           </div>
         </div>
@@ -769,6 +943,52 @@
       outEl.textContent = typeof body === 'string' ? body : pretty(body);
     }
 
+    let selectedLeadId = '';
+
+    function setLeadActionState(disabled) {
+      document.getElementById('leadRefreshBtn').disabled = disabled;
+      document.getElementById('leadApproveSendBtn').disabled = disabled;
+      document.getElementById('leadRejectBtn').disabled = disabled;
+      document.getElementById('leadAuditBtn').disabled = disabled;
+    }
+
+    function renderLeadDetail(lead) {
+      const pre = document.getElementById('leadDetailPre');
+      pre.textContent = lead ? pretty(lead) : 'Select a lead to view detail.';
+    }
+
+    function renderLeadsList(leads) {
+      const listEl = document.getElementById('leadsList');
+      if (!Array.isArray(leads) || !leads.length) {
+        listEl.innerHTML = '<div style="padding:10px 12px;color:var(--text-muted);font-size:12px;">No leads found.</div>';
+        selectedLeadId = '';
+        setLeadActionState(true);
+        renderLeadDetail(null);
+        return;
+      }
+      listEl.innerHTML = '';
+      for (const lead of leads) {
+        const row = document.createElement('button');
+        row.className = 'lead-row' + (lead.id === selectedLeadId ? ' active' : '');
+        row.type = 'button';
+        row.dataset.leadId = lead.id;
+        row.innerHTML = `
+          <div class="lead-row-main">
+            <span>${lead.name || 'Unknown Lead'}</span>
+            <span>${lead.status || 'UNKNOWN'}</span>
+          </div>
+          <div class="lead-row-sub">
+            <span>${lead.source || ''}</span>
+            <span>${lead.updated_at || ''}</span>
+          </div>
+        `;
+        row.addEventListener('click', () => {
+          loadLeadDetail(lead.id);
+        });
+        listEl.appendChild(row);
+      }
+    }
+
     async function fetchJson(path, options = {}) {
       const apiBase = options.baseUrl || getApiBase();
       const token = document.getElementById('authToken').value.trim();
@@ -802,6 +1022,88 @@
       } finally {
         clearTimeout(timer);
       }
+    }
+
+    async function loadLeads() {
+      const status = document.getElementById('leadStatusFilter').value;
+      const source = document.getElementById('leadSourceFilter').value;
+      const limit = parseInt(document.getElementById('leadLimit').value || '20', 10);
+      const offset = parseInt(document.getElementById('leadOffset').value || '0', 10);
+      const payload = { limit, offset };
+      if (status) payload.status = status;
+      if (source) payload.source = source;
+      const res = await fetchJson('/api/leads/query', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        timeoutMs: 25000
+      });
+      setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
+      if (res.ok && res.data) {
+        const leads = res.data.leads || [];
+        if (!selectedLeadId && leads.length) selectedLeadId = leads[0].id;
+        renderLeadsList(leads);
+        if (selectedLeadId) {
+          await loadLeadDetail(selectedLeadId, false);
+        }
+      }
+      return res;
+    }
+
+    async function loadLeadDetail(leadId, updateOutput = true) {
+      if (!leadId) return { status: 400, ms: 0, data: { error: 'Lead id is required' } };
+      const res = await fetchJson(`/api/leads/${encodeURIComponent(leadId)}`, { method: 'GET', timeoutMs: 20000 });
+      if (updateOutput) {
+        setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
+      }
+      if (res.ok) {
+        selectedLeadId = leadId;
+        setLeadActionState(false);
+        renderLeadDetail(res.data);
+        const leadsSnapshot = Array.from(document.querySelectorAll('.lead-row'));
+        for (const row of leadsSnapshot) row.classList.remove('active');
+        const selected = leadsSnapshot.find((el) => el.dataset.leadId === leadId);
+        if (selected) selected.classList.add('active');
+      } else {
+        setLeadActionState(true);
+      }
+      return res;
+    }
+
+    async function approveSendSelectedLead() {
+      if (!selectedLeadId) return { status: 400, ms: 0, data: { error: 'No lead selected' } };
+      const actor = document.getElementById('leadActor').value.trim() || 'dashboard-operator';
+      const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/approve-send`, {
+        method: 'POST',
+        body: JSON.stringify({ approved_by: actor }),
+        timeoutMs: 45000
+      });
+      setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
+      if (res.ok) await loadLeadDetail(selectedLeadId, false);
+      return res;
+    }
+
+    async function rejectSelectedLead() {
+      if (!selectedLeadId) return { status: 400, ms: 0, data: { error: 'No lead selected' } };
+      const actor = document.getElementById('leadActor').value.trim() || 'dashboard-operator';
+      const reason = document.getElementById('leadRejectReason').value.trim() || 'Requires manual rewrite';
+      const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ rejected_by: actor, reason }),
+        timeoutMs: 30000
+      });
+      setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
+      if (res.ok) await loadLeadDetail(selectedLeadId, false);
+      return res;
+    }
+
+    async function fetchSelectedLeadAudit() {
+      if (!selectedLeadId) return { status: 400, ms: 0, data: { error: 'No lead selected' } };
+      const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/audit?limit=25&offset=0`, {
+        method: 'GET',
+        timeoutMs: 25000
+      });
+      setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
+      return res;
     }
 
     async function ping() {
@@ -892,6 +1194,12 @@
       if (next) setApiBase(next);
     });
     document.getElementById('pingBtn').addEventListener('click', () => ping());
+    document.getElementById('leadsLoadBtn').addEventListener('click', () => loadLeads());
+    document.getElementById('leadRefreshBtn').addEventListener('click', () => loadLeadDetail(selectedLeadId));
+    document.getElementById('leadApproveSendBtn').addEventListener('click', () => approveSendSelectedLead());
+    document.getElementById('leadRejectBtn').addEventListener('click', () => rejectSelectedLead());
+    document.getElementById('leadAuditBtn').addEventListener('click', () => fetchSelectedLeadAudit());
+    setLeadActionState(true);
 
     // Chat
     bindAction('chatBtn', 'chatMeta', 'chatOut', 'sending...', async () => {

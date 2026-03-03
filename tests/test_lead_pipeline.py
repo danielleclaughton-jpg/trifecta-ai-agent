@@ -15,6 +15,7 @@ def client(tmp_path, monkeypatch):
     app_module.lead_store = app_module.LeadPipelineStore(str(db_path))
     app_module.Config.GODADDY_WEBHOOK_TOKEN = "godaddy-test-token"
     app_module.Config.DIALPAD_WEBHOOK_TOKEN = "dialpad-test-token"
+    app_module.Config.OUTLOOK_FORM_WEBHOOK_TOKEN = "outlook-test-token"
     app_module.Config.OUTLOOK_SENDER_UPN = "sender@example.com"
     app_module.Config.API_KEY = ""
     monkeypatch.setattr(app_module, "INTERNAL_API_KEY", "internal-test-key")
@@ -199,6 +200,60 @@ def test_dialpad_webhook_missing_contact_does_not_generate_draft(client):
     assert lead_res.get_json()["latest_draft"] is None
 
 
+def test_outlook_form_webhook_accepts_and_dedupes(client):
+    payload = {
+        "event_id": "outlook-form-evt-001",
+        "createdDateTime": "2026-02-20T09:45:00Z",
+        "responses": [
+            {"name": "full_name", "value": "Form Lead"},
+            {"name": "email", "value": "forms@example.com"},
+            {"name": "question", "value": "Can you share program details?"},
+        ],
+    }
+    headers = {"X-Outlook-Token": "outlook-test-token"}
+
+    first = client.post("/api/webhooks/outlook-form", json=payload, headers=headers)
+    assert first.status_code == 200
+    first_data = first.get_json()
+    assert first_data["duplicate"] is False
+    assert first_data["source"] == app_module.LEAD_SOURCE["OUTLOOK_FORM"]
+
+    second = client.post("/api/webhooks/outlook-form", json=payload, headers=headers)
+    assert second.status_code == 200
+    second_data = second.get_json()
+    assert second_data["duplicate"] is True
+    assert second_data["lead_id"] == first_data["lead_id"]
+
+
+def test_outlook_form_webhook_missing_contact_skips_draft(client):
+    payload = {
+        "id": "outlook-form-no-contact",
+        "responses": [
+            {"name": "full_name", "value": "No Contact"},
+            {"name": "question", "value": "Looking for help"},
+        ],
+    }
+    res = client.post(
+        "/api/webhooks/outlook-form",
+        json=payload,
+        headers={"X-Outlook-Token": "outlook-test-token"},
+    )
+    assert res.status_code == 200
+    body = res.get_json()
+    assert body["draft_generated"] is False
+
+    lead_state = client.get(f"/api/leads/{body['lead_id']}")
+    assert lead_state.status_code == 200
+    assert lead_state.get_json()["latest_draft"] is None
+
+
+def test_outlook_form_webhook_rejects_missing_auth(client):
+    payload = {"event_id": "outlook-form-unauthorized", "email": "blocked@example.com"}
+    res = client.post("/api/webhooks/outlook-form", json=payload)
+    assert res.status_code == 401
+    assert "authentication" in res.get_json()["error"].lower()
+
+
 def test_patch_lead_rejects_invalid_transition(client):
     lead = _create_manual_lead(client, email="invalid-transition@example.com", auto_generate_draft=False)
     patch_res = client.patch(
@@ -245,6 +300,13 @@ def test_get_lead_audit_requires_api_key_and_returns_entries(client):
     body = authorized.get_json()
     assert body["count"] >= 2
     assert any(entry["action"] in {"lead_created", "draft_rejected"} for entry in body["audit"])
+
+    bad_page = client.get(
+        f"/api/leads/{lead_id}/audit?limit=not-a-number",
+        headers=_admin_headers()
+    )
+    assert bad_page.status_code == 400
+    assert bad_page.get_json()["code"] == "invalid_pagination"
 
 
 def test_delete_lead_soft_archives(client):

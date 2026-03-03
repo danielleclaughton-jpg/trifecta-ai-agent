@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Client_A – Wise Mind Boundaries: Katie, Family & Christmas | Trifecta</title>
+  <style>
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f4f7f9;
+      color: #12232E;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page {
+      client_a-width: 950px;
+      margin: 24px auto 40px;
+      background: #ffffff;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    }
+
+    .header-box {
+      background: linear-gradient(135deg, #003B5C, #00838F);
+      color: #ffffff;
+      padding: 20px 24px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .header-box h1 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      letter-spacing: 0.03em;
+    }
+
+    .header-box p {
+      margin: 0;
+      font-size: 12px;
+      opacity: 0.95;
+    }
+
+    h2 {
+      font-size: 18px;
+      color: #003B5C;
+      margin: 28px 0 12px 0;
+      border-left: 4px solid #00838F;
+      padding-left: 12px;
+    }
+
+    h3 {
+      font-size: 14px;
+      color: #006477;
+      margin: 14px 0 8px 0;
+      font-weight: 600;
+    }
+
+    .scenario-box {
+      background: #f9fcff;
+      border: 2px solid #00838F;
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin: 16px 0;
+    }
+
+    .scenario-box h3 {
+      margin-top: 0;
+      color: #003B5C;
+      font-size: 15px;
+    }
+
+    .mind-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0;
+    }
+
+    .mind-box {
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .emotion-mind {
+      background: #ffe6e6;
+      border: 2px solid #ff6b6b;
+    }
+
+    .emotion-mind h4 {
+      color: #cc0000;
+      font-size: 12px;
+      margin: 0 0 6px 0;
+    }
+
+    .reasonable-mind {
+      background: #e6f2ff;
+      border: 2px solid #4dabf7;
+    }
+
+    .reasonable-mind h4 {
+      color: #1971c2;
+      font-size: 12px;
+      margin: 0 0 6px 0;
+    }
+
+    .wise-mind {
+      background: #e6f7f7;
+      border: 2px solid #00838F;
+    }
+
+    .wise-mind h4 {
+      color: #00838F;
+      font-size: 12px;
+      margin: 0 0 6px 0;
+    }
+
+    .script-box {
+      background: #ffffff;
+      border: 1px dashed #00838F;
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+
+    .script-box strong {
+      color: #003B5C;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .quick-card {
+      background: #003B5C;
+      color: #ffffff;
+      padding: 16px 18px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border: 3px solid #00838F;
+    }
+
+    .quick-card h3 {
+      color: #ffffff;
+      margin-top: 0;
+      font-size: 15px;
+      border-bottom: 2px solid #00838F;
+      padding-bottom: 8px;
+    }
+
+    .quick-card ul, .quick-card ol {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    .quick-card li {
+      margin: 6px 0;
+      color: #ffffff;
+      opacity: 0.95;
+      font-size: 12px;
+    }
+
+    .interactive-box {
+      background: #f0f8ff;
+      border: 2px dashed #00838F;
+      padding: 14px 16px;
+      margin: 12px 0;
+      border-radius: 6px;
+    }
+
+    .interactive-box h4 {
+      margin-top: 0;
+      color: #003B5C;
+      font-size: 13px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 70px;
+      border-radius: 6px;
+      border: 1px solid #c3d7e5;
+      padding: 8px 10px;
+      font-size: 12px;
+      resize: vertical;
+      box-sizing: border-box;
+      margin: 6px 0 10px;
+      background: #ffffff;
+      font-family: inherit;
+    }
+
+    .small-textarea {
+      min-height: 45px;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #7b8f9b;
+      font-style: italic;
+      margin-bottom: 4px;
+    }
+
+    .pill {
+      display: inline-block;
+      background: #00838F;
+      color: #ffffff;
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-right: 6px;
+      font-weight: 600;
+    }
+
+    .warning-box {
+      background: #fff8e6;
+      border-left: 4px solid #ffa500;
+      padding: 12px 14px;
+      margin: 12px 0;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .principle-box {
+      background: #eef6fb;
+      border-left: 4px solid #00838F;
+      padding: 12px 14px;
+      margin: 12px 0;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .decision-tree {
+      background: #f9fcff;
+      border: 2px solid #00838F;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 12px 0;
+    }
+
+    .step {
+      background: #ffffff;
+      border-left: 3px solid #00838F;
+      padding: 10px 12px;
+      margin: 8px 0;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    ul, ol {
+      margin: 8px 0;
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 5px 0;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .footer {
+      margin-top: 28px;
+      padding-top: 14px;
+      border-top: 2px solid #e0edf4;
+      text-align: center;
+      font-size: 11px;
+      color: #4f6b7a;
+    }
+
+    .footer strong {
+      color: #003B5C;
+    }
+
+    @media (client_a-width: 850px) {
+      .page {
+        margin: 10px;
+        padding: 20px;
+      }
+      .mind-compare {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Header -->
+    <div class="header-box">
+      <h1>Client_A – Wise Mind Boundaries Guide</h1>
+      <p>Specific Scripts for Katie, Her Brothers, Christmas & Contact Urges</p>
+      <p style="margin-top: 8px;"><strong>Trifecta Addiction & Mental Health Services</strong> | Evidence-Based Neuroplasticity Model</p>
+    </div>
+
+    <!-- INTRODUCTION -->
+    <div class="principle-box">
+      <strong>What This Guide Is For:</strong><br><br>
+      Client_A, you're navigating an incredibly complex situation:<br>
+      • Katie has filed for separation (legal reality)<br>
+      • Katie is still sending messages (emotional confusion)<br>
+      • Her brothers judge you and aren't accepting yet<br>
+      • Christmas is approaching and you don't know if you'll be invited<br>
+      • You have urges to reach out and seek clarity or connection<br><br>
+      
+      <strong>This guide gives you specific Wise Mind boundaries and scripts for each of these situations.</strong><br><br>
+      
+      Remember: <strong>Wise Mind = Emotion + Reason together</strong><br>
+      • It honors your feelings (grief, hope, confusion) AND<br>
+      • It protects your well-being (recovery, dignity, emotional safety)
+    </div>
+
+    <!-- SECTION 1: KATIE BOUNDARIES -->
+    <h2>Section 1: Wise Mind Boundaries with Katie</h2>
+
+    <div class="warning-box">
+      <strong>The Challenge:</strong> Katie is legally separating from you AND still making contact. This creates cognitive dissonance and intermittent reinforcement (like gambling – you never know if the next contact brings hope or hurt). Your brain stays hyper-vigilant, constantly scanning for signs of reconciliation.
+    </div>
+
+    <!-- Scenario 1.1 -->
+    <div class="scenario-box">
+      <h3>Scenario 1.1: Katie Texts You Something Neutral (House, Bills, Dog)</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"She's reaching out! Maybe she misses me!"</li>
+            <li>"I should respond RIGHT NOW"</li>
+            <li>"I'll add something nice to keep the door open"</li>
+            <li>"This could be my chance to reconnect"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"It's just logistics. Don't read into it"</li>
+            <li>"Keep it cold and factual"</li>
+            <li>"She doesn't deserve warmth"</li>
+            <li>"Ignore it – she made her choice"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"This is a practical message, not emotional"</li>
+            <li>"I'll wait 24 hours before responding"</li>
+            <li>"I'll keep it brief and neutral"</li>
+            <li>"I can be respectful without being hopeful"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="script-box">
+        <strong>WISE MIND SCRIPT (Choose One):</strong>
+        <ul style="margin:6px 0 0 0; padding-left:18px;">
+          <li>"Got it. I'll take care of that."</li>
+          <li>"Thanks for letting me know."</li>
+          <li>"Okay, I'll handle it on [day]."</li>
+        </ul>
+        <strong style="margin-top:8px;">Then STOP. Do not add:</strong>
+        <ul style="margin:4px 0 0 0; padding-left:18px;">
+          <li>❌ "How are you doing?"</li>
+          <li>❌ "Hope you're well"</li>
+          <li>❌ "Miss you"</li>
+          <li>❌ "Can we talk?"</li>
+        </ul>
+      </div>
+
+      <div class="interactive-box">
+        <h4>Your Personal Response:</h4>
+        <div class="hint">Write your version in your own words</div>
+        <textarea class="small-textarea" placeholder="My Wise Mind response to neutral Katie messages:"></textarea>
+      </div>
+    </div>
+
+    <!-- Scenario 1.2 -->
+    <div class="scenario-box">
+      <h3>Scenario 1.2: Katie Sends Something Emotional or Ambiguous</h3>
+      <div class="hint">Examples: "I've been thinking about us," "This is so hard," "I miss the dog," anything that could be interpreted as hope</div>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"She DOES still care!"</li>
+            <li>"I need to respond and explain everything"</li>
+            <li>"This is my chance to fix things"</li>
+            <li>"If I say the right thing, she'll change her mind"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"She's just feeling guilty. Ignore it"</li>
+            <li>"Tell her it's too late for emotions"</li>
+            <li>"Don't engage with manipulation"</li>
+            <li>"Block her number"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"She may have feelings AND she filed for separation"</li>
+            <li>"I'm not responsible for processing her emotions"</li>
+            <li>"I'll wait 24-48 hours before deciding if I respond"</li>
+            <li>"I can acknowledge her without taking on emotional labor"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="script-box">
+        <strong>WISE MIND SCRIPT (Choose One):</strong>
+        <ul style="margin:6px 0 0 0; padding-left:18px;">
+          <li>"I hear that this is hard for you. I'm focusing on my own stability right now."</li>
+          <li>"I appreciate you sharing that. I need to take care of myself during this time."</li>
+          <li>"I understand. I'm not in a place to have this conversation right now."</li>
+          <li>OR: Don't respond at all (this is a valid Wise Mind choice)</li>
+        </ul>
+      </div>
+
+      <div class="interactive-box">
+        <h4>Your Personal Response:</h4>
+        <textarea class="small-textarea" placeholder="My Wise Mind response to emotional Katie messages:"></textarea>
+      </div>
+    </div>
+
+    <!-- Scenario 1.3 -->
+    <div class="scenario-box">
+      <h3>Scenario 1.3: Katie Wants to "Talk" or Meet Up</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"YES! This is it! She wants to reconcile!"</li>
+            <li>"I need to see her RIGHT NOW"</li>
+            <li>"I'll say everything I've been holding in"</li>
+            <li>"This is my chance to save the relationship"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"There's nothing to talk about – she filed papers"</li>
+            <li>"Refuse. It's just going to hurt"</li>
+            <li>"Tell her to communicate through lawyers only"</li>
+            <li>"She doesn't get access to you anymore"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"I need to know what she wants to discuss first"</li>
+            <li>"I won't meet if I'm in Emotion Mind"</li>
+            <li>"I can take time to decide – urgency is not emergency"</li>
+            <li>"I'll only meet if it serves a practical purpose AND I'm grounded"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="script-box">
+        <strong>WISE MIND SCRIPT:</strong>
+        <ul style="margin:6px 0 0 0; padding-left:18px;">
+          <li>"What do you want to talk about specifically?"</li>
+          <li>(If she says something vague like "us" or "everything"):<br>"I'm not available to have an open-ended emotional conversation right now. If there's something specific and practical, let me know what it is and I'll consider it."</li>
+          <li>(If you decide to meet):<br>"I can meet briefly on [specific day/time] at [public location]. I have about 30-45 minutes."</li>
+        </ul>
+        <strong style="display:block; margin-top:10px;">Meeting Boundaries (If You Agree):</strong>
+        <ul style="margin:4px 0 0 0; padding-left:18px;">
+          <li>Public place only</li>
+          <li>Time limit set in advance (30-60 min client_a)</li>
+          <li>Have an exit strategy ("I have to get to [thing]")</li>
+          <li>No alcohol environments</li>
+          <li>Don't go if you're above 70% Emotion Mind</li>
+        </ul>
+      </div>
+
+      <div class="interactive-box">
+        <h4>Your Personal Boundary:</h4>
+        <textarea placeholder="Under what conditions would I meet with Katie? What boundaries would I set?"></textarea>
+      </div>
+    </div>
+
+    <!-- Scenario 1.4 -->
+    <div class="scenario-box">
+      <h3>Scenario 1.4: Katie Sends Mixed Signals (Warm One Day, Cold the Next)</h3>
+      
+      <div class="warning-box" style="margin-top:0;">
+        <strong>Reality Check:</strong> This pattern is intermittent reinforcement. It keeps your hope alive and your nervous system activated. Wise Mind recognizes the pattern without getting caught in it.
+      </div>
+
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"She's confused! If I'm patient, she'll come around"</li>
+            <li>"The warm messages are the REAL her"</li>
+            <li>"I need to figure out what I did wrong"</li>
+            <li>"I have to be available when she's warm"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"She's manipulating you"</li>
+            <li>"Cut all contact immediately"</li>
+            <li>"Don't fall for this game"</li>
+            <li>"She doesn't deserve your energy"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"She's in her own process of confusion and grief"</li>
+            <li>"Her inconsistency is about HER, not my worth"</li>
+            <li>"I can't control her emotional temperature"</li>
+            <li>"I will stay consistent in MY boundaries regardless of her shifts"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="script-box">
+        <strong>WISE MIND BOUNDARY:</strong><br>
+        "I notice Katie's warmth and distance shifting. That's her process. I will maintain consistent boundaries regardless of her temperature. I will not chase warmth or panic at distance. I stay steady."
+      </div>
+
+      <div class="interactive-box">
+        <h4>Pattern Recognition:</h4>
+        <strong>When Katie is warm, I notice I want to:</strong>
+        <textarea class="small-textarea" placeholder="Chase, explain, hope, open up, make plans..."></textarea>
+
+        <strong>When Katie is cold, I notice I want to:</strong>
+        <textarea class="small-textarea" placeholder="Panic, fix it, demand answers, pursue..."></textarea>
+
+        <strong>Wise Mind says instead:</strong>
+        <textarea class="small-textarea" placeholder="I stay consistent. Her temperature doesn't dictate my boundaries."></textarea>
+      </div>
+    </div>
+
+    <!-- KATIE BOUNDARIES QUICK CARD -->
+    <div class="quick-card">
+      <h3>📱 KATIE CONTACT QUICK REFERENCE</h3>
+      <p style="font-size:11px; opacity:0.9; margin-bottom:12px;">Screenshot • Save • Use before responding to Katie</p>
+
+      <strong>⚡ WISE MIND KATIE PROTOCOL:</strong>
+      <ol>
+        <li><strong>PAUSE:</strong> Do not respond same-day (24-hour minimum)</li>
+        <li><strong>DECODE:</strong> What did she actually say vs what I'm making it mean?</li>
+        <li><strong>CHECK:</strong> Am I in Wise Mind (50%+) or Emotion Mind (70%+)?</li>
+        <li><strong>DECIDE:</strong> Does this require a response? If yes, what serves MY well-being?</li>
+        <li><strong>RESPOND:</strong> Brief, neutral, boundaried (use scripts above)</li>
+        <li><strong>REDIRECT:</strong> Immediately engage sober pathway activity</li>
+      </ol>
+
+      <strong style="display:block; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.3);">🚫 NEVER RESPOND WHEN:</strong>
+      <ul style="margin:6px 0;">
+        <li>You're above 70% Emotion Mind</li>
+        <li>You're hoping the message will change the relationship</li>
+        <li>You're ruminating or activated</li>
+        <li>You haven't waited 24 hours</li>
+        <li>You're seeking reassurance or validation</li>
+      </ul>
+    </div>
+
+    <!-- SECTION 2: KATIE'S BROTHERS -->
+    <h2>Section 2: Wise Mind Boundaries with Katie's Brothers (& Judging Family)</h2>
+
+    <div class="warning-box">
+      <strong>The Challenge:</strong> Katie's brothers are protective of her, remember your past struggles, and aren't accepting of you yet. They may judge you, exclude you, or make comments. This triggers shame, rejection, and the urge to prove yourself or win them over.
+    </div>
+
+    <!-- Scenario 2.1 -->
+    <div class="scenario-box">
+      <h3>Scenario 2.1: You're Excluded from Family Events (Not Invited)</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"They hate me. I'll never be accepted"</li>
+            <li>"This is so unfair – I've changed!"</li>
+            <li>"Katie doesn't care enough to fight for me"</li>
+            <li>"I should show up anyway and prove myself"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"They're being protective. That's logical"</li>
+            <li>"You can't force acceptance"</li>
+            <li>"Focus on other relationships"</li>
+            <li>"Their opinion doesn't define you"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"This hurts AND it's understandable they need time"</li>
+            <li>"They're protecting their sister based on past information"</li>
+            <li>"I can't control their timeline for acceptance"</li>
+            <li>"My worth isn't determined by their current opinion of me"</li>
+            <li>"Consistent sober behavior over TIME will speak louder than words"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="principle-box">
+        <strong>Wise Mind Perspective:</strong><br><br>
+        Her brothers remember who you WERE. They don't know who you're BECOMING yet. That's painful, but it's not personal – it's protective. Your job is not to convince them. Your job is to keep being the sober Client_A who shows up consistently. Time and behavior will do the convincing, not explanations.
+      </div>
+
+      <div class="script-box">
+        <strong>IF KATIE MENTIONS YOU WEREN'T INVITED:</strong>
+        <ul style="margin:6px 0 0 0; padding-left:18px;">
+          <li>"I understand. Your family is processing this in their own way."</li>
+          <li>"That makes sense. I hope you have a good time with them."</li>
+          <li>"I get it. Family dynamics are complicated right now."</li>
+        </ul>
+        <strong style="display:block; margin-top:10px;">INTERNAL WISE MIND STATEMENT (to yourself):</strong>
+        <ul style="margin:4px 0 0 0; padding-left:18px;">
+          <li>"Not being invited doesn't mean I'm unworthy. It means they need more time to see the changes I'm making. I can feel hurt AND accept their process."</li>
+        </ul>
+      </div>
+
+      <div class="interactive-box">
+        <h4>Processing Exclusion:</h4>
+        <strong>How does being excluded make me feel?</strong>
+        <textarea class="small-textarea" placeholder="Shame, rejection, anger, sadness, unworthy..."></textarea>
+
+        <strong>Wise Mind reminder I need:</strong>
+        <textarea class="small-textarea" placeholder="Example: 'Their acceptance doesn't define my worth. Consistent sobriety over time speaks louder than forcing my way in.'"></textarea>
+      </div>
+    </div>
+
+    <!-- Scenario 2.2 -->
+    <div class="scenario-box">
+      <h3>Scenario 2.2: You ARE at a Family Event & Feel Judged</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"Everyone is staring at me and judging"</li>
+            <li>"I need to over-explain and prove myself"</li>
+            <li>"I should just leave – I don't belong here"</li>
+            <li>"I'll try extra hard to make them like me"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"Stay polite and distant"</li>
+            <li>"Don't engage beyond surface pleasantries"</li>
+            <li>"They're not your family anymore anyway"</li>
+            <li>"Keep it brief and factual"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"I'm here, I'm sober, I'm respectful – that's enough"</li>
+            <li>"I don't need to prove anything or win anyone over"</li>
+            <li>"I can be friendly without over-explaining"</li>
+            <li>"Their current perception is based on past me – I'll let behavior speak"</li>
+            <li>"I'll stay for a reasonable time (1-2 hours) then exit gracefully"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="script-box">
+        <strong>CONVERSATION SCRIPTS (Keep Brief & Neutral):</strong>
+        <ul style="margin:6px 0 0 0; padding-left:18px;">
+          <li><strong>If asked how you're doing:</strong> "I'm doing well. Staying busy with work and focusing on my health."</li>
+          <li><strong>If asked about relationship:</strong> "We're figuring things out. How's [change subject to them]?"</li>
+          <li><strong>If judgment is implicit (tone, body language):</strong> Don't address it. Stay pleasant and brief.</li>
+          <li><strong>If someone is directly rude:</strong> "I appreciate the concern. Excuse me, I need to [bathroom/get water/check on something]."</li>
+        </ul>
+
+        <strong style="display:block; margin-top:10px;">EXIT STRATEGY:</strong>
+        <ul style="margin:4px 0 0 0; padding-left:18px;">
+          <li>Plan to stay 1-2 hours maximum</li>
+          <li>Set an alarm on your phone as a reminder</li>
+          <li>Have a prepared exit line: "I have to get going – early shift tomorrow" or "I promised my aunt I'd stop by"</li>
+          <li>Don't linger at the door explaining – short goodbye and leave</li>
+        </ul>
+      </div>
+
+      <div class="interactive-box">
+        <h4>Your Event Survival Plan:</h4>
+        <strong>My pre-event Wise Mind check:</strong>
+        <textarea class="small-textarea" placeholder="Am I going from Wise Mind (50%+) or Emotion Mind (70%+)? If Emotion Mind is high, should I even go?"></textarea>
+
+        <strong>My exit time:</strong>
+        <textarea class="small-textarea" placeholder="I will leave by: _____ OR after _____ hours, whichever comes first."></textarea>
+
+        <strong>My neutral conversation topics:</strong>
+        <textarea class="small-textarea" placeholder="Things I can talk about that aren't about me/Katie/relationship: work, sports, hobbies, their lives..."></textarea>
+      </div>
+    </div>
+
+    <!-- Scenario 2.3 -->
+    <div class="scenario-box">
+      <h3>Scenario 2.3: You Want to Reach Out to Her Brothers to "Clear the Air"</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"If I just explain everything, they'll understand!"</li>
+            <li>"I need their approval to fix things with Katie"</li>
+            <li>"I have to defend myself and my progress"</li>
+            <li>"I'll send a long message apologizing and explaining"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"Don't bother – you don't owe them anything"</li>
+            <li>"Their opinion is irrelevant"</li>
+            <li>"You're not on trial"</li>
+            <li>"Save your energy for yourself"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"Reaching out now is likely from anxiety, not clarity"</li>
+            <li>"I can't talk them into acceptance"</li>
+            <li>"Actions over time speak louder than explanations"</li>
+            <li>"If they want to talk to ME, they'll reach out"</li>
+            <li>"My focus stays on my recovery, not managing their opinions"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warning-box">
+        <strong>Wise Mind Boundary:</strong> Do NOT reach out to her brothers trying to explain, defend, or win them over. This is almost always Emotion Mind seeking reassurance and approval. It will likely backfire (they'll see it as manipulation or desperation) or drain you emotionally (they're not ready to hear it).
+      </div>
+
+      <div class="decision-tree">
+        <strong>BEFORE Reaching Out to Her Brothers, Ask:</strong>
+        <div class="step">
+          <strong>1. Why do I want to do this?</strong>
+          <ul style="margin:4px 0 0 0; padding-left:18px; font-size:11px;">
+            <li>If the answer is: "To get their approval," "To explain myself," "To fix my image" → <strong>This is Emotion Mind. Don't do it.</strong></li>
+            <li>If the answer is: "They directly reached out asking to talk" → <strong>Proceed with caution, set boundaries</strong></li>
+          </ul>
+        </div>
+        <div class="step">
+          <strong>2. What am I hoping will happen?</strong>
+          <ul style="margin:4px 0 0 0; padding-left:18px; font-size:11px;">
+            <li>If you're hoping they'll suddenly accept you, forgive you, or influence Katie → <strong>This is fantasy. Don't do it.</strong></li>
+          </ul>
+        </div>
+        <div class="step">
+          <strong>3. Am I in Wise Mind (50%+)?</strong>
+          <ul style="margin:4px 0 0 0; padding-left:18px; font-size:11px;">
+            <li>If you're below 50% Wise Mind → <strong>Wait at least 72 hours and reassess</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="interactive-box">
+        <h4>Reality Check:</h4>
+        <strong>What I'm hoping reaching out to her brothers will accomplish:</strong>
+        <textarea class="small-textarea"></textarea>
+
+        <strong>Wise Mind says about this urge:</strong>
+        <textarea class="small-textarea" placeholder="Is this anxiety seeking relief, or genuine clarity?"></textarea>
+      </div>
+    </div>
+
+    <!-- BROTHERS QUICK CARD -->
+    <div class="quick-card">
+      <h3>📱 KATIE'S BROTHERS / JUDGING FAMILY REFERENCE</h3>
+      
+      <strong>🛡️ CORE WISE MIND PRINCIPLES:</strong>
+      <ul>
+        <li><strong>I can't control their timeline for acceptance</strong></li>
+        <li><strong>Their judgment is about PAST me, not CURRENT me</strong></li>
+        <li><strong>Actions over time speak louder than explanations</strong></li>
+        <li><strong>I don't need their approval to be worthy</strong></li>
+        <li><strong>Consistent sobriety is my proof – not words</strong></li>
+      </ul>
+
+      <strong style="display:block; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.3);">🚫 DO NOT:</strong>
+      <ul style="margin:6px 0;">
+        <li>Over-explain or defend yourself</li>
+        <li>Reach out trying to "clear the air"</li>
+        <li>Take their judgment as truth about who you are NOW</li>
+        <li>Try to win them over or prove yourself</li>
+        <li>Let their exclusion determine your self-worth</li>
+      </ul>
+
+      <strong style="display:block; margin-top:10px;">✅ DO:</strong>
+      <ul style="margin:6px 0;">
+        <li>Stay respectful and brief if you see them</li>
+        <li>Focus on your recovery, not their opinions</li>
+        <li>Let time and consistent behavior speak for you</li>
+        <li>Accept that not being invited is painful AND understandable</li>
+        <li>Maintain your dignity through boundaries</li>
+      </ul>
+    </div>
+
+    <!-- SECTION 3: CHRISTMAS BOUNDARIES -->
+    <h2>Section 3: Wise Mind Boundaries for Christmas</h2>
+
+    <div class="warning-box">
+      <strong>The Challenge:</strong> You don't know if you'll be invited to Katie's family Christmas. This might be your last Christmas with her. The uncertainty triggers anxiety, the "last time" awareness triggers grief, and the whole situation triggers urges to control the outcome.
+    </div>
+
+    <!-- Scenario 3.1 -->
+    <div class="scenario-box">
+      <h3>Scenario 3.1: You're NOT Invited to Christmas</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"This is it – the relationship is REALLY over"</li>
+            <li>"I'm alone and rejected on Christmas"</li>
+            <li>"Everyone else has someone – I have nothing"</li>
+            <li>"I should show up anyway and fight for this"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"It's just a day. Get over it"</li>
+            <li>"You have work obligations anyway"</li>
+            <li>"Christmas means nothing – focus on practical matters"</li>
+            <li>"Other people celebrate alone all the time"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"Not being invited is painful AND I can create a meaningful day"</li>
+            <li>"This grief is real – last Christmas with Katie IS a loss"</li>
+            <li>"I have choices: aunt, NA meeting, call family, structure alone time"</li>
+            <li>"My worth doesn't depend on an invitation"</li>
+            <li>"I can honor my feelings AND take care of myself"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="script-box">
+        <strong>IF KATIE SAYS YOU'RE NOT INVITED (or you figure it out):</strong>
+        <ul style="margin:6px 0 0 0; padding-left:18px;">
+          <li>"I understand. I hope you have a good Christmas with your family."</li>
+          <li>(Then STOP. Don't beg, explain, or ask why)</li>
+        </ul>
+
+        <strong style="display:block; margin-top:10px;">WISE MIND PLAN FOR CHRISTMAS IF NOT INVITED:</strong>
+      </div>
+
+      <div class="interactive-box">
+        <h4>My Christmas Day Plan (If Not Invited):</h4>
+        
+        <strong>Morning:</strong>
+        <textarea class="small-textarea" placeholder="Example: Grounding routine, call family in Ontario, breakfast with aunt, short walk..."></textarea>
+
+        <strong>Midday/Afternoon:</strong>
+        <textarea class="small-textarea" placeholder="Example: NA meeting (virtual or in-person), watch a movie, small project, physical activity..."></textarea>
+
+        <strong>Evening:</strong>
+        <textarea class="small-textarea" placeholder="Example: Structured dinner, call a safe friend, read, early bedtime, NO ruminating alone..."></textarea>
+
+        <strong>My non-negotiables for this day:</strong>
+        <textarea class="small-textarea" placeholder="Stay sober, one connection (call/text someone), eat actual meals, physical grounding, early bed, no isolation for more than 2 hours at a time..."></textarea>
+
+        <strong>If rumination/grief spikes (8+/10), I will:</strong>
+        <textarea class="small-textarea" placeholder="Call Danielle, text safe person, use rumination interrupt card, physical activity, leave environment..."></textarea>
+      </div>
+    </div>
+
+    <!-- Scenario 3.2 -->
+    <div class="scenario-box">
+      <h3>Scenario 3.2: You ARE Invited to Christmas</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"This means she still loves me!"</li>
+            <li>"I'll stay all day and prove myself to everyone"</li>
+            <li>"This is my chance to fix everything"</li>
+            <li>"We'll have such a good time, she'll reconsider divorce"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"It's just politeness. Don't read into it"</li>
+            <li>"Go for 30 minutes then leave"</li>
+            <li>"Keep it completely transactional"</li>
+            <li>"Don't let yourself feel anything"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"Being invited doesn't mean reconciliation"</li>
+            <li>"I can attend AND protect my emotional well-being"</li>
+            <li>"I'll set clear time boundaries (1-2 hours client_a)"</li>
+            <li>"I can be present without hope-driven fantasies"</li>
+            <li>"This may be our last Christmas – I can honor that grief while staying grounded"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="script-box">
+        <strong>IF KATIE INVITES YOU:</strong>
+        <ul style="margin:6px 0 0 0; padding-left:18px;">
+          <li>"Thanks for the invitation. I'd like to stop by briefly. I can come from [time] to [time – 1-2 hours client_a]."</li>
+          <li>(Set the expectation that you're not staying all day)</li>
+        </ul>
+
+        <strong style="display:block; margin-top:10px;">CHRISTMAS VISIT BOUNDARIES:</strong>
+        <ul style="margin:4px 0 0 0; padding-left:18px;">
+          <li><strong>Time limit:</strong> 1-2 hours maximum</li>
+          <li><strong>Exit strategy:</strong> "I have to get to my aunt's" or "Early shift at the mill tomorrow"</li>
+          <li><strong>No private conversations:</strong> Stay in main family areas, don't go to another room alone with Katie</li>
+          <li><strong>No alcohol environments:</strong> If there's heavy drinking, leave</li>
+          <li><strong>No relationship talks:</strong> If Katie or anyone brings up the relationship/divorce: "This isn't the time. Let's just enjoy the holiday."</li>
+        </ul>
+      </div>
+
+      <div class="interactive-box">
+        <h4>My Christmas Visit Plan (If Invited):</h4>
+
+        <strong>Before I go, I check:</strong>
+        <textarea class="small-textarea" placeholder="Am I in Wise Mind (50%+)? Do I have my exit strategy ready? Have I set my time limit? Am I going with realistic expectations (not hoping for reconciliation)?"></textarea>
+
+        <strong>My arrival time:</strong> <input type="text" style="width:auto; display:inline-block; margin-left:8px;" placeholder="__:__ AM/PM">
+
+        <strong>My departure time (non-negotiable):</strong> <input type="text" style="width:auto; display:inline-block; margin-left:8px;" placeholder="__:__ AM/PM">
+
+        <strong>My exit line:</strong>
+        <textarea class="small-textarea" placeholder="Prepare this in advance: 'I need to get going – promised my aunt I'd stop by' or 'Early shift tomorrow'"></textarea>
+
+        <strong>Topics I will NOT discuss:</strong>
+        <textarea class="small-textarea" placeholder="The divorce, relationship status, our future, reconciliation hopes, anything emotional about 'us'..."></textarea>
+
+        <strong>If I start feeling overwhelmed (7+/10), I will:</strong>
+        <textarea class="small-textarea" placeholder="Excuse myself to bathroom, step outside for air, use grounding technique, leave early if needed..."></textarea>
+      </div>
+    </div>
+
+    <!-- Scenario 3.3 -->
+    <div class="scenario-box">
+      <h3>Scenario 3.3: The "Last Christmas" Grief</h3>
+      
+      <div class="principle-box" style="margin-top:0;">
+        <strong>Reality:</strong> This might genuinely be your last Christmas with Katie as a couple. That awareness is heavy and painful. Wise Mind doesn't deny this grief – it holds space for it while still making healthy choices.
+      </div>
+
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"I need to make grand gestures so she remembers me"</li>
+            <li>"I'll create the perfect Christmas memory"</li>
+            <li>"Time is running out – I have to DO something"</li>
+            <li>"I can't accept this is the end"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"It's just another day. Move on"</li>
+            <li>"Don't be sentimental about it"</li>
+            <li>"Focus on work obligations"</li>
+            <li>"Emotions are irrelevant here"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"This might be our last Christmas, and that loss is real"</li>
+            <li>"I can feel this grief deeply without acting desperately"</li>
+            <li>"I honor what we had while accepting what is"</li>
+            <li>"I don't need grand gestures – presence and dignity are enough"</li>
+            <li>"I can grieve this chapter while protecting my future"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="interactive-box">
+        <h4>Processing "Last Christmas" Grief:</h4>
+
+        <strong>What I'm grieving about this potentially being our last Christmas:</strong>
+        <textarea placeholder="Traditions, being part of her family, couple identity, future Christmases imagined, the life I thought we'd have..."></textarea>
+
+        <strong>Radical Acceptance statement for this grief:</strong>
+        <textarea placeholder="Example: 'This might be our last Christmas together. That is deeply painful. I cannot control whether it's truly the last or not. I can feel this grief AND make wise choices. I can be present for this moment without trying to control the future.'"></textarea>
+
+        <strong>How I'll honor this grief in a healthy way:</strong>
+        <textarea placeholder="Journal about it, talk to Danielle or safe person, allow myself to cry, name the loss out loud, practice Radical Acceptance..."></textarea>
+      </div>
+    </div>
+
+    <!-- CHRISTMAS QUICK CARD -->
+    <div class="quick-card">
+      <h3>📱 CHRISTMAS WISE MIND REFERENCE</h3>
+
+      <strong>🎄 IF NOT INVITED:</strong>
+      <ul>
+        <li>Have a structured plan for the entire day</li>
+        <li>At least one connection (call/meeting/person)</li>
+        <li>No isolation longer than 2 hours</li>
+        <li>Rumination interrupt tools ready</li>
+        <li>Grief is allowed; rumination is not</li>
+        <li>Early bedtime, no late-night spiraling</li>
+      </ul>
+
+      <strong style="display:block; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.3);">🎁 IF INVITED:</strong>
+      <ul>
+        <li>Set time limit BEFORE going (1-2 hours client_a)</li>
+        <li>Have exit strategy prepared and rehearsed</li>
+        <li>No private conversations with Katie</li>
+        <li>No relationship/divorce talk at the event</li>
+        <li>Stay in public areas with family</li>
+        <li>If overwhelmed (7+), leave early</li>
+      </ul>
+
+      <strong style="display:block; margin-top:10px;"> "LAST CHRISTMAS" GRIEF:</strong>
+      <ul style="margin:6px 0;">
+        <li>This grief is real and valid</li>
+        <li>I can feel it without acting desperately</li>
+        <li>No grand gestures or attempts to control the narrative</li>
+        <li>Presence and dignity are enough</li>
+        <li>I honor what we had AND accept what is</li>
+      </ul>
+    </div>
+
+    <!-- SECTION 4: REACHING OUT URGES -->
+    <h2>Section 4: Wise Mind Boundaries for Urges to Reach Out</h2>
+
+    <div class="warning-box">
+      <strong>The Challenge:</strong> You'll have strong urges to contact Katie – to explain, seek reassurance, share something, check in, or try to fix things. These urges feel urgent and overwhelming, but they're usually Emotion Mind seeking relief from anxiety or hope.
+    </div>
+
+    <!-- Scenario 4.1 -->
+    <div class="scenario-box">
+      <h3>Scenario 4.1: Urge to Text Katie "Just to Check In"</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"I just want to see how she's doing"</li>
+            <li>"Maybe she's thinking about me too"</li>
+            <li>"A friendly text won't hurt anything"</li>
+            <li>"What if she's waiting for me to reach out?"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"She made her choice. Don't bother"</li>
+            <li>"You're just seeking validation"</li>
+            <li>"Block her and move on"</li>
+            <li>"Checking in is pointless"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"This urge is anxiety seeking relief, not genuine need"</li>
+            <li>"What am I hoping this text will accomplish?"</li>
+            <li>"Will this serve my long-term well-being or just give temporary relief?"</li>
+            <li>"She has my number. If she wants to connect, she can reach out"</li>
+            <li>"I'll wait 48 hours. If I still feel this urge then, I'll reassess"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="decision-tree">
+        <strong>URGE TO REACH OUT PROTOCOL:</strong>
+        <div class="step">
+          <strong>STEP 1: PAUSE & NAME IT</strong><br>
+          Say out loud: "I'm having an urge to contact Katie. This is Emotion Mind seeking relief."
+        </div>
+        <div class="step">
+          <strong>STEP 2: ASK WISE MIND QUESTIONS</strong>
+          <ul style="margin:4px 0 0 0; padding-left:18px; font-size:11px;">
+            <li>What am I hoping this contact will accomplish?</li>
+            <li>Am I seeking reassurance, connection, or trying to change her mind?</li>
+            <li>Will this serve my long-term recovery and well-being?</li>
+            <li>What does Wise Mind say?</li>
+          </ul>
+        </div>
+        <div class="step">
+          <strong>STEP 3: SET A 48-HOUR TIMER</strong><br>
+          Tell yourself: "If I still genuinely need to contact her in 48 hours, I can revisit this decision."
+        </div>
+        <div class="step">
+          <strong>STEP 4: INTERRUPT THE URGE (Do ONE Now)</strong>
+          <ul style="margin:4px 0 0 0; padding-left:18px; font-size:11px;">
+            <li>Call/text a safe person</li>
+            <li>Physical activity (walk, shower, exercise)</li>
+            <li>Read recovery material</li>
+            <li>Journal: "What I'm hoping this text will fix: ___"</li>
+            <li>NA meeting or recovery video</li>
+          </ul>
+        </div>
+        <div class="step">
+          <strong>STEP 5: AFTER 48 HOURS, REASSESS</strong><br>
+          95% of the time, the urge will have passed. If it hasn't, check: Am I in Wise Mind (50%+)? Does this TRULY serve my recovery? Is this about her or about me managing my anxiety?
+        </div>
+      </div>
+
+      <div class="interactive-box">
+        <h4>My Reaching Out Urge Plan:</h4>
+
+        <strong>When I want to contact Katie, what am I usually hoping will happen?</strong>
+        <textarea placeholder="Be brutally honest: seeking reassurance, hope for reconciliation, relief from anxiety, wanting connection..."></textarea>
+
+        <strong>My 3 go-to urge interrupts:</strong>
+        <textarea class="small-textarea" placeholder="1) Call [person] 2) [physical activity] 3) [alternative action]"></textarea>
+
+        <strong>My Wise Mind reminder:</strong>
+        <textarea class="small-textarea" placeholder="Example: 'This urge is anxiety, not emergency. It will pass in 20-30 minutes. Katie has my number – if she wants contact, she can reach out.'"></textarea>
+      </div>
+    </div>
+
+    <!-- Scenario 4.2 -->
+    <div class="scenario-box">
+      <h3>Scenario 4.2: Urge to Send Something Meaningful (Gift, Letter, Explanation)</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"If I send this heartfelt letter, she'll understand"</li>
+            <li>"A thoughtful gift will show her I care"</li>
+            <li>"I need to explain my side of things"</li>
+            <li>"This will change everything"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"She doesn't want to hear from you"</li>
+            <li>"Grand gestures are manipulation"</li>
+            <li>"You're wasting your time and money"</li>
+            <li>"Just cut contact completely"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"Grand gestures won't change her decision"</li>
+            <li>"I'm seeking control over an uncontrollable situation"</li>
+            <li>"This urge is about MY anxiety, not genuine connection"</li>
+            <li>"If things change, it will be through time and behavior, not gestures"</li>
+            <li>"I can write the letter for MYSELF (not send it)"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warning-box">
+        <strong>Wise Mind Boundary:</strong> Do NOT send grand gesture gifts, long letters, explanations, or apologies right now. These are almost always Emotion Mind trying to control the outcome or seeking reassurance. They rarely land the way you hope and often push the other person further away.
+      </div>
+
+      <div class="script-box">
+        <strong>ALTERNATIVE TO SENDING:</strong>
+        <ul style="margin:6px 0 0 0; padding-left:18px;">
+          <li><strong>Write it out:</strong> Write the full letter, text, or explanation in a journal or document</li>
+          <li><strong>Read it out loud</strong> to yourself or a safe person</li>
+          <li><strong>Sit with it for 7 days</strong> without sending</li>
+          <li><strong>Ask Wise Mind:</strong> "Is this for ME (to process) or for HER (to change her mind)?"</li>
+          <li><strong>If it's for YOU:</strong> Keep it. It's done its job.</li>
+          <li><strong>If it's for HER:</strong> Don't send it. You're trying to control the outcome.</li>
+        </ul>
+      </div>
+
+      <div class="interactive-box">
+        <h4>Processing the Urge to Send Something:</h4>
+
+        <strong>What I want to send/say:</strong>
+        <textarea placeholder="Write it here if you need to get it out"></textarea>
+
+        <strong>What I'm hoping this will accomplish:</strong>
+        <textarea class="small-textarea" placeholder="Be honest: change her mind, prove myself, get her to respond, make her see my worth..."></textarea>
+
+        <strong>Wise Mind reality check:</strong>
+        <textarea class="small-textarea" placeholder="Will this actually serve that goal, or will it push her away or drain me emotionally?"></textarea>
+
+        <strong>Alternative action:</strong>
+        <textarea class="small-textarea" placeholder="Write it in my journal, share it with Danielle, sit with it for 7 days, process it in therapy..."></textarea>
+      </div>
+    </div>
+
+    <!-- Scenario 4.3 -->
+    <div class="scenario-box">
+      <h3>Scenario 4.3: Urge to "Just Drive By" or Show Up</h3>
+      
+      <div class="mind-compare">
+        <div class="mind-box emotion-mind">
+          <h4>😰 Emotion Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"I'll just drive by and see if she's home"</li>
+            <li>"Maybe I'll run into her 'accidentally'"</li>
+            <li>"I just want to see her, even for a minute"</li>
+            <li>"What if she needs me and I'm not there?"</li>
+          </ul>
+        </div>
+        <div class="mind-box reasonable-mind">
+          <h4>🧊 Reasonable Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"That's stalking behavior"</li>
+            <li>"You'll look desperate"</li>
+            <li>"She'll call the cops"</li>
+            <li>"Just stay away completely"</li>
+          </ul>
+        </div>
+        <div class="mind-box wise-mind">
+          <h4>🧭 Wise Mind Says:</h4>
+          <ul style="margin:6px 0; padding-left:16px; font-size:11px;">
+            <li>"This is anxiety trying to get relief through proximity"</li>
+            <li>"Showing up uninvited violates boundaries"</li>
+            <li>"This won't give me what I'm seeking (connection, clarity)"</li>
+            <li>"It will likely make things worse and hurt my dignity"</li>
+            <li>"I need to redirect this urge to something that actually helps ME"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warning-box">
+        <strong>CRITICAL WISE MIND BOUNDARY:</strong> Do NOT drive by the house, show up unannounced, or engineer "accidental" meetings. This is a boundary violation driven by Emotion Mind, and it WILL backfire. It will make you feel worse, not better, and will damage your dignity and her respect for you.
+      </div>
+
+      <div class="script-box">
+        <strong>IF YOU'RE IN YOUR CAR WITH THE URGE TO DRIVE BY:</strong>
+        <ol style="margin:6px 0 0 0; padding-left:18px; font-size:11px;">
+          <li><strong>STOP the car.</strong> Pull over safely.</li>
+          <li><strong>Say out loud:</strong> "I'm having an urge to drive by. This is Emotion Mind. This will not help me."</li>
+          <li><strong>Call or text someone safe immediately.</strong> Don't drive anywhere until you've made contact.</li>
+          <li><strong>Redirect the drive:</strong> Drive to your aunt's, a meeting, a coffee shop, anywhere BUT Katie's.</li>
+          <li><strong>If urge is still high:</strong> Go home, get out of the car, use physical interrupt (cold water, shower, walk)</li>
+        </ol>
+      </div>
+
+      <div class="interactive-box">
+        <h4>Emergency Protocol for "Drive By" Urges:</h4>
+
+        <strong>Who I call/text if I'm in my car with this urge:</strong>
+        <textarea class="small-textarea" placeholder="Name 2-3 people who will answer: Danielle, [family], [friend]"></textarea>
+
+        <strong>Alternative destinations I can drive to instead:</strong>
+        <textarea class="small-textarea" placeholder="Aunt's house, coffee shop, meeting location, park, anywhere that's NOT her house"></textarea>
+
+        <strong>My Wise Mind reminder for this urge:</strong>
+        <textarea class="small-textarea" placeholder="Example: 'Driving by will not give me relief. It will violate boundaries and hurt my dignity. I will redirect this urge to something that actually serves me.'"></textarea>
+      </div>
+    </div>
+
+    <!-- REACHING OUT QUICK CARD -->
+    <div class="quick-card">
+      <h3>📱 REACHING OUT URGE QUICK REFERENCE</h3>
+
+      <strong>⚡ WHEN I WANT TO CONTACT KATIE:</strong>
+      <ol>
+        <li><strong>PAUSE & NAME IT:</strong> "This is an urge. This is Emotion Mind."</li>
+        <li><strong>ASK:</strong> "What am I hoping this will accomplish?"</li>
+        <li><strong>WAIT:</strong> Set 48-hour timer. No contact until timer goes off.</li>
+        <li><strong>INTERRUPT:</strong> Call safe person, physical activity, journal, meeting</li>
+        <li><strong>REASSESS:</strong> After 48 hours, check if still needed (usually isn't)</li>
+      </ol>
+
+      <strong style="display:block; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.3);">🚫 NEVER REACH OUT WHEN:</strong>
+      <ul style="margin:6px 0;">
+        <li>Above 70% Emotion Mind</li>
+        <li>Seeking reassurance or validation</li>
+        <li>Hoping to change her mind</li>
+        <li>Trying to "explain" or "prove" yourself</li>
+        <li>Planning grand gestures (gifts, letters, showing up)</li>
+        <li>Less than 48 hours since the urge started</li>
+      </ul>
+
+      <strong style="display:block; margin-top:10px;">🧭 WISE MIND TRUTH:</strong>
+      <ul style="margin:6px 0;">
+        <li>The urge will pass in 20-30 minutes if I don't feed it</li>
+        <li>Katie has my number – if she wants contact, she can reach out</li>
+        <li>Grand gestures don't change legal decisions</li>
+        <li>My dignity is more important than temporary relief</li>
+        <li>This anxiety is real, but acting on it won't make it better</li>
+      </ul>
+    </div>
+
+    <!-- MASTER INTEGRATION -->
+    <h2>Master Integration: Your Wise Mind Boundary Contract</h2>
+
+    <div class="interactive-box">
+      <h3 style="margin-top:0;">My Wise Mind Boundary Agreement</h3>
+      <div class="hint">Fill this out and refer back to it when you're unsure</div>
+
+      <strong>MY NON-NEGOTIABLE BOUNDARIES WITH KATIE:</strong>
+      <textarea placeholder="Example:&#10;• 24-hour wait before responding to messages&#10;• No same-day contact initiation&#10;• No grand gestures or long explanations&#10;• No showing up uninvited&#10;• Maintain my dignity above all else"></textarea>
+
+      <strong>MY BOUNDARIES WITH HER FAMILY:</strong>
+      <textarea placeholder="Example:&#10;• No reaching out to her brothers to 'explain'&#10;• Stay 1-2 hours client_a if invited to events&#10;• Keep conversations brief and neutral&#10;• Don't take their judgment as truth about who I am now&#10;• Let my actions over time speak for me"></textarea>
+
+      <strong>MY CHRISTMAS BOUNDARIES:</strong>
+      <textarea placeholder="Example:&#10;• If not invited: structured day plan, no isolation&#10;• If invited: 1-2 hours client_a, exit strategy ready&#10;• No relationship discussions at family events&#10;• Honor grief without acting desperately"></textarea>
+
+      <strong>MY REACHING OUT BOUNDARIES:</strong>
+      <textarea placeholder="Example:&#10;• 48-hour wait minimum for any contact urge&#10;• Must be in Wise Mind (50%+) to consider contact&#10;• No driving by or showing up uninvited&#10;• Write letters but don't send them for 7 days minimum"></textarea>
+
+      <strong>HOW I'LL KNOW I'M BREAKING A BOUNDARY:</strong>
+      <textarea class="small-textarea" placeholder="Signs: above 70% Emotion Mind, acting from hope/anxiety, seeking relief not clarity, bypassing waiting periods..."></textarea>
+
+      <strong>WHAT I'LL DO IF I BREAK A BOUNDARY:</strong>
+      <textarea placeholder="Pause immediately, call safe person, use self-compassion (not shame), recommit to boundary, learn what triggered the break, adjust plan if needed..."></textarea>
+    </div>
+
+    <!-- CLOSING AFFIRMATION -->
+    <div class="principle-box" style="margin-top:24px;">
+      <strong>Client_A, These Wise Mind Boundaries Are Your Protection:</strong><br><br>
+      
+      ✓ They honor your feelings (grief, hope, confusion) AND protect your well-being<br><br>
+      
+      ✓ They keep you in your dignity when Emotion Mind wants to chase, beg, or prove yourself<br><br>
+      
+      ✓ They give you a clear framework when everything feels unclear<br><br>
+      
+      ✓ They prevent decisions you'll regret later when Wise Mind comes back online<br><br>
+      
+      ✓ They protect your recovery, which is more important than any single relationship<br><br>
+      
+      <strong>You're not being cold or uncaring by having boundaries. You're being WISE.</strong><br><br>
+      
+      Katie has filed for separation. Her brothers need time to see your changes. Christmas may be painful whether you're invited or not. You'll have urges to reach out and fix things.<br><br>
+      
+      <strong>All of that is true. AND you can stay grounded through all of it.</strong><br><br>
+      
+      Wise Mind knows: You can feel everything AND make healthy choices. You can grieve the loss AND protect your future. You can honor what was AND accept what is.<br><br>
+      
+      <strong>These boundaries aren't walls. They're guardrails that keep you on the path of recovery.</strong><br><br>
+      
+      You've got this, Client_A. One wise choice at a time. 
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <strong>Trifecta Addiction & Mental Health Services</strong><br>
+      Neuroplasticity-Based Recovery • CBT & DBT Integrated • Executive-Level Care<br>
+      <em>Small-group, high-touch programming designed for sustainable, long-term change.</em>
+    </div>
+  </div>
+</body>
+</html>

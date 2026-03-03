@@ -18,9 +18,13 @@ except Exception:
     pass
 
 # Configuration
-API_BASE_URL = os.getenv("TRIFECTA_API_URL", "http://127.0.0.1:5000")
+API_BASE_URL = (
+    os.getenv("TRIFECTA_API_URL")
+    or os.getenv("FLASK_URL")
+    or "http://127.0.0.1:5000"
+).rstrip("/")
 API_KEY = os.getenv("TRIFECTA_API_KEY", "").strip()
-REQUEST_TIMEOUT = 10
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "10"))
 
 
 # -----------------------------
@@ -294,13 +298,17 @@ st.markdown(
 # Data
 # -----------------------------
 
-metrics = api_get("/dashboard/metrics")
+metrics = api_get("/api/dashboard/metrics")
 metrics_data = metrics["data"] if metrics["ok"] else {}
 
 kpi_total_leads = safe_get(metrics_data, "total_leads", 67)
 kpi_qualified = safe_get(metrics_data, "qualified_hr_leads", 34)
 kpi_revenue = safe_get(metrics_data, "revenue_mtd", 81547)
 kpi_conversion = safe_get(metrics_data, "conversion_rate", 4.2)
+if isinstance(kpi_conversion, str) and kpi_conversion.endswith("%"):
+    kpi_conversion_display = kpi_conversion
+else:
+    kpi_conversion_display = f"{kpi_conversion}%"
 
 client_activity = safe_get(metrics_data, "client_activity", [
     {"name": "Sarah Wen", "detail": "Appointment rescheduled", "when": "Today 11:00 AM"},
@@ -367,7 +375,7 @@ with kpi_col4:
     st.markdown(
         f"""
         <div class="card kpi">
-          <div class="value">{kpi_conversion}%</div>
+          <div class="value">{kpi_conversion_display}</div>
           <div class="label">Conversion Rate</div>
         </div>
         """,
@@ -471,7 +479,7 @@ with col_b:
         st.markdown("<div class='pill'>Metrics: Placeholder</div>", unsafe_allow_html=True)
     st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
     if st.button("Refresh Live Data"):
-        st.experimental_rerun()
+        st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
 

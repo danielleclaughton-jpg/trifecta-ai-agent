@@ -4,7 +4,12 @@
       "Bash(tree:*)",
       "Bash(git commit:*)",
       "Bash(dir:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(chmod:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(git restore:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

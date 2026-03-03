@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Client_A – Recovery Toolkit | Trifecta Addiction & Mental Health Services</title>
+  <style>
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f4f7f9;
+      color: #12232E;
+      margin: 0;
+      padding: 0;
+    }
+    .page {
+      client_a-width: 1000px;
+      margin: 24px auto 40px;
+      background: #ffffff;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    }
+    .branding-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid #00838F;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+    .brand-left h1 {
+      font-size: 20px;
+      margin: 0;
+      color: #003B5C;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .brand-left p {
+      margin: 3px 0 0;
+      font-size: 11px;
+      color: #4b6a7a;
+    }
+    .brand-right {
+      text-align: right;
+      font-size: 11px;
+      color: #4b6a7a;
+      line-height: 1.4;
+    }
+    .tagline {
+      margin-top: 4px;
+      font-style: italic;
+      font-size: 11px;
+      color: #00838F;
+    }
+    h2.main-title {
+      font-size: 20px;
+      color: #003B5C;
+      margin: 4px 0 4px;
+    }
+    h3.main-subtitle {
+      font-size: 13px;
+      color: #006477;
+      margin: 0 0 16px;
+      font-weight: 600;
+    }
+    .meta-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 16px;
+      color: #4f6b7a;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .meta-line span { flex: 1; }
+    .meta-label {
+      font-weight: 600;
+      color: #003B5C;
+    }
+    .segment {
+      border-radius: 10px;
+      border: 1px solid #d6e4ed;
+      margin-bottom: 18px;
+      overflow: hidden;
+      background: #f9fcff;
+    }
+    .segment-header {
+      padding: 10px 14px;
+      background: linear-gradient(90deg, #003B5C, #00838F);
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .segment-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .segment-subtitle {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+    .segment-body {
+      padding: 14px 16px 14px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #21333f;
+    }
+    .mini-heading {
+      font-weight: 700;
+      color: #003B5C;
+      margin-top: 6px;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    .script {
+      font-style: italic;
+      background: #eef6fb;
+      border-left: 3px solid #00838F;
+      padding: 6px 8px;
+      border-radius: 4px;
+      margin: 6px 0 8px;
+      font-size: 12px;
+    }
+    ul, ol {
+      margin: 4px 0 8px 18px;
+      padding: 0;
+    }
+    li { margin-bottom: 3px; }
+    .rating-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 4px 0 8px;
+      font-size: 11px;
+      align-items: center;
+    }
+    .rating-row label {
+      font-weight: 600;
+      color: #003B5C;
+    }
+    .rating-row input[type="number"] {
+      width: 70px;
+      padding: 3px 4px;
+      border-radius: 4px;
+      border: 1px solid #c3d7e5;
+      font-size: 11px;
+    }
+    .percent-input {
+      width: 80px;
+      padding: 3px 4px;
+      border-radius: 4px;
+      border: 1px solid #c3d7e5;
+      font-size: 11px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 60px;
+      border-radius: 6px;
+      border: 1px solid #c3d7e5;
+      padding: 6px 8px;
+      font-size: 12px;
+      resize: vertical;
+      box-sizing: border-box;
+      margin: 3px 0 6px;
+      background: #ffffff;
+    }
+    .hint {
+      font-size: 11px;
+      color: #7b8f9b;
+      font-style: italic;
+      margin-bottom: 4px;
+    }
+    .pill {
+      display: inline-block;
+      background: #e2f4f8;
+      color: #006477;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-right: 4px;
+      margin-bottom: 3px;
+    }
+    .columns-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .columns-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .box {
+      border-radius: 6px;
+      border: 1px dashed #c3d7e5;
+      padding: 6px 8px;
+      background: #ffffff;
+      margin-bottom: 6px;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 4px 0 6px;
+    }
+    .chip {
+      border-radius: 999px;
+      border: 1px solid #c3d7e5;
+      padding: 2px 8px;
+      font-size: 10px;
+      background: #f6fbff;
+      color: #00526a;
+    }
+    .footer {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 2px solid #e0edf4;
+      text-align: center;
+      font-size: 11px;
+      color: #4f6b7a;
+      line-height: 1.5;
+    }
+    .footer strong { color: #003B5C; }
+    .footer .cta {
+      margin-top: 3px;
+      font-weight: 600;
+      color: #00838F;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    @media (client_a-width: 700px) {
+      .page { margin: 10px; padding: 18px; }
+      .branding-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .meta-line {
+        flex-direction: column;
+        gap: 4px;
+      }
+      .columns-2,
+      .columns-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="branding-bar">
+      <div class="brand-left">
+        <h1>Trifecta Addiction &amp; Mental Health Services</h1>
+        <p>Evidence-Based Neuroplasticity Model • CBT &amp; DBT Integrated • Executive-Level Care</p>
+      </div>
+      <div class="brand-right">
+        <div><strong>Toolkit:</strong> Client_A – Personalized Recovery Toolkit</div>
+        <div><strong>Program:</strong> Trifecta Empowerment &amp; Maintenance</div>
+        <div class="tagline">Elite, evidence-based Recovery, empowering one life at a time.</div>
+      </div>
+    </div>
+
+    <h2 class="main-title">MAX – RECOVERY TOOLKIT</h2>
+    <h3 class="main-subtitle">Protecting Your 99% Sober Self in the Middle of Uncertainty</h3>
+
+    <div class="meta-line">
+      <span><span class="meta-label">Client:</span> Client_A _____________________</span>
+      <span style="text-align:center;"><span class="meta-label">Created With:</span> Danielle</span>
+      <span style="text-align:right;"><span class="meta-label">Last Updated:</span> ____ / ____ / ______</span>
+    </div>
+
+    <!-- Segment 1: Recovery Identity -->
+    <div class="segment">
+      <div class="segment-header">
+        <div class="segment-title">1. My Sober Self Identity Card</div>
+        <div class="segment-subtitle">Who I am becoming – on purpose</div>
+      </div>
+      <div class="segment-body">
+        <div class="script">
+          “This is who you are when your 99% sober self is in charge. This is the version of you we are strengthening every day.”
+        </div>
+
+        <div class="columns-2">
+          <div class="box">
+            <div class="mini-heading">Who I Am Now (Sober Self)</div>
+            <div class="hint">Use words that feel true today – even if your brain argues.</div>
+            <textarea placeholder="Example ideas: &#10;• I am a man who shows up sober, even when it’s hard. &#10;• I am a partner who wants honesty and clarity. &#10;• I am a hunter, hockey player, and leader at work. &#10;• I am someone who doesn’t run from pain anymore."></textarea>
+          </div>
+          <div class="box">
+            <div class="mini-heading">Who I Am Not Anymore (Old Addicted Self)</div>
+            <div class="hint">Name the parts you’ve already outgrown.</div>
+            <textarea placeholder="Example ideas: &#10;• I’m not a man who disappears into substances when life gets hard. &#10;• I’m not someone who ignores my health. &#10;• I’m not someone who accepts chaos as normal."></textarea>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="mini-heading">My Top 5 Sober Self Qualities</div>
+          <div class="chips">
+            <div class="chip">Honest</div>
+            <div class="chip">Loyal</div>
+            <div class="chip">Hard-working</div>
+            <div class="chip">Committed to Growth</div>
+            <div class="chip">Protective of People I Love</div>
+          </div>
+          <textarea placeholder="Circle or rewrite the ones that fit, then add your own.&#10;1) &#10;2) &#10;3) &#10;4) &#10;5) "></textarea>
+        </div>
+
+        <div class="rating-row">
+          <label>This week, I feel connected to my Sober Self about:</label>
+          <input class="percent-input" type="number" min="0" client_a="100" placeholder="%">
+          <span>% of the time.</span>
+        </div>
+
+        <textarea placeholder="Where did your Sober Self show up strongest this week (hunting, hockey, work, conversations with Katie, family)?"></textarea>
+      </div>
+    </div>
+
+    <!-- Segment 2: Warning Signs & Red Flags -->
+    <div class="segment">
+      <div class="segment-header">
+        <div class="segment-title">2. Early Warning Signs &amp; Red Flags</div>
+        <div class="segment-subtitle">Catching things before they snowball</div>
+      </div>
+      <div class="segment-body">
+        <div class="script">
+          “You’re not waiting to hit bottom again. You’re catching things early. This section is about noticing what ‘yellow flags’ and ‘red flags’ look like for you.”
+        </div>
+
+        <div class="columns-2">
+          <div class="box">
+            <div class="mini-heading">Yellow Flags – Early Warning Signs</div>
+            <div class="hint">These are changes that tell you, ‘Okay, I need to tighten up my tools.’</div>
+            <textarea placeholder="Examples for you might include: &#10;• Thinking about Katie or the future on a loop. &#10;• Sleep getting more restless. &#10;• Skipping a check-in or wanting to. &#10;• Isolating after work instead of hockey/hunting. &#10;Write yours here."></textarea>
+          </div>
+          <div class="box">
+            <div class="mini-heading">Red Flags – Serious Risk Signs</div>
+            <div class="hint">Moments where recovery needs to become your #1 focus immediately.</div>
+            <textarea placeholder="Examples for you might include: &#10;• Thinking, ‘What’s the point?’ or ‘Screw it.’ &#10;• Fantasizing about using, not just thoughts passing through. &#10;• Feeling like none of this matters if Katie doesn’t choose you. &#10;• Skipping multiple check-ins. &#10;List your red flags here."></textarea>
+          </div>
+        </div>
+
+        <div class="rating-row">
+          <label>In the last 7 days, my yellow flags have been at:</label>
+          <input type="number" min="0" client_a="10" placeholder="0-10">
+          <span>/10 intensity.</span>
+        </div>
+        <div class="rating-row">
+          <label>In the last 7 days, my red flags have been at:</label>
+          <input type="number" min="0" client_a="10" placeholder="0-10">
+          <span>/10 intensity.</span>
+        </div>
+
+        <textarea placeholder="What’s one yellow flag you want to respond to earlier this coming week, before it grows?"></textarea>
+      </div>
+    </div>
+
+    <!-- Segment 3: My Top Recovery Tools -->
+    <div class="segment">
+      <div class="segment-header">
+        <div class="segment-title">3. My Top Recovery Tools</div>
+        <div class="segment-subtitle">What actually works for me</div>
+      </div>
+      <div class="segment-body">
+        <div class="script">
+          “You’re not ‘trying to figure it out from scratch’ anymore. You already know a lot of what works for you. This is your menu you and Danielle can come back to over and over.”
+        </div>
+
+        <div class="columns-3">
+          <div class="box">
+            <div class="mini-heading">Tools with Danielle</div>
+            <div class="hint">Things you do directly in or around session.</div>
+            <textarea placeholder="Examples: &#10;• Daily/regular check-ins. &#10;• Voice notes when overwhelmed. &#10;• Talking things out instead of stuffing them down. &#10;• Using Wise Mind language. &#10;Add your own:"></textarea>
+          </div>
+          <div class="box">
+            <div class="mini-heading">Tools On My Own</div>
+            <div class="hint">Things you can do even if nobody picks up the phone.</div>
+            <textarea placeholder="Examples: &#10;• Playing hockey. &#10;• Going hunting / being outside. &#10;• Taking a walk instead of spiralling. &#10;• Listening to music that grounds you."></textarea>
+          </div>
+          <div class="box">
+            <div class="mini-heading">Tools With Other People</div>
+            <div class="hint">Healthy connections that support your sober self.</div>
+            <textarea placeholder="Examples: &#10;• Time with sober friends. &#10;• Time with Dad / Stepmom when calm. &#10;• Calling someone safe instead of sitting alone."></textarea>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="mini-heading">My Top 5 “Go-To” Tools When I’m Spinning</div>
+          <textarea placeholder="1) &#10;2) &#10;3) &#10;4) &#10;5) "></textarea>
+        </div>
+
+        <div class="rating-row">
+          <label>Out of all my tools, I actually use about:</label>
+          <input class="percent-input" type="number" min="0" client_a="100" placeholder="%">
+          <span>% of them when I’m stressed.</span>
+        </div>
+
+        <textarea placeholder="Which tools do you want to start using more often instead of just ‘knowing about’ them?"></textarea>
+      </div>
+    </div>
+
+    <!-- Segment 4: Relationship & Boundaries Quick Plan (Katie) -->
+    <div class="segment">
+      <div class="segment-header">
+        <div class="segment-title">4. Relationship &amp; Boundaries – Katie</div>
+        <div class="segment-subtitle">Protecting your heart and your sobriety</div>
+      </div>
+      <div class="segment-body">
+        <div class="script">
+          “You love Katie. You’ve also been really clear that living in the unknown for too long is not okay for your mental health or your recovery. This page keeps you anchored to your own bottom lines.”
+        </div>
+
+        <div class="mini-heading">1. How Things Feel Right Now</div>
+        <textarea placeholder="In your own words: what is the situation with Katie right now (effort before Mexico, effort since, gifts/space/uncertainty)?"></textarea>
+
+        <div class="mini-heading">2. My Three-Month Boundary (In My Own Words)</div>
+        <div class="hint">What did you and Danielle already decide is your line in the sand?</div>
+        <textarea placeholder="Write your 3-month boundary clearly here. E.g., ‘If after ______ there’s still no clear commitment or clear ending, I will begin making decisions that move me forward, even if that means letting go.’"></textarea>
+
+        <div class="mini-heading">3. DEAR MAN Snapshot</div>
+        <div class="columns-2">
+          <div class="box">
+            <strong>D – Describe (Facts)</strong>
+            <textarea placeholder="What has been happening – games, time together, talk about gifts, talk about space, not knowing where you stand."></textarea>
+          </div>
+          <div class="box">
+            <strong>E – Express (Feelings)</strong>
+            <textarea placeholder="How all of this uncertainty actually feels inside you – confused, anxious, unsettled, hopeful, scared."></textarea>
+          </div>
+        </div>
+
+        <div class="columns-2">
+          <div class="box">
+            <strong>A – Assert (What You Need)</strong>
+            <textarea placeholder="What you are asking for – clarity, direction, honesty about whether this is moving forward or not."></textarea>
+          </div>
+          <div class="box">
+            <strong>R – Reinforce (Why It Helps Both)</strong>
+            <textarea placeholder="How clarity benefits both of you – making fair decisions, not wasting each other’s time, protecting both of your mental health."></textarea>
+          </div>
+        </div>
+
+        <div class="mini-heading">4. FAST – Protecting Self-Respect</div>
+        <div class="columns-2">
+          <div class="box">
+            <strong>What I Will Not Apologize For</strong>
+            <div class="hint">Your needs aren’t something to feel guilty about.</div>
+            <textarea placeholder="E.g., wanting clarity, wanting to feel chosen, wanting emotional safety, wanting to protect your sobriety."></textarea>
+          </div>
+          <div class="box">
+            <strong>Values Guiding Me Here</strong>
+            <textarea placeholder="E.g., honesty, loyalty, self-respect, stability, mutual effort."></textarea>
+          </div>
+        </div>
+
+        <div class="rating-row">
+          <label>Right now, I feel like I’m giving about:</label>
+          <input class="percent-input" type="number" min="0" client_a="100" placeholder="%">
+          <span>% effort in this relationship.</span>
+        </div>
+        <div class="rating-row">
+          <label>I feel like Katie is giving about:</label>
+          <input class="percent-input" type="number" min="0" client_a="100" placeholder="%">
+          <span>% effort right now.</span>
+        </div>
+
+        <textarea placeholder="What does a healthier, more balanced percentage look like to you over the next few months?"></textarea>
+      </div>
+    </div>
+
+    <!-- Segment 5: Family Stress (Sister, Stepmom, Parents) -->
+    <div class="segment">
+      <div class="segment-header">
+        <div class="segment-title">5. Family Stress – Sister, Stepmom &amp; Parents</div>
+        <div class="segment-subtitle">Caring without carrying everything</div>
+      </div>
+      <div class="segment-body">
+        <div class="script">
+          “You care deeply about your sister and your stepmom. You’ve watched scary things before, and your brain gets pulled into responsibility mode. This section separates what’s in your hands from what isn’t.”
+        </div>
+
+        <div class="mini-heading">1. Sister – What I’m Worried About</div>
+        <textarea placeholder="Describe what worries you most about your sister right now, especially when your parents say she’s ‘acting out’ or saying things that aren’t true."></textarea>
+
+        <div class="columns-2">
+          <div class="box">
+            <strong>In My Control</strong>
+            <textarea placeholder="How you respond, how you listen, whether you take on everything alone, how honest you are with Danielle about stress."></textarea>
+          </div>
+          <div class="box">
+            <strong>Not In My Control</strong>
+            <textarea placeholder="Her choices, her episodes, how systems respond, whether she accepts help in the moment."></textarea>
+          </div>
+        </div>
+
+        <div class="mini-heading">2. Stepmom – Heart Issues &amp; Fear</div>
+        <textarea placeholder="Name the feelings that come up when you think about your stepmom’s heart issues and hospital stays – fear, sadness, guilt, protectiveness, etc."></textarea>
+
+        <div class="box">
+          <strong>What Would My Stepmom Want For Me Right Now?</strong>
+          <textarea placeholder="If she could talk directly to you about your recovery and stress, what do you think she would say she wants for you?"></textarea>
+        </div>
+
+        <div class="rating-row">
+          <label>Family stress impact on my cravings / urges this week (0–10):</label>
+          <input type="number" min="0" client_a="10" placeholder="0-10">
+        </div>
+
+        <div class="box">
+          <strong>One Thing I Can Do That Helps My Family AND My Recovery</strong>
+          <textarea placeholder="E.g., be present and calm instead of panicked; check in on them, but still go to hockey or keep my check-ins with Danielle."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segment 6: Emergency Plan & Crisis Flow -->
+    <div class="segment">
+      <div class="segment-header">
+        <div class="segment-title">6. Emergency Plan – When Things Get Really Loud</div>
+        <div class="segment-subtitle">What I do when everything spikes</div>
+      </div>
+      <div class="segment-body">
+        <div class="script">
+          “This is the plan for the 1% moments – when everything feels heavy, unfair, or overwhelming. We’re not guessing what to do; we’ve already decided.”
+        </div>
+
+        <div class="mini-heading">When I Notice These Signs...</div>
+        <textarea placeholder="Examples: &#10;• ‘Screw it’ thoughts. &#10;• Fantasies about using. &#10;• Wanting to disappear. &#10;• Feeling like nothing matters if the relationship doesn’t work."></textarea>
+
+        <div class="mini-heading">My 5-Step Emergency Flow</div>
+        <ol>
+          <li><strong>Step 1 – Name It</strong> (What am I feeling? What is the story in my head?)</li>
+        </ol>
+        <textarea placeholder="Write your sentence: ‘Right now I’m feeling ______ and my brain is telling me ______.’"></textarea>
+
+        <ol start="2">
+          <li><strong>Step 2 – Ground in Reality</strong> (What are the actual facts?)</li>
+        </ol>
+        <textarea placeholder="Write a simple grounding script you can come back to."></textarea>
+
+        <ol start="3">
+          <li><strong>Step 3 – Use One Physical or Behavioral Tool</strong> (No new skills – only ones you already know)</li>
+        </ol>
+        <textarea placeholder="Examples: hockey, going outside, walking, shower, breathing you already use, music that calms you, etc."></textarea>
+
+        <ol start="4">
+          <li><strong>Step 4 – Reach Out (If Needed)</strong></li>
+        </ol>
+        <div class="columns-2">
+          <div class="box">
+            <strong>People I Can Reach Out To</strong>
+            <textarea placeholder="List first names or roles – safe people who support your sober self."></textarea>
+          </div>
+          <div class="box">
+            <strong>How I Will Reach Out</strong>
+            <textarea placeholder="Text, call, voice note to Danielle, message to a friend, etc."></textarea>
+          </div>
+        </div>
+
+        <ol start="5">
+          <li><strong>Step 5 – Report Back in Check-In</strong></li>
+        </ol>
+        <textarea placeholder="What kind of message will you send Danielle after a tough moment so she knows what happened and how you handled it?"></textarea>
+      </div>
+    </div>
+
+    <!-- Segment 7: Daily Check-In Template -->
+    <div class="segment">
+      <div class="segment-header">
+        <div class="segment-title">7. Daily Check-In Template</div>
+        <div class="segment-subtitle">Keeping your streak and your brain rewiring</div>
+      </div>
+      <div class="segment-body">
+        <div class="script">
+          “Your daily check-ins are one of your strongest habits. This page is your standard script you can follow quickly, even on busy days.”
+        </div>
+
+        <div class="mini-heading">Max’s Daily Check-In Structure</div>
+        <ol>
+          <li><strong>Today’s Date &amp; Sober Day Count</strong></li>
+        </ol>
+        <textarea placeholder="‘Today is ______ and I am ____ days sober.’"></textarea>
+
+        <ol start="2">
+          <li><strong>Quick Numbers (0–10)</strong></li>
+        </ol>
+        <div class="rating-row">
+          <label>Mood:</label><input type="number" min="0" client_a="10" placeholder="0-10">
+          <label>Stress:</label><input type="number" min="0" client_a="10" placeholder="0-10">
+          <label>Cravings:</label><input type="number" min="0" client_a="10" placeholder="0-10">
+        </div>
+
+        <ol start="3">
+          <li><strong>One Win From Today</strong></li>
+        </ol>
+        <textarea placeholder="Something you did or got through that your old self wouldn’t have."></textarea>
+
+        <ol start="4">
+          <li><strong>One Challenge / Trigger From Today</strong></li>
+        </ol>
+        <textarea placeholder="What was hardest today – Katie, work, family, brain stories, etc."></textarea>
+
+        <ol start="5">
+          <li><strong>One Tool I Used (or Should Have Used)</strong></li>
+        </ol>
+        <textarea placeholder="Name what you actually used or wish you had used."></textarea>
+
+        <ol start="6">
+          <li><strong>How I Want to Show Up Tomorrow (1 Sentence)</strong></li>
+        </ol>
+        <textarea placeholder="‘Tomorrow I want to show up as a man who ______.’"></textarea>
+      </div>
+    </div>
+
+    <!-- Segment 8: Weekly Reflection & Goal Reset -->
+    <div class="segment">
+      <div class="segment-header">
+        <div class="segment-title">8. Weekly Reflection &amp; SMART Goal Reset</div>
+        <div class="segment-subtitle">Adjusting the plan instead of abandoning it</div>
+      </div>
+      <div class="segment-body">
+        <div class="script">
+          “You and Danielle can use this at the end of the week to zoom out, see the bigger picture, and reset goals without shame – only adjustment.”
+        </div>
+
+        <div class="mini-heading">1. This Week’s Snapshot</div>
+        <div class="rating-row">
+          <label>Sober Self in Charge (% of the week):</label>
+          <input class="percent-input" type="number" min="0" client_a="100" placeholder="%">
+        </div>
+        <div class="rating-row">
+          <label>Average Stress (0–10):</label>
+          <input type="number" min="0" client_a="10" placeholder="0-10">
+        </div>
+        <div class="rating-row">
+          <label>Average Hope / Confidence (0–10):</label>
+          <input type="number" min="0" client_a="10" placeholder="0-10">
+        </div>
+
+        <div class="mini-heading">2. Biggest Wins</div>
+        <textarea placeholder="List 3 wins from this week – big or small. &#10;1) &#10;2) &#10;3) "></textarea>
+
+        <div class="mini-heading">3. Toughest Moments</div>
+        <textarea placeholder="Where did your brain struggle the most? What were the themes (Katie, future, finances, family, work)?"></textarea>
+
+        <div class="mini-heading">4. SMART Goals For Next Week</div>
+
+        <div class="box">
+          <strong>SMART Goal #1 – Recovery / Tools</strong>
+          <textarea placeholder="E.g., ‘I will send my daily check-in every day this week, even if it’s short.’"></textarea>
+          <div class="rating-row">
+            <label>Confidence (0–10):</label>
+            <input type="number" min="0" client_a="10" placeholder="0-10">
+          </div>
+        </div>
+
+        <div class="box">
+          <strong>SMART Goal #2 – Relationship / Boundaries</strong>
+          <textarea placeholder="E.g., ‘I will bring up one honest conversation topic with Katie this week using my DEAR MAN notes.’"></textarea>
+          <div class="rating-row">
+            <label>Confidence (0–10):</label>
+            <input type="number" min="0" client_a="10" placeholder="0-10">
+          </div>
+        </div>
+
+        <div class="box">
+          <strong>SMART Goal #3 – Family &amp; Self-Protection</strong>
+          <textarea placeholder="E.g., ‘I will check in on my parents/sister ______ times and share with Danielle if it starts to feel heavy.’"></textarea>
+          <div class="rating-row">
+            <label>Confidence (0–10):</label>
+            <input type="number" min="0" client_a="10" placeholder="0-10">
+          </div>
+        </div>
+
+        <div class="box">
+          <strong>SMART Goal #4 – Investing in Myself (Hockey / Hunting / Health)</strong>
+          <textarea placeholder="E.g., ‘I will go to hockey ____ times this week and schedule one other activity that is just for me (even if it’s small).’"></textarea>
+          <div class="rating-row">
+            <label>Confidence (0–10):</label>
+            <input type="number" min="0" client_a="10" placeholder="0-10">
+          </div>
+        </div>
+
+        <div class="mini-heading">5. Closing Weekly Reflection</div>
+        <textarea placeholder="If you could say one thing to your future self 3 months from now about this season, what would you say?"></textarea>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div><strong>Trifecta Addiction &amp; Mental Health Services</strong> • Neuroplasticity-Based Recovery • CBT &amp; DBT Integrated</div>
+      <div class="cta">Transform with Trifecta</div>
+      <div>Small-group, high-touch programming designed for sustainable, long-term change.</div>
+    </div>
+  </div>
+</body>
+</html>

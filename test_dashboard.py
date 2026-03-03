@@ -6,14 +6,13 @@ Version: 1.0.0 | Created: 2026-01-27
 
 import streamlit as st
 import requests
-import json
 import os
 from datetime import datetime
 
 # Page configuration
 st.set_page_config(
     page_title="Trifecta AI Agent - Test Dashboard",
-    page_icon="🏥",
+    page_icon="TA",
     layout="wide"
 )
 
@@ -29,7 +28,7 @@ DEFAULT_FLASK_URL = "http://127.0.0.1:5000"
 # SIDEBAR - CONFIGURATION
 # =============================================================================
 
-st.sidebar.title("⚙️ Configuration")
+st.sidebar.title("Configuration")
 
 # API URLs
 st.sidebar.header("API Endpoints")
@@ -59,22 +58,22 @@ def check_mcp_health():
 flask_ok, flask_status = check_flask_health()
 mcp_ok, mcp_status = check_mcp_health()
 
-flask_indicator = "🟢 Online" if flask_ok else "🔴 Offline"
+flask_indicator = "Online" if flask_ok else "Offline"
 st.sidebar.text(f"Flask API: {flask_indicator}")
 
-mcp_indicator = "🟢 Online" if mcp_ok else "🔴 Offline"
+mcp_indicator = "Online" if mcp_ok else "Offline"
 st.sidebar.text(f"MCP Server: {mcp_indicator}")
 
 # API Keys status
 st.sidebar.header("API Keys Status")
-anthropic_status = "✅ Configured" if os.environ.get("ANTHROPIC_API_KEY") else "❌ Missing"
+anthropic_status = "Configured" if os.environ.get("ANTHROPIC_API_KEY") else "Missing"
 st.sidebar.text(f"Anthropic Claude: {anthropic_status}")
 
 # =============================================================================
 # MAIN CONTENT
 # =============================================================================
 
-st.title("🏥 Trifecta Recovery Services - AI Agent Test Dashboard")
+st.title("Trifecta Recovery Services - AI Agent Test Dashboard")
 st.markdown("**Testing Interface for MCP Server and Trifecta AI Agent Integration**")
 st.markdown("---")
 
@@ -83,11 +82,11 @@ st.markdown("---")
 # =============================================================================
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📊 System Status",
-    "💬 Agent Chat",
-    "👥 Lead Management",
-    "📋 MCP Tools",
-    "🔧 Debug"
+    "System Status",
+    "Agent Chat",
+    "Lead Management",
+    "MCP Tools",
+    "Debug"
 ])
 
 # =============================================================================
@@ -102,7 +101,11 @@ with tab1:
     with col1:
         st.metric("Flask API", "Online" if flask_ok else "Offline", delta="Healthy" if flask_ok else "Error")
     with col2:
-        st.metric("MCP Server", "Online" if mcp_ok else "Offline", delta="Ready" if mcp_okelse "Not Ready")
+        st.metric(
+            "MCP Server",
+            "Online" if mcp_ok else "Offline",
+            delta="Ready" if mcp_ok else "Not Ready",
+        )
     with col3:
         anthropic_ok = bool(os.environ.get("ANTHROPIC_API_KEY"))
         st.metric("Anthropic Claude", "Connected" if anthropic_ok else "Missing Key", delta="Active" if anthropic_ok else "Blocked")
@@ -127,10 +130,12 @@ with tab1:
 
 with tab2:
     st.header("Trifecta AI Agent Chat Test")
+    if "chat_message" not in st.session_state:
+        st.session_state.chat_message = ""
     
     # System prompt context
     with st.expander("System Context", expanded=False):
-        system_context = st.text_area(
+        st.text_area(
             "System Prompt",
             value="You are the Trifecta AI Agent for Trifecta Addiction and Mental Health Services. "
                   "You help with lead intake, client management, scheduling, and providing information "
@@ -140,7 +145,12 @@ with tab2:
         )
     
     # Chat input
-    user_message = st.text_area("Your Message", placeholder="Ask about programs, pricing, or help with a client...", height=100)
+    user_message = st.text_area(
+        "Your Message",
+        key="chat_message",
+        placeholder="Ask about programs, pricing, or help with a client...",
+        height=100,
+    )
     
     if st.button("Send to Agent", type="primary"):
         if not user_message.strip():
@@ -184,7 +194,8 @@ with tab2:
     cols = st.columns(2)
     for i, prompt in enumerate(quick_prompts):
         if cols[i % 2].button(prompt, key=f"quick_{i}"):
-            st.session_state.quick_message = prompt
+            st.session_state.chat_message = prompt
+            st.rerun()
 
 # =============================================================================
 # TAB 3: LEAD MANAGEMENT
@@ -199,7 +210,7 @@ with tab3:
         st.subheader("Create Lead")
         with st.form("lead_form"):
             name = st.text_input("Lead Name")
-            source = st.selectbox("Source", ["Chat - GoDaddy", "Contact Form", "Phone", "Referral", "Website"])
+            source = st.selectbox("Source", ["MANUAL", "GODADDY_CHAT", "DIALPAD_SMS", "DIALPAD_CALL", "OUTLOOK_FORM"])
             email = st.text_input("Email")
             phone = st.text_input("Phone")
             program_interest = st.selectbox("Program Interest", ["", "bootcamp", "inpatient", "virtual"])
@@ -266,13 +277,13 @@ with tab3:
                     factors.append("+15: Self-referral")
                 
                 if score >= 70:
-                    priority = "🔥 HOT - Contact within 1 hour"
+                    priority = "HOT - Contact within 1 hour"
                 elif score >= 50:
-                    priority = "⭐ WARM - Contact within 4 hours"
+                    priority = "WARM - Contact within 4 hours"
                 elif score >= 30:
-                    priority = "💧 COOL - Contact within 24 hours"
+                    priority = "COOL - Contact within 24 hours"
                 else:
-                    priority = "❄️ COLD - Add to nurture sequence"
+                    priority = "COLD - Add to nurture sequence"
                 
                 st.success(f"Score: {score}/100")
                 st.info(f"Priority: {priority}")
@@ -318,27 +329,27 @@ with tab4:
     elif tool_category == "Communications":
         st.subheader("Generate Chat Response")
         with st.form("chat_response"):
-            lead_name = st.text_input("Lead Name", value="there")
-            inquiry_type = st.selectbox("Inquiry Type", ["general", "pricing", "program", "professional"])
-            specific_question = st.text_area("Specific Question")
+            st.text_input("Lead Name", value="there")
+            st.selectbox("Inquiry Type", ["general", "pricing", "program", "professional"])
+            st.text_area("Specific Question")
             
-            if st.button("Generate Response"):
+            if st.form_submit_button("Generate Response"):
                 st.info("Response would be generated via MCP tool call")
     
     elif tool_category == "Crisis Detection":
         st.subheader("Crisis Risk Analysis")
         with st.form("crisis_analysis"):
-            text = st.text_area("Text to Analyze", placeholder="Enter message text to analyze for crisis indicators...")
-            context = st.selectbox("Context", ["message", "call", "session_note"])
+            st.text_area("Text to Analyze", placeholder="Enter message text to analyze for crisis indicators...")
+            st.selectbox("Context", ["message", "call", "session_note"])
             
-            if st.button("Analyze Crisis Risk"):
+            if st.form_submit_button("Analyze Crisis Risk"):
                 st.info("Would call analyze_crisis_risk MCP tool")
     
     elif tool_category == "Analytics":
         if st.button("get_dashboard_metrics"):
             if flask_ok:
                 try:
-                    resp =requests.get(f"{flask_url}/api/dashboard/metrics", timeout=5)
+                    resp = requests.get(f"{flask_url}/api/dashboard/metrics", timeout=5)
                     st.json(resp.json())
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
@@ -355,6 +366,8 @@ with tab4:
 
 with tab5:
     st.header("Debug Information")
+    if "log" not in st.session_state:
+        st.session_state.log = ""
     
     st.subheader("Environment Variables")
     env_vars = {
@@ -388,7 +401,7 @@ with tab5:
             st.error(f"Failed: {str(e)}")
     
     st.subheader("Logs")
-    log_area = st.text_area("Activity Log", height=200, placeholder="Activity will appear here...")
+    st.text_area("Activity Log", key="log", height=200, placeholder="Activity will appear here...")
     
     if st.button("Clear Log"):
         st.session_state.log = ""

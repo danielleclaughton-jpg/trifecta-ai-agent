@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Client_B — Recovery Toolkit V9 (Interactive)</title>
+<style>
+:root{--navy:#0b2447;--teal:#00a0a0;--ink:#0f172a;--muted:#6b7280;--line:#e5e7eb;--paper:#f8fafc}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;margin:0;background:var(--paper);color:var(--ink)}
+.wrap{client_a-width:1100px;margin:22px auto;padding:22px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.brand{font-weight:900;color:var(--navy)}
+.sub{color:var(--muted);font-size:13px}
+.h1{color:var(--navy);margin:20px 0 8px;font-size:22px;border-bottom:3px solid var(--teal);padding-bottom:8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+.card h3{margin:0 0 8px;color:var(--navy)}
+.note{color:var(--muted);font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+@media (client_a-width:900px){.grid2,.grid3,.grid4,.grid7{grid-template-columns:1fr}}
+textarea,input[type="text"]{width:100%;min-height:90px;padding:10px;border-radius:10px;border:1.4px solid #d7eef0;background:#f7fdfd;resize:vertical;font-size:15px}
+.small{min-height:56px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#475569}
+.btn{border:1px solid var(--teal);background:#fff;color:var(--teal);padding:8px 12px;border-radius:9px;cursor:pointer;font-weight:700}
+.btn.primary{background:var(--teal);color:#fff}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border:1px solid #e6eef0;padding:8px;text-align:left;font-size:14px;vertical-align:top}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:#f1fafb;font-weight:700;color:var(--teal);font-size:12px}
+.arrowflow{display:flex;gap:14px;overflow-x:auto;padding:6px 0;align-items:stretch}
+.step{flex:0 0 260px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;position:relative}
+.step:after{content:"→";position:absolute;right:-12px;top:50%;transform:translateY(-50%);color:var(--teal);font-weight:900;font-size:20px}
+.step:last-child:after{display:none}
+.num{position:absolute;top:-12px;left:-12px;background:var(--teal);color:#fff;border-radius:999px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800}
+.callout{border-left:4px solid var(--teal);background:#f2fbfb;padding:10px;border-radius:8px}
+.footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
+hr.sep{border:none;border-top:1px dashed #dbe6e8;margin:12px 0}
+.kv{display:grid;grid-template-columns:160px 1fr;gap:8px}
+.copybox{position:relative}
+.copybox .copybtn{position:absolute;top:8px;right:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <div class="brand">Trifecta Addiction & Mental Health Services</div>
+      <div class="sub">Recovery Toolkit — Client_B (V9 • Interactive)</div>
+    </div>
+    <div class="mono">Navy • Teal • Local Save/Load</div>
+  </div>
+
+  <div class="h1">Recovery Toolkit V9 — Boundaries • Relapse Prevention • Sober Pathways</div>
+
+  <div class="card">
+    <strong>Note</strong>
+    <div class="note" style="margin-top:6px">Use this nightly and before tough conversations. The goal is fast recovery choices and clean tone.</div>
+  </div>
+
+  <!-- A. Addicted vs Sober Early Catch -->
+  <div class="card">
+    <h3>A) Addicted Self vs. Sober Self — Early Thought Catch</h3>
+    <div class="note">Everything starts with a thought. Catch it → choose the sober action.</div>
+    <table class="table" style="margin-top:8px">
+      <thead><tr><th>Addicted Self (old loop)</th><th>Sober Self (replacement)</th><th>Action (next 5 minutes)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>“He’s controlling me again — screw it.”</td>
+          <td>“I control my tone and my boundary.”</td>
+          <td><textarea id="as1" class="small">Step outside • breathe • text support</textarea></td>
+        </tr>
+        <tr>
+          <td>“Why does this always happen to me?”</td>
+          <td>“Old pattern. I’m catching it earlier.”</td>
+          <td><textarea id="as2" class="small">Stretch • name 3 facts • return to task</textarea></td>
+        </tr>
+        <tr>
+          <td>“If I set a boundary, I’ll lose him.”</td>
+          <td>“Boundaries are respect; they keep things clean.”</td>
+          <td><textarea id="as3" class="small">One boundary sentence • stop explaining</textarea></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:8px">
+      <div class="note">Reflection (free write):</div>
+      <textarea id="as_reflect" class="small" placeholder="When addicted thoughts show up, they sound like…"></textarea>
+    </div>
+  </div>
+
+  <!-- B. Cognitive Rewire Flow (arrows) -->
+  <div class="card">
+    <h3>B) Cognitive Rewire Flow</h3>
+    <div class="note">Arrow flow mirrors STOP. Train the sober pathway.</div>
+    <div class="arrowflow" style="margin-top:8px">
+      <div class="step"><div class="num">1</div><strong>Trigger</strong><textarea id="cr_trigger" class="small" placeholder="e.g., Comment about car/house"></textarea></div>
+      <div class="step"><div class="num">2</div><strong>Thought</strong><textarea id="cr_thought" class="small" placeholder="‘He’ll hold this over me’"></textarea></div>
+      <div class="step"><div class="num">3</div><strong>Emotion</strong><textarea id="cr_emotion" class="small" placeholder="Resentment / shame / anger"></textarea></div>
+      <div class="step"><div class="num">4</div><strong>PAUSE (STOP)</strong><textarea id="cr_stop" class="small" placeholder="Stop • Take a breath • Observe • Proceed"></textarea></div>
+      <div class="step"><div class="num">5</div><strong>Reframe</strong><textarea id="cr_reframe" class="small" placeholder="Grateful & independent can coexist"></textarea></div>
+      <div class="step"><div class="num">6</div><strong>Action</strong><textarea id="cr_action" class="small" placeholder="One calm line • change topic"></textarea></div>
+      <div class="step"><div class="num">7</div><strong>Relief</strong><textarea id="cr_relief" class="small" placeholder="Autonomy preserved • calm returns"></textarea></div>
+    </div>
+  </div>
+
+  <!-- C. Family Boundaries — FAST & GIVE -->
+  <div class="card">
+    <h3>C) Family Boundaries — <span class="badge">FAST</span> & <span class="badge">GIVE</span></h3>
+    <div class="note">Use <b>FAST</b> when you must protect values/time/health. Use <b>GIVE</b> when the relationship needs care and buy‑in. Often you’ll use both: GIVE first, then FAST.</div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="copybox">
+        <strong>FAST — Self‑Respect</strong>
+        <div class="note">F = Fair • A = Apologies (only if yours) • S = Stick to values • T = Truthful</div>
+        <button class="btn copybtn" onclick="copyText('fast_dad1')">Copy</button>
+        <textarea id="fast_dad1" class="small" readonly>I appreciate the car — it was generous. I’m going to manage the decisions and costs so it feels like mine.</textarea>
+        <button class="btn" style="margin-top:6px" onclick="copyText('fast_dad2')">Copy</button>
+        <textarea id="fast_dad2" class="small" readonly>I’m grateful for your help. Where I live and whether I rent the house is my call. I’ll keep you posted; it’s not up for debate.</textarea>
+        <button class="btn" style="margin-top:6px" onclick="copyText('fast_dad3')">Copy</button>
+        <textarea id="fast_dad3" class="small" readonly>I can hear you care. I’m not making a decision right now. I’ll circle back after I’ve thought it through.</textarea>
+      </div>
+      <div class="copybox">
+        <strong>GIVE — Relationship Skill</strong>
+        <div class="note">G = Gentle • I = Interested • V = Validate • E = Easy manner</div>
+        <button class="btn copybtn" onclick="copyText('give_dad1')">Copy</button>
+        <textarea id="give_dad1" class="small" readonly>I know you meant well with the car, and I appreciate it. I also want to handle the logistics so it feels independent on my end.</textarea>
+        <button class="btn" style="margin-top:6px" onclick="copyText('give_dad2')">Copy</button>
+        <textarea id="give_dad2" class="small" readonly>I get that you want the best for me. When decisions are made for me, I feel boxed in. Can we talk before big purchases?</textarea>
+        <button class="btn" style="margin-top:6px" onclick="copyText('give_dad3')">Copy</button>
+        <textarea id="give_dad3" class="small" readonly>I hear your view. I’m going to think on it and come back to you tomorrow. I don’t want this to turn into an argument.</textarea>
+      </div>
+    </div>
+    <hr class="sep"/>
+    <div class="callout"><strong>Decision rule:</strong> Relationship long‑term → start with GIVE. Protect time/health/quality → FAST. If both: GIVE 1 line (“I get you’re helping”) + FAST 1 line (“I’m keeping this boundary”).</div>
+  </div>
+
+  <!-- D. Sober Thought Anchors -->
+  <div class="card">
+    <h3>D) Sober Thought Anchors</h3>
+    <table class="table" style="margin-top:8px">
+      <thead><tr><th>Scenario</th><th>Anchor (replacement thought)</th><th>Replacement Action</th></tr></thead>
+      <tbody>
+        <tr><td>Feeling watched/judged</td><td>Their opinions don’t define me.</td><td><textarea id="an1" class="small">Pause • relax jaw • redirect</textarea></td></tr>
+        <tr><td>Dad questions choices</td><td>I can accept input without compliance.</td><td><textarea id="an2" class="small">“Thanks — I’ll think about it.”</textarea></td></tr>
+        <tr><td>Pressure spike</td><td>Pressure ≠ priority. Peace first.</td><td><textarea id="an3" class="small">5 slow breaths • reset posture</textarea></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- E. Boundary Builder -->
+  <div class="card">
+    <h3>E) Boundary Builder</h3>
+    <div class="note">Define the line. One sentence. No debate.</div>
+    <div class="grid3" style="margin-top:8px">
+      <div><strong>Boundary #1</strong><textarea id="bb1" class="small" placeholder="With who, what, simple line."></textarea></div>
+      <div><strong>Boundary #2</strong><textarea id="bb2" class="small"></textarea></div>
+      <div><strong>Boundary #3</strong><textarea id="bb3" class="small"></textarea></div>
+    </div>
+    <div class="note" style="margin-top:8px">If someone gets upset, that doesn’t mean you did it wrong.</div>
+  </div>
+
+  <!-- F. Cognitive Reframe Practice -->
+  <div class="card">
+    <h3>F) Cognitive Reframe Practice (Neuroplastic Reps)</h3>
+    <table class="table" style="margin-top:8px">
+      <thead><tr><th>Situation</th><th>Old Neural Loop</th><th>New Neural Path</th><th>Next Time I Will…</th></tr></thead>
+      <tbody>
+        <tr><td>Parent acts intrusive</td><td>“He’s trying to control me.”</td><td>“He wants connection; I control my reaction.”</td><td><textarea id="nr1" class="small">Say one calm line • disengage</textarea></td></tr>
+        <tr><td>I feel judged</td><td>“I’m being attacked.”</td><td>“I’m being misunderstood.”</td><td><textarea id="nr2" class="small">Clarify once or walk away</textarea></td></tr>
+        <tr><td>Shame/pressure storm</td><td>“I’m never enough.”</td><td>“I’m learning new patterns.”</td><td><textarea id="nr3" class="small">List 3 current wins</textarea></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- G. Emergency Recall Addendum -->
+  <div class="card">
+    <h3>G) Emergency Recall — Addendum Steps</h3>
+    <div class="grid2" style="margin-top:8px">
+      <div class="callout"><strong>Step 6 — Identify Thought Origin</strong><br/><span class="note">Is this my addicted brain or my sober brain talking?</span></div>
+      <div class="callout"><strong>Step 7 — Replace Fast</strong><br/><span class="note">Say one sober line and move your body (cold water, 3‑minute walk, stretch).</span></div>
+    </div>
+    <div style="margin-top:8px">
+      <strong>3 Supports</strong>
+      <div class="grid3" style="margin-top:6px">
+        <input id="sup1" type="text" class="small" placeholder="Name • number"/>
+        <input id="sup2" type="text" class="small" placeholder="Name • number"/>
+        <input id="sup3" type="text" class="small" placeholder="Name • number"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- H. Sober Pathway Builder (NEW Scheduling) -->
+  <div class="card">
+    <h3>H) Sober Pathway Builder — Activity Scheduling</h3>
+    <div class="note">Pick one anchor for each day + a backup. Build the sober pathway on purpose.</div>
+    <table class="table" style="margin-top:8px">
+      <thead><tr><th>Day</th><th>Anchor Activity</th><th>Time</th><th>Backup (10–15 min)</th></tr></thead>
+      <tbody>
+        <tr><td>Mon</td><td><textarea id="sp_mon" class="small">Yoga — Beckham Yoga A</textarea></td><td><textarea id="sp_mont" class="small">6:30pm</textarea></td><td><textarea id="sp_monb" class="small">5‑min breath • 10‑min stretch</textarea></td></tr>
+        <tr><td>Tue</td><td><textarea id="sp_tue" class="small">Boxing class</textarea></td><td><textarea id="sp_tuet" class="small">6:00pm</textarea></td><td><textarea id="sp_tueb" class="small">Shadowbox 10 min</textarea></td></tr>
+        <tr><td>Wed</td><td><textarea id="sp_wed" class="small">Coffee with friend / walk</textarea></td><td><textarea id="sp_wedt" class="small">7:00pm</textarea></td><td><textarea id="sp_wedb" class="small">20‑min walk</textarea></td></tr>
+        <tr><td>Thu</td><td><textarea id="sp_thu" class="small">Therapy</textarea></td><td><textarea id="sp_thut" class="small">2:00–3:00pm</textarea></td><td><textarea id="sp_thub" class="small">Breath + 1 journal line</textarea></td></tr>
+        <tr><td>Fri</td><td><textarea id="sp_fri" class="small">Boxing or gym</textarea></td><td><textarea id="sp_frit" class="small">6:00pm</textarea></td><td><textarea id="sp_frib" class="small">Push/pull/legs 15 min</textarea></td></tr>
+        <tr><td>Sat</td><td><textarea id="sp_sat" class="small">Yoga — Beckham Yoga A</textarea></td><td><textarea id="sp_satt" class="small">10:00am</textarea></td><td><textarea id="sp_satb" class="small">Café worksheet 10 min</textarea></td></tr>
+        <tr><td>Sun</td><td><textarea id="sp_sun" class="small">Reset + meal prep + call friend</textarea></td><td><textarea id="sp_sunt" class="small">11:00am</textarea></td><td><textarea id="sp_sunb" class="small">10‑min tidy + gratitude 3</textarea></td></tr>
+      </tbody>
+    </table>
+    <div class="note">Rule: if work gets busy, do the <b>backup</b>. Small actions still wire the sober pathway.</div>
+  </div>
+
+  <!-- I. Daily Neuroplastic Habit Loop -->
+  <div class="card">
+    <h3>I) Daily Neuroplastic Habit Loop (Evening • 2 minutes)</h3>
+    <div class="grid4" style="margin-top:8px">
+      <div><strong>Pause I chose</strong><textarea id="hn1" class="small" placeholder="Where I paused before reacting"></textarea></div>
+      <div><strong>New thought</strong><textarea id="hn2" class="small" placeholder="Replacement I used"></textarea></div>
+      <div><strong>Physical reset</strong><textarea id="hn3" class="small" placeholder="Yoga/boxing/breath/shower"></textarea></div>
+      <div><strong>Calm rating 1–10</strong><textarea id="hn4" class="small" placeholder="Number + quick note"></textarea></div>
+    </div>
+  </div>
+
+  <!-- Reference: GIVE/FAST -->
+  <div class="card">
+    <h3>Reference — GIVE / FAST Cheat Sheet</h3>
+    <div class="grid2">
+      <div class="callout"><strong>GIVE (relationship)</strong><div class="note">Gentle • Interested • Validate • Easy manner</div></div>
+      <div class="callout"><strong>FAST (self‑respect)</strong><div class="note">Fair • Apologies (only yours) • Stick to values • Truthful</div></div>
+    </div>
+    <div style="margin-top:8px" class="btnrow">
+      <button class="btn" onclick="copyBundle('give_pack')">Copy GIVE pack</button>
+      <button class="btn" onclick="copyBundle('fast_pack')">Copy FAST pack</button>
+      <span id="copy_status" class="mono"></span>
+    </div>
+    <textarea id="give_pack" class="small" style="display:none">GIVE: Gentle • Interested • Validate • Easy manner. Use when the relationship matters and you need buy‑in. Example: “I know you meant well — I appreciate it. I also want to handle the logistics so it feels independent on my end.”</textarea>
+    <textarea id="fast_pack" class="small" style="display:none">FAST: Fair • Apologies (only if yours) • Stick to values • Truthful. Use when protecting time/health/quality. Example: “Where I live and whether I rent is my call. I’ll keep you posted; it’s not up for debate.”</textarea>
+  </div>
+
+  <!-- Save/Load -->
+  <div class="card">
+    <h3>Save / Load</h3>
+    <div class="note">Saves to this device (localStorage). Use Load to continue later.</div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn primary" onclick="saveAll()">Save</button>
+      <button class="btn" onclick="loadAll()">Load</button>
+      <button class="btn" onclick="clearAll()">Clear</button>
+      <span id="status" class="mono"></span>
+    </div>
+  </div>
+
+  <div class="footer">© Trifecta Addiction & Mental Health Services — Built for Client_B (V9)</div>
+</div>
+
+<script>
+const ids = [
+  'as1','as2','as3','as_reflect',
+  'cr_trigger','cr_thought','cr_emotion','cr_stop','cr_reframe','cr_action','cr_relief',
+  'fast_dad1','fast_dad2','fast_dad3','give_dad1','give_dad2','give_dad3',
+  'an1','an2','an3','bb1','bb2','bb3','nr1','nr2','nr3',
+  'sup1','sup2','sup3',
+  'sp_mon','sp_mont','sp_monb','sp_tue','sp_tuet','sp_tueb','sp_wed','sp_wedt','sp_wedb','sp_thu','sp_thut','sp_thub','sp_fri','sp_frit','sp_frib','sp_sat','sp_satt','sp_satb','sp_sun','sp_sunt','sp_sunb',
+  'hn1','hn2','hn3','hn4'
+];
+function saveAll(){ids.forEach(id=>{const el=document.getElementById(id);if(el){localStorage.setItem('v9_'+id, el.value||el.innerText||'');}});const s=document.getElementById('status');s.textContent='Saved ✓';setTimeout(()=>s.textContent='',1500);}
+function loadAll(){ids.forEach(id=>{const el=document.getElementById(id);if(el){const v=localStorage.getItem('v9_'+id);if(v!==null){if(el.value!==undefined){el.value=v;}else{el.innerText=v;}}}});const s=document.getElementById('status');s.textContent='Loaded ✓';setTimeout(()=>s.textContent='',1500);}
+function clearAll(){ids.forEach(id=>{localStorage.removeItem('v9_'+id);const el=document.getElementById(id);if(el){if(el.value!==undefined){el.value='';}else{el.innerText='';}}});const s=document.getElementById('status');s.textContent='Cleared ✓';setTimeout(()=>s.textContent='',1500);}
+function copyText(id){try{const el=document.getElementById(id);const txt=(el.value!==undefined&&el.value!=='')?el.value:el.innerText;navigator.clipboard.writeText(txt);}catch(e){}}
+function copyBundle(id){try{const el=document.getElementById(id);const txt=el.value;navigator.clipboard.writeText(txt).then(()=>{document.getElementById('copy_status').textContent='Copied ✓';setTimeout(()=>document.getElementById('copy_status').textContent='',1200);});}catch(e){}}
+window.addEventListener('DOMContentLoaded', loadAll);
+</script>
+</body>
+</html>

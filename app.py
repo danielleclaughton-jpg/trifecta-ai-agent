@@ -176,6 +176,7 @@ class Config:
     LEAD_DRAFT_CONFIDENCE_THRESHOLD = float(os.environ.get('LEAD_DRAFT_CONFIDENCE_THRESHOLD', '0.70'))
     LEAD_AUTO_DRAFT_ON_INGEST = os.environ.get('LEAD_AUTO_DRAFT_ON_INGEST', '0') == '1'
     OUTLOOK_SENDER_UPN = os.environ.get('OUTLOOK_SENDER_UPN', '')
+    OUTLOOK_FORM_WEBHOOK_TOKEN = os.environ.get('OUTLOOK_FORM_WEBHOOK_TOKEN', '')
 
     # Notifications
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
@@ -1487,6 +1488,14 @@ def verify_dialpad_signature(payload_bytes):
     return True
 
 
+def verify_outlook_form_webhook(payload_bytes):
+    token = request.headers.get('X-Outlook-Token', '') or request.headers.get('Authorization', '').replace('Bearer ', '')
+    if Config.OUTLOOK_FORM_WEBHOOK_TOKEN:
+        return hmac.compare_digest(token or '', Config.OUTLOOK_FORM_WEBHOOK_TOKEN)
+    logger.warning("Outlook Forms webhook auth not configured; allowing request (compatibility mode)")
+    return True
+
+
 def parse_json_object(text):
     try:
         return json.loads(text)
@@ -1564,6 +1573,69 @@ def normalize_dialpad_event(event):
         'program_interest': event.get('program_interest', ''),
         'external_contact_key': f"dialpad:{contact_key}" if contact_key else '',
         'has_contact': bool(normalize_phone(number) or normalize_email(contact.get('email')))
+    }
+
+
+def normalize_outlook_form_event(event):
+    submission = event.get('submission', {}) or {}
+    data = event.get('data', {}) or {}
+    responses = event.get('responses') or event.get('answers') or event.get('fields') or []
+    response_map = {}
+    if isinstance(responses, dict):
+        for k, v in responses.items():
+            response_map[str(k).strip().lower()] = v
+    elif isinstance(responses, list):
+        for item in responses:
+            if not isinstance(item, dict):
+                continue
+            key = item.get('name') or item.get('key') or item.get('id') or item.get('question') or item.get('label') or item.get('title')
+            value = item.get('value')
+            if value is None:
+                value = item.get('answer')
+            if value is None:
+                value = item.get('text')
+            if value is None:
+                value = item.get('response')
+            if key:
+                response_map[str(key).strip().lower()] = value
+
+    def lookup(*keys):
+        for key in keys:
+            if key in event and event.get(key):
+                return event.get(key)
+            if key in submission and submission.get(key):
+                return submission.get(key)
+            if key in data and data.get(key):
+                return data.get(key)
+            low_key = str(key).strip().lower()
+            if low_key in response_map and response_map.get(low_key):
+                return response_map.get(low_key)
+        return ''
+
+    source_event_id = str(
+        lookup('event_id', 'id', 'submission_id', 'submissionId')
+        or f"outlook-form:{sha256_json(event)[:20]}"
+    )
+    occurred_at = lookup('createdDateTime', 'submitted_at', 'submittedAt', 'timestamp') or utcnow_iso()
+    name = lookup('name', 'full_name', 'contact_name', 'responder_name', 'display_name') or 'Forms Lead'
+    email = lookup('email', 'email_address', 'responder_email')
+    phone = lookup('phone', 'phone_number', 'mobile', 'telephone')
+    initial_question = lookup('question', 'message', 'comments', 'notes', 'initial_question')
+    program_interest = lookup('program_interest', 'program', 'service_interest')
+    contact_key = lookup('responder_id', 'responderId', 'submission_id', 'submissionId')
+
+    return {
+        'source': LEAD_SOURCE['OUTLOOK_FORM'],
+        'source_event_id': source_event_id,
+        'event_type': lookup('event_type', 'type') or 'form.submitted',
+        'occurred_at': occurred_at,
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'initial_question': initial_question,
+        'program_interest': program_interest,
+        'external_contact_key': f"outlook:{contact_key}" if contact_key else '',
+        'has_contact': bool(normalize_email(email) or normalize_phone(phone))
     }
 
 
@@ -1741,6 +1813,31 @@ def dialpad_webhook():
     except Exception as e:
         logger.error(f"Dialpad webhook error: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/webhooks/outlook-form', methods=['POST'])
+def outlook_form_webhook():
+    """Receive Microsoft Forms submissions and ingest to lead pipeline."""
+    try:
+        raw_body = request.get_data()
+        if not verify_outlook_form_webhook(raw_body):
+            logger.warning("Outlook Forms webhook: invalid token rejected")
+            return jsonify({'error': 'Invalid webhook authentication'}), 401
+        event = request.get_json(force=True) or {}
+        normalized = normalize_outlook_form_event(event)
+        result = process_inbound_lead_event(normalized, event)
+        return jsonify({
+            'status': 'received',
+            'source': normalized['source'],
+            'source_event_id': normalized['source_event_id'],
+            'duplicate': result['duplicate'],
+            'lead_id': result['lead']['id'] if result['lead'] else None,
+            'draft_generated': result['draft_generated']
+        }), 200
+    except Exception as e:
+        logger.error("Outlook Forms webhook error: %s", e)
+        return jsonify({'error': str(e)}), 500
+
 # =============================================================================
 # API ENDPOINTS - Portal Sync (Task 4)
 # =============================================================================
@@ -2239,65 +2336,79 @@ def lead_admin_metrics():
         return jsonify({**metrics, 'timestamp': utcnow_iso()}), 200
     except Exception as exc:
         logger.error("Lead admin metrics error: %s", exc)
-        return jsonify({'error': str(exc)}), 500
+        return jsonify({'error': str(exc), 'code': 'lead_metrics_failed'}), 500
 
 
 @app.route('/api/leads/<lead_id>', methods=['PATCH'])
 @require_api_key
 def update_lead_admin(lead_id):
     """Manually update lead status and core lead info."""
-    lead = lead_store.get_lead_by_id(lead_id)
-    if not lead:
-        return jsonify({'error': 'Lead not found'}), 404
-    data = request.get_json(silent=True)
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
+    try:
+        lead = lead_store.get_lead_by_id(lead_id)
+        if not lead:
+            return jsonify({'error': 'Lead not found', 'code': 'lead_not_found'}), 404
 
-    actor = data.get('updated_by', 'operator')
-    requested_status = data.get('status')
-    update_fields = {
-        k: v for k, v in data.items()
-        if k in {'name', 'email', 'phone', 'source', 'initial_question', 'program_interest', 'external_contact_key'}
-    }
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or not data:
+            return jsonify({'error': 'No data provided', 'code': 'missing_payload'}), 400
 
-    before = dict(lead)
-    if update_fields:
-        lead = lead_store.update_lead(lead_id, **update_fields)
+        actor = data.get('updated_by', 'operator')
+        requested_status = data.get('status')
+        update_fields = {
+            k: v for k, v in data.items()
+            if k in {'name', 'email', 'phone', 'source', 'initial_question', 'program_interest', 'external_contact_key'}
+        }
 
-    if requested_status:
-        lead_after_status, status_err = lead_store.set_lead_status(lead_id, requested_status)
-        if status_err == 'invalid_transition':
-            return jsonify({
-                'error': 'Invalid status transition',
-                'current_status': before.get('status'),
-                'requested_status': requested_status
-            }), 400
-        if status_err == 'not_found':
-            return jsonify({'error': 'Lead not found'}), 404
-        lead = lead_after_status
+        before = dict(lead)
+        if update_fields:
+            lead = lead_store.update_lead(lead_id, **update_fields)
 
-    lead_store.add_audit(actor, 'lead_admin_updated', 'lead', lead_id, before, lead)
-    return jsonify({'status': 'updated', 'lead': _serialize_lead(lead)}), 200
+        if requested_status:
+            lead_after_status, status_err = lead_store.set_lead_status(lead_id, requested_status)
+            if status_err == 'invalid_transition':
+                return jsonify({
+                    'error': 'Invalid status transition',
+                    'code': 'invalid_transition',
+                    'current_status': before.get('status'),
+                    'requested_status': requested_status
+                }), 400
+            if status_err == 'not_found':
+                return jsonify({'error': 'Lead not found', 'code': 'lead_not_found'}), 404
+            lead = lead_after_status
+
+        lead_store.add_audit(actor, 'lead_admin_updated', 'lead', lead_id, before, lead)
+        return jsonify({'status': 'updated', 'lead': _serialize_lead(lead)}), 200
+    except Exception as exc:
+        logger.error("Lead admin patch error: %s", exc)
+        return jsonify({'error': str(exc), 'code': 'lead_update_failed'}), 500
 
 
 @app.route('/api/leads/<lead_id>/audit', methods=['GET'])
 @require_api_key
 def get_lead_audit(lead_id):
     """Fetch audit trail for a lead and related draft/message records."""
-    lead = lead_store.get_lead_by_id(lead_id)
-    if not lead:
-        return jsonify({'error': 'Lead not found'}), 404
+    try:
+        lead = lead_store.get_lead_by_id(lead_id)
+        if not lead:
+            return jsonify({'error': 'Lead not found', 'code': 'lead_not_found'}), 404
 
-    limit = min(max(int(request.args.get('limit', 100)), 1), 500)
-    offset = max(int(request.args.get('offset', 0)), 0)
-    rows = lead_store.list_audit_for_lead(lead_id, limit=limit, offset=offset)
-    return jsonify({
-        'lead_id': lead_id,
-        'count': len(rows),
-        'limit': limit,
-        'offset': offset,
-        'audit': rows
-    }), 200
+        try:
+            limit = min(max(int(request.args.get('limit', 100)), 1), 500)
+            offset = max(int(request.args.get('offset', 0)), 0)
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Invalid pagination parameters', 'code': 'invalid_pagination'}), 400
+
+        rows = lead_store.list_audit_for_lead(lead_id, limit=limit, offset=offset)
+        return jsonify({
+            'lead_id': lead_id,
+            'count': len(rows),
+            'limit': limit,
+            'offset': offset,
+            'audit': rows
+        }), 200
+    except Exception as exc:
+        logger.error("Lead audit fetch error: %s", exc)
+        return jsonify({'error': str(exc), 'code': 'lead_audit_failed'}), 500
 
 
 @app.route('/api/leads/<lead_id>', methods=['DELETE'])
