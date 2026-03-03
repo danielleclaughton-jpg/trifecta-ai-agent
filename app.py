@@ -74,9 +74,23 @@ except ImportError:
     APPINSIGHTS_AVAILABLE = False
 
 # Load environment variables
+# Detect local vs Azure: Azure App Service sets WEBSITE_SITE_NAME automatically
 from dotenv import load_dotenv
-env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
-load_dotenv(env_path)
+
+_base_dir = os.path.dirname(os.path.abspath(__file__))
+IS_AZURE = bool(os.environ.get('WEBSITE_SITE_NAME') or os.environ.get('WEBSITE_INSTANCE_ID'))
+
+if IS_AZURE:
+    # On Azure: load .env (production secrets are in Azure App Settings)
+    env_path = os.path.join(_base_dir, '.env')
+    load_dotenv(env_path)
+else:
+    # Local development: load .env.local first (overrides), then .env as fallback
+    env_local_path = os.path.join(_base_dir, '.env.local')
+    env_path = os.path.join(_base_dir, '.env')
+    if os.path.exists(env_local_path):
+        load_dotenv(env_local_path)
+    load_dotenv(env_path)  # Won't override already-set vars from .env.local
 
 # =============================================================================
 # APP INITIALIZATION
