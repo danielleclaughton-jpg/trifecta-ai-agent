@@ -50,3 +50,6 @@ twilio==8.11.0
 
 # Supabase
 supabase==2.3.0
+
+# Webhook Support
+requests==2.31.0
