@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config:*)",
+      "Read(//c/Users/TrifectaAgent/lamby-command-center/client/src/pages/**)",
+      "Bash(git filter-branch:*)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch \"\"Assets/seo/SEO_Analysis_for_Trifecta_Addiction_&_Mental_Health_Services[1].pdf\"\" \"\"Assets/seo/SEO_Recommendations_for_Trifecta_Addiction_&_Mental_Health_Services[1].pdf\"\"' --prune-empty -- --all)"
+    ]
+  }
+}
