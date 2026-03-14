@@ -16,3 +16,5 @@ Interactive-*.ipynb
 logs/
 deploy.zip
 create_zip.ps1
+Microsoft/
+Assets/seo/*.pdf
