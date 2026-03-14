@@ -1,4 +1,4 @@
-"""
+﻿"""
 Trifecta AI Agent - Production Flask Application
 Flask-based AI agent API with Azure integrations, Microsoft Graph, SharePoint, Dialpad
 Version: 1.0.0 | Updated: 2026-01-10
@@ -15,7 +15,7 @@ import hmac
 import threading
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 from pathlib import Path
 import requests
@@ -279,7 +279,7 @@ Return ONLY valid JSON with this exact schema:
 
 
 def utcnow_iso():
-    return datetime.utcnow().replace(microsecond=0).isoformat() + 'Z'
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
 
 
 def normalize_email(email):
@@ -906,7 +906,7 @@ class GraphClient:
 
     def get_token(self):
         """Get OAuth2 access token using client credentials flow."""
-        if self._token and self._token_expires and datetime.utcnow() < self._token_expires:
+        if self._token and self._token_expires and datetime.now(timezone.utc) < self._token_expires:
             return self._token
 
         if not all([Config.MS_CLIENT_ID, Config.MS_CLIENT_SECRET, Config.MS_TENANT_ID]):
@@ -925,7 +925,7 @@ class GraphClient:
         token_data = resp.json()
 
         self._token = token_data['access_token']
-        self._token_expires = datetime.utcnow() + timedelta(seconds=token_data.get('expires_in', 3600) - 60)
+        self._token_expires = datetime.now(timezone.utc) + timedelta(seconds=token_data.get('expires_in', 3600) - 60)
 
         return self._token
 
@@ -1076,7 +1076,7 @@ class QuickBooksClient:
         invoice_data = {
             'CustomerRef': {'value': customer_id},
             'Line': line_items,
-            'DueDate': due_date or (datetime.utcnow() + timedelta(days=30)).strftime('%Y-%m-%d')
+            'DueDate': due_date or (datetime.now(timezone.utc) + timedelta(days=30)).strftime('%Y-%m-%d')
         }
 
         headers = {
@@ -1102,7 +1102,7 @@ def home():
         'status': 'running',
         'service': 'Trifecta AI Agent',
         'version': '1.0.0',
-        'timestamp': datetime.utcnow().isoformat(),
+        'timestamp': datetime.now(timezone.utc).isoformat(),
         'skills_loaded': len(SKILLS),
         'endpoints': [
             '/api/chat', '/api/skills', '/api/graph/clients',
@@ -1129,7 +1129,7 @@ def health():
         'status': status,
         'services': services,
         'skills_count': len(SKILLS),
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     }), 200
 
 @app.route('/api-docs', methods=['GET'])
@@ -1151,7 +1151,7 @@ def api_docs():
 # =============================================================================
 @app.route('/api/dashboard/overview', methods=['GET'])
 def dashboard_overview():
-    """Real-time dashboard overview — called by dashboard_index.html."""
+    """Real-time dashboard overview â€” called by dashboard_index.html."""
     try:
         service_status = {
             'anthropic': bool(Config.ANTHROPIC_API_KEY),
@@ -1175,11 +1175,11 @@ def dashboard_overview():
                 'services_total': len(service_status),
                 'api_status': service_status,
             },
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 200
     except Exception as e:
         logger.error(f"Dashboard overview error: {e}")
-        return jsonify({'error': str(e), 'timestamp': datetime.utcnow().isoformat()}), 500
+        return jsonify({'error': str(e), 'timestamp': datetime.now(timezone.utc).isoformat()}), 500
 
 @app.route('/api/agent/status', methods=['GET'])
 def agent_status():
@@ -1188,12 +1188,12 @@ def agent_status():
         'status': 'online',
         'skills_loaded': len(SKILLS),
         'version': '1.0.0',
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     }), 200
 
 @app.route('/api/agent/message', methods=['POST'])
 def agent_message():
-    """Agent message endpoint — proxies to /api/chat for dashboard compatibility."""
+    """Agent message endpoint â€” proxies to /api/chat for dashboard compatibility."""
     return chat()
 
 @app.route('/api/clients', methods=['GET'])
@@ -1211,7 +1211,7 @@ def get_clients():
                 'phone': c.get('mobilePhone'),
                 'status': 'active'
             } for c in clients],
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 200
     except Exception as e:
         logger.error(f"Get clients error: {e}")
@@ -1225,7 +1225,7 @@ def get_invoices():
             'message': 'Connect QuickBooks OAuth to see live invoice data',
             'quickbooks_configured': bool(Config.QUICKBOOKS_REALM_ID),
         },
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     }), 200
 
 # =============================================================================
@@ -1306,7 +1306,7 @@ def chat():
             'reply': response_text,
             'matched_skill': matched['name'] if matched else None,
             'skill_title': matched['title'] if matched else None,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 200
 
     except Exception as e:
@@ -1356,7 +1356,7 @@ def get_graph_clients():
             'count': len(enriched_clients),
             'clients': enriched_clients,
             'skills_used': ['trifecta-lead-intake-workflow', 'trifecta-practice-system'],
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 200
 
     except Exception as e:
@@ -1417,7 +1417,7 @@ def sharepoint_upload():
             'web_url': result.get('webUrl'),
             'id': result.get('id'),
             'skills_used': ['trifecta-document-generator', 'trifecta-session-documentation'],
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 200
 
     except Exception as e:
@@ -1440,7 +1440,7 @@ def dialpad_calls():
         return jsonify({
             'calls': calls,
             'skills_used': ['trifecta-tailored-session-builder'],
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 200
 
     except Exception as e:
@@ -1465,7 +1465,7 @@ def dialpad_transcription(call_id):
             'transcription': transcription,
             'toolkit_generated': toolkit is not None,
             'toolkit': toolkit,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 200
 
     except Exception as e:
@@ -1860,8 +1860,8 @@ def outlook_form_webhook():
 def portal_sync():
     """
     Sync portal data with Claude analysis.
-    GET: Fetch high-risk clients → Claude analysis → return recommendations
-    POST: Apply Claude recommendations → PATCH updates to Graph
+    GET: Fetch high-risk clients â†’ Claude analysis â†’ return recommendations
+    POST: Apply Claude recommendations â†’ PATCH updates to Graph
     Uses: trifecta-ai-agent-orchestration
     """
     try:
@@ -1909,7 +1909,7 @@ Format as JSON array."""
                 'risk_filter': risk,
                 'analysis': analysis,
                 'skills_used': ['trifecta-ai-agent-orchestration'],
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }), 200
 
         elif request.method == 'POST':
@@ -1932,7 +1932,7 @@ Format as JSON array."""
             return jsonify({
                 'updates_applied': len([r for r in results if r['status'] == 'updated']),
                 'results': results,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }), 200
 
     except Exception as e:
@@ -1947,7 +1947,7 @@ Format as JSON array."""
 def generate_contract(client_id):
     """
     Generate contract/invoice for client.
-    Uses: trifecta-document-generator → HTML invoice → QuickBooks webhook
+    Uses: trifecta-document-generator â†’ HTML invoice â†’ QuickBooks webhook
     """
     try:
         doc_skill = SKILLS.get('trifecta-document-generator', {})
@@ -1999,8 +1999,8 @@ Client: {client.get('displayName')}
 Email: {client.get('mail')}
 Program: {program['name']}
 Price: ${program['price']} CAD
-Date: {datetime.utcnow().strftime('%B %d, %Y')}
-Due Date: {(datetime.utcnow() + timedelta(days=7)).strftime('%B %d, %Y')}
+Date: {datetime.now(timezone.utc).strftime('%B %d, %Y')}
+Due Date: {(datetime.now(timezone.utc) + timedelta(days=7)).strftime('%B %d, %Y')}
 
 Use Trifecta Addiction & Mental Health Services branding.
 Include payment instructions and terms from the document generator skill.
@@ -2032,7 +2032,7 @@ Output complete HTML document."""
             sharepoint_url = None
             try:
                 client_folder = client.get('displayName', 'Unknown').replace(' ', '_')
-                filename = f"Invoice_{datetime.utcnow().strftime('%Y%m%d')}_{program_code}.html"
+                filename = f"Invoice_{datetime.now(timezone.utc).strftime('%Y%m%d')}_{program_code}.html"
                 result = graph_client.upload_to_sharepoint(
                     folder_path=f"{client_folder}/Invoices",
                     filename=filename,
@@ -2051,7 +2051,7 @@ Output complete HTML document."""
                 'sharepoint_url': sharepoint_url,
                 'quickbooks_invoice': qb_invoice,
                 'skills_used': ['trifecta-document-generator'],
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }), 200
 
     except Exception as e:
@@ -2064,7 +2064,7 @@ Output complete HTML document."""
 @app.route('/api/quickbooks/callback', methods=['GET'])
 def quickbooks_callback():
     """
-    QuickBooks OAuth2 callback — run this ONCE during initial setup.
+    QuickBooks OAuth2 callback â€” run this ONCE during initial setup.
     Visit: https://developer.intuit.com/app/developer/playground to get auth code.
     Then Azure will redirect here after OAuth consent.
     """
@@ -2456,7 +2456,7 @@ def create_client():
             'phone': data.get('phone', ''),
             'program_type': data.get('program_type', ''),
             'status': data.get('status', 'intake'),
-            'created_at': datetime.utcnow().isoformat()
+            'created_at': datetime.now(timezone.utc).isoformat()
         }
         clients_db[client_id] = client
         
@@ -2501,7 +2501,7 @@ def create_session():
             'mood_rating': data.get('mood_rating', 5),
             'progress_notes': data.get('progress_notes', ''),
             'action_items': data.get('action_items', []),
-            'created_at': datetime.utcnow().isoformat()
+            'created_at': datetime.now(timezone.utc).isoformat()
         }
         sessions_db[session_id] = session
         
@@ -2532,7 +2532,7 @@ def create_appointment():
             'duration': data.get('duration_minutes', 60),
             'location': data.get('location', 'Virtual'),
             'status': 'scheduled',
-            'created_at': datetime.utcnow().isoformat()
+            'created_at': datetime.now(timezone.utc).isoformat()
         }
         appointments_db[appointment_id] = appointment
         
@@ -2593,7 +2593,7 @@ def get_metrics():
             'upcoming': upcoming_count
         },
         'status': 'operational',
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     }), 200
 
 
@@ -2615,13 +2615,13 @@ def lead_metrics():
 # =============================================================================
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({'error': 'Endpoint not found', 'timestamp': datetime.utcnow().isoformat()}), 404
+    return jsonify({'error': 'Endpoint not found', 'timestamp': datetime.now(timezone.utc).isoformat()}), 404
 
 @app.errorhandler(500)
 def server_error(error):
     err_id = str(uuid.uuid4())
     logger.exception('Internal server error [%s]: %s', err_id, error)
-    return jsonify({'error': 'Internal server error', 'id': err_id, 'timestamp': datetime.utcnow().isoformat()}), 500
+    return jsonify({'error': 'Internal server error', 'id': err_id, 'timestamp': datetime.now(timezone.utc).isoformat()}), 500
 
 @app.errorhandler(Exception)
 def handle_unexpected_error(error):
@@ -2644,4 +2644,6 @@ if __name__ == '__main__':
     logger.info(f"Debug mode: {debug}")
 
     app.run(host='0.0.0.0', port=port, debug=debug)
+
+
 

@@ -1,0 +1,79 @@
+# =============================================================================
+# TRIFECTA AI AGENT - ENVIRONMENT VARIABLES
+# Copy this to .env and fill in your values
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ANTHROPIC (Claude AI) - REQUIRED for AI chat
+# Get your key at: https://console.anthropic.com/settings/keys
+# -----------------------------------------------------------------------------
+ANTHROPIC_API_KEY=PASTE_YOUR_ANTHROPIC_API_KEY
+# -----------------------------------------------------------------------------
+# MICROSOFT AZURE / GRAPH API
+# Create app at: https://portal.azure.com > App registrations
+# -----------------------------------------------------------------------------
+MS_CLIENT_ID=PASTE_YOUR_AZURE_APP_CLIENT_ID
+MS_CLIENT_SECRET=PASTE_YOUR_AZURE_APP_SECRET
+MS_TENANT_ID=PASTE_YOUR_AZURE_TENANT_ID
+
+# -----------------------------------------------------------------------------
+# SHAREPOINT
+# Get from Azure Portal > SharePoint site settings
+# -----------------------------------------------------------------------------
+SHAREPOINT_SITE_ID=your-sharepoint-site-id
+SHAREPOINT_DRIVE_ID=your-sharepoint-drive-id
+SHAREPOINT_CLIENT_RECORDS_FOLDER=Client_Records
+
+# -----------------------------------------------------------------------------
+# DIALPAD
+# Get from: https://dialpad.com/settings/api
+# -----------------------------------------------------------------------------
+DIALPAD_API_KEY=PASTE_YOUR_DIALPAD_API_KEY
+DIALPAD_WEBHOOK_SECRET=PASTE_YOUR_DIALPAD_WEBHOOK_SECRET
+
+# -----------------------------------------------------------------------------
+# GODADDY WEBCHAT
+# Get from: GoDaddy Dashboard > WebChat > API Settings
+# -----------------------------------------------------------------------------
+GODADDY_API_KEY=PASTE_YOUR_GODADDY_API_KEY
+GODADDY_API_SECRET=PASTE_YOUR_GODADDY_API_SECRET
+GODADDY_WEBCHAT_WEBHOOK_SECRET=PASTE_YOUR_GODADDY_WEBHOOK_SECRET
+
+# -----------------------------------------------------------------------------
+# QUICKBOOKS ONLINE
+# Get from: https://developer.intuit.com/app/developer/dashboard
+# -----------------------------------------------------------------------------
+QUICKBOOKS_CLIENT_ID=PASTE_YOUR_QUICKBOOKS_CLIENT_ID
+QUICKBOOKS_CLIENT_SECRET=PASTE_YOUR_QUICKBOOKS_CLIENT_SECRET
+QUICKBOOKS_REALM_ID=PASTE_YOUR_QUICKBOOKS_REALM_ID
+QUICKBOOKS_ACCESS_TOKEN=PASTE_YOUR_QUICKBOOKS_ACCESS_TOKEN
+
+# -----------------------------------------------------------------------------
+# AZURE SPEECH (for voice features)
+# Get from: Azure Portal > Cognitive Services > Speech
+# -----------------------------------------------------------------------------
+AZURE_SPEECH_KEY=PASTE_YOUR_AZURE_SPEECH_KEY
+
+AZURE_SPEECH_REGION=canadacentral
+
+# -----------------------------------------------------------------------------
+# APPLICATION INSIGHTS (Azure monitoring)
+# Get from: Azure Portal > Application Insights > Connection String
+# -----------------------------------------------------------------------------
+APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=xxx;IngestionEndpoint=xxx
+
+# -----------------------------------------------------------------------------
+# APP SETTINGS
+# -----------------------------------------------------------------------------
+PORT=8000
+FLASK_DEBUG=0
+SECRET_KEY=change-this-to-a-random-string-in-production
+SKILL_DIR=Assets/skills
+
+# Demo mode (set to 1 to use demo responses when API keys missing)
+DEMO_MODE=0
+ALLOW_DEMO=1
+
+# Timeouts
+DEFAULT_OUTBOUND_TIMEOUT=30
+MAX_MESSAGE_LENGTH=4000

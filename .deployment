@@ -1,2 +1,5 @@
 [config]
-SCM_DO_BUILD_DURING_DEPLOYMENT=true
+command = bash -c "pip install -r requirements.txt && gunicorn --bind=0.0.0.0:8000 --workers=2 --timeout=120 app:app"
+
+[deployment]
+ignore = [.git, .venv, __pycache__, *.pyc, .pytest_cache, .vscode, node_modules, *.zip, .env, .env.*, trifecta-client-portal*.zip, Interactive-*.ipynb, *.db]
