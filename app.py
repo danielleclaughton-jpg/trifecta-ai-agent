@@ -203,6 +203,22 @@ class Config:
 
     # Anthropic
     ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+    ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022')
+
+    # OpenAI (direct)
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+    OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+    OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
+
+    # OpenRouter (OpenAI-compatible)
+    OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
+    OPENROUTER_BASE_URL = os.environ.get('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1')
+    OPENROUTER_MODEL = os.environ.get('OPENROUTER_MODEL', 'openai/gpt-4o-mini')
+    OPENROUTER_SITE_URL = os.environ.get('OPENROUTER_SITE_URL', 'https://trifecta-agent.azurewebsites.net')
+    OPENROUTER_APP_NAME = os.environ.get('OPENROUTER_APP_NAME', 'Trifecta AI Agent')
+
+    # Provider routing, first available key wins unless explicitly set.
+    LLM_PROVIDER_ORDER = os.environ.get('LLM_PROVIDER_ORDER', 'openrouter,openai,anthropic')
 
     # App
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
@@ -848,50 +864,137 @@ def match_skill(message):
 # =============================================================================
 # ANTHROPIC (CLAUDE) INTEGRATION
 # =============================================================================
-def call_anthropic(skill_context, message, max_tokens=2000):
-    """Call Anthropic Messages API with Claude 3.5 Sonnet.
-    Adds a network timeout and raises network-related exceptions for the caller to handle.
-    """
+def _provider_order():
+    raw = Config.LLM_PROVIDER_ORDER or 'openrouter,openai,anthropic'
+    seen = set()
+    order = []
+    for item in raw.split(','):
+        provider = item.strip().lower()
+        if provider and provider not in seen:
+            seen.add(provider)
+            order.append(provider)
+    return order or ['openrouter', 'openai', 'anthropic']
+
+
+def _extract_openai_content(choice_message):
+    content = choice_message.get('content', '')
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict) and item.get('type') == 'text':
+                parts.append(item.get('text', ''))
+        return ''.join(parts).strip()
+    return str(content).strip()
+
+
+def _call_openai_compatible(base_url, api_key, model, skill_context, message, max_tokens=2000, extra_headers=None):
+    if not api_key:
+        raise ValueError('API key not configured')
+
+    url = f"{base_url.rstrip('/')}/chat/completions"
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json',
+    }
+    if extra_headers:
+        headers.update(extra_headers)
+
+    messages = []
+    if skill_context:
+        messages.append({'role': 'system', 'content': skill_context})
+    messages.append({'role': 'user', 'content': message})
+
+    payload = {
+        'model': model,
+        'max_tokens': max_tokens,
+        'messages': messages,
+    }
+
+    resp = requests.post(url, headers=headers, json=payload, timeout=DEFAULT_OUTBOUND_TIMEOUT)
+    if not resp.ok:
+        logger.error('OpenAI-compatible API error: %s - %s', resp.status_code, resp.text[:500])
+    resp.raise_for_status()
+    data = resp.json()
+    choices = data.get('choices', [])
+    if choices:
+        msg = choices[0].get('message', {})
+        return _extract_openai_content(msg)
+    return ''
+
+
+def _call_anthropic_only(skill_context, message, max_tokens=2000):
     api_key = Config.ANTHROPIC_API_KEY
     if not api_key:
-        raise ValueError("ANTHROPIC_API_KEY not configured")
+        raise ValueError('ANTHROPIC_API_KEY not configured')
 
     url = 'https://api.anthropic.com/v1/messages'
     headers = {
         'x-api-key': api_key,
         'Content-Type': 'application/json',
-        'anthropic-version': '2024-10-22'  # Updated to latest
+        'anthropic-version': '2024-10-22',
     }
-
     payload = {
-        'model': 'claude-3-5-sonnet-20241022',
+        'model': Config.ANTHROPIC_MODEL,
         'max_tokens': max_tokens,
-        'messages': [{'role': 'user', 'content': message}]
+        'messages': [{'role': 'user', 'content': message}],
     }
-
     if skill_context:
         payload['system'] = skill_context
 
-    try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=DEFAULT_OUTBOUND_TIMEOUT)
-        
-        # Log error details for debugging
-        if not resp.ok:
-            logger.error(f'Anthropic API error: {resp.status_code} - {resp.text[:500]}')
-        
-        resp.raise_for_status()
-        data = resp.json()
+    resp = requests.post(url, headers=headers, json=payload, timeout=DEFAULT_OUTBOUND_TIMEOUT)
+    if not resp.ok:
+        logger.error('Anthropic API error: %s - %s', resp.status_code, resp.text[:500])
+    resp.raise_for_status()
+    data = resp.json()
+    content = data.get('content', [])
+    if content and len(content) > 0:
+        return content[0].get('text', '').strip()
+    return ''
 
-        content = data.get('content', [])
-        if content and len(content) > 0:
-            return content[0].get('text', '').strip()
-        return ''
-    except Timeout:
-        logger.warning('Anthropic request timed out after %ss', DEFAULT_OUTBOUND_TIMEOUT)
-        raise
-    except RequestException as e:
-        logger.error('Anthropic request failed: %s', e)
-        raise
+
+def call_anthropic(skill_context, message, max_tokens=2000):
+    """LLM call with provider fallback. Keeps legacy function name for compatibility."""
+    errors = []
+    for provider in _provider_order():
+        try:
+            if provider == 'openrouter' and Config.OPENROUTER_API_KEY:
+                return _call_openai_compatible(
+                    Config.OPENROUTER_BASE_URL,
+                    Config.OPENROUTER_API_KEY,
+                    Config.OPENROUTER_MODEL,
+                    skill_context,
+                    message,
+                    max_tokens=max_tokens,
+                    extra_headers={
+                        'HTTP-Referer': Config.OPENROUTER_SITE_URL,
+                        'X-Title': Config.OPENROUTER_APP_NAME,
+                    },
+                )
+            if provider == 'openai' and Config.OPENAI_API_KEY:
+                return _call_openai_compatible(
+                    Config.OPENAI_BASE_URL,
+                    Config.OPENAI_API_KEY,
+                    Config.OPENAI_MODEL,
+                    skill_context,
+                    message,
+                    max_tokens=max_tokens,
+                )
+            if provider == 'anthropic' and Config.ANTHROPIC_API_KEY:
+                return _call_anthropic_only(skill_context, message, max_tokens=max_tokens)
+        except Timeout:
+            logger.warning('LLM request timed out via provider=%s after %ss', provider, DEFAULT_OUTBOUND_TIMEOUT)
+            errors.append(f'{provider}: timeout')
+        except RequestException as e:
+            logger.error('LLM request failed via provider=%s: %s', provider, e)
+            errors.append(f'{provider}: request_failed')
+        except Exception as e:
+            logger.error('LLM provider error via provider=%s: %s', provider, e)
+            errors.append(f'{provider}: {str(e)[:120]}')
+
+    details = ' | '.join(errors) if errors else 'No API key configured'
+    raise RuntimeError(f'All configured LLM providers failed. Details: {details}')
 
 # =============================================================================
 # MICROSOFT GRAPH INTEGRATION
@@ -1113,7 +1216,11 @@ def home():
 @app.route('/health', methods=['GET'])
 def health():
     """Health check for Azure monitoring."""
+    llm_ready = bool(Config.OPENROUTER_API_KEY or Config.OPENAI_API_KEY or Config.ANTHROPIC_API_KEY)
     services = {
+        'llm': llm_ready,
+        'openrouter': bool(Config.OPENROUTER_API_KEY),
+        'openai': bool(Config.OPENAI_API_KEY),
         'anthropic': bool(Config.ANTHROPIC_API_KEY),
         'microsoft_graph': bool(Config.MS_CLIENT_ID),
         'sharepoint': bool(Config.SHAREPOINT_SITE_ID),
@@ -1153,7 +1260,11 @@ def api_docs():
 def dashboard_overview():
     """Real-time dashboard overview â€” called by dashboard_index.html."""
     try:
+        llm_ready = bool(Config.OPENROUTER_API_KEY or Config.OPENAI_API_KEY or Config.ANTHROPIC_API_KEY)
         service_status = {
+            'llm': llm_ready,
+            'openrouter': bool(Config.OPENROUTER_API_KEY),
+            'openai': bool(Config.OPENAI_API_KEY),
             'anthropic': bool(Config.ANTHROPIC_API_KEY),
             'microsoft_graph': bool(Config.MS_CLIENT_ID),
             'sharepoint': bool(Config.SHAREPOINT_SITE_ID),
@@ -1293,7 +1404,7 @@ def chat():
         try:
             response_text = call_anthropic(skill_context, message)
         except Timeout:
-            logger.warning('Anthropic timed out for message: %s', message[:80])
+            logger.warning('LLM request timed out')
             response_text = "Service timed out, please try again."
         except Exception as e:
             logger.error('Anthropic call failed: %s', e)

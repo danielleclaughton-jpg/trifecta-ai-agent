@@ -4,10 +4,26 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# ANTHROPIC (Claude AI) - REQUIRED for AI chat
-# Get your key at: https://console.anthropic.com/settings/keys
+# LLM Providers (use one or more for AI chat)
+# Anthropic key: https://console.anthropic.com/settings/keys
 # -----------------------------------------------------------------------------
 ANTHROPIC_API_KEY=PASTE_YOUR_ANTHROPIC_API_KEY
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+
+# OpenAI direct (optional)
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
+
+# OpenRouter (optional, OpenAI-compatible)
+OPENROUTER_API_KEY=
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_SITE_URL=https://trifecta-agent.azurewebsites.net
+OPENROUTER_APP_NAME=Trifecta AI Agent
+
+# Provider fallback order
+LLM_PROVIDER_ORDER=openrouter,openai,anthropic
 # -----------------------------------------------------------------------------
 # MICROSOFT AZURE / GRAPH API
 # Create app at: https://portal.azure.com > App registrations
