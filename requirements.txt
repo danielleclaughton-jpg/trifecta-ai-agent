@@ -12,9 +12,5 @@ opencensus-ext-flask==0.8.2
 anthropic==0.39.0
 intuit-oauth==1.2.6
 httpx==0.27.0
-
-# Twilio (SMS/Voice)
-twilio==8.11.0
-
-# Supabase
-supabase==2.3.0
+xhtml2pdf==0.2.16
+apscheduler==3.10.4

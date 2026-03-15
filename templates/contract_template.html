@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Service Agreement - {{CLIENT_NAME}}</title>
+  <style>
+    @page { size: letter; margin: 1in; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #2E3033;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #00B4B9;
+    }
+    .header h1 {
+      font-size: 24px;
+      color: #00B4B9;
+      margin-bottom: 4px;
+    }
+    .header .tagline {
+      font-style: italic;
+      color: #6B7280;
+      font-size: 11px;
+    }
+    .header h2 {
+      font-size: 18px;
+      margin-top: 16px;
+      color: #2E3033;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section h3 {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #00B4B9;
+      border-bottom: 1px solid #E5E7EB;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+    .info-row {
+      display: flex;
+      margin-bottom: 4px;
+    }
+    .info-label {
+      font-weight: 600;
+      min-width: 180px;
+      color: #2E3033;
+    }
+    .info-value {
+      color: #374151;
+    }
+    .terms ol {
+      padding-left: 20px;
+    }
+    .terms li {
+      margin-bottom: 8px;
+    }
+    .program-box {
+      background: #F0FDFA;
+      border: 1px solid #00B4B9;
+      border-radius: 4px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .program-box .name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #00B4B9;
+    }
+    .program-box .price {
+      font-size: 20px;
+      font-weight: 700;
+      color: #2E3033;
+      margin-top: 4px;
+    }
+    .program-box .details {
+      font-size: 11px;
+      color: #6B7280;
+      margin-top: 4px;
+    }
+    .signature-block {
+      margin-top: 40px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .sig-line {
+      width: 45%;
+    }
+    .sig-line .line {
+      border-bottom: 1px solid #2E3033;
+      height: 40px;
+      margin-bottom: 4px;
+    }
+    .sig-line .label {
+      font-size: 10px;
+      color: #6B7280;
+    }
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 10px;
+      color: #6B7280;
+      border-top: 1px solid #E5E7EB;
+      padding-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>TRIFECTA</h1>
+    <div class="tagline">Mind Body Soul</div>
+    <h2>Service Agreement</h2>
+  </div>
+
+  <div class="section">
+    <h3>Client Information</h3>
+    <div class="info-row">
+      <span class="info-label">Client Name:</span>
+      <span class="info-value">{{CLIENT_NAME}}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Email:</span>
+      <span class="info-value">{{CLIENT_EMAIL}}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Agreement Date:</span>
+      <span class="info-value">{{DATE}}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Agreement Number:</span>
+      <span class="info-value">{{CONTRACT_NUMBER}}</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Selected Program</h3>
+    <div class="program-box">
+      <div class="name">{{PROGRAM_NAME}}</div>
+      <div class="price">${{PROGRAM_PRICE}} CAD</div>
+      <div class="details">{{PROGRAM_DESCRIPTION}}</div>
+    </div>
+  </div>
+
+  <div class="section terms">
+    <h3>Terms & Conditions</h3>
+    <ol>
+      <li><strong>Services:</strong> Trifecta Addiction & Mental Health Services agrees to provide the above-selected program services to the Client, including all sessions, materials, and support outlined in the program description.</li>
+      <li><strong>Payment:</strong> The total program fee of ${{PROGRAM_PRICE}} CAD is due as outlined in the accompanying invoice. Payment may be made via e-transfer to info@trifectaaddictionservices.com. GST exempt.</li>
+      <li><strong>Cancellation:</strong> Clients may cancel within 48 hours of signing for a full refund. After 48 hours, a cancellation fee of 25% of the program fee applies. No refunds after program commencement.</li>
+      <li><strong>Confidentiality:</strong> All client information is kept strictly confidential in accordance with PIPEDA and professional ethics standards. Information will only be disclosed with written consent or as required by law.</li>
+      <li><strong>Scope of Practice:</strong> Services are provided by CACCF-certified addiction counselors. Services do not replace medical treatment. Clients are encouraged to maintain relationships with their healthcare providers.</li>
+      <li><strong>Attendance:</strong> Clients agree to attend all scheduled sessions. Missed sessions without 24-hour notice may not be rescheduled. Consistent no-shows may result in program termination without refund.</li>
+      <li><strong>Code of Conduct:</strong> Clients agree to participate respectfully, maintain sobriety during sessions, and follow program guidelines. Violation may result in immediate termination.</li>
+      <li><strong>Limitation of Liability:</strong> Trifecta Addiction & Mental Health Services provides supportive counseling services and makes no guarantees regarding recovery outcomes.</li>
+    </ol>
+  </div>
+
+  <div class="signature-block">
+    <div class="sig-line">
+      <div class="line"></div>
+      <div class="label">Client Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div>
+    </div>
+    <div class="sig-line">
+      <div class="line"></div>
+      <div class="label">Danielle Claughton, Founding Director &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Trifecta Addiction & Mental Health Services | info@trifectaaddictionservices.com | +1 (403) 907-0996<br>
+    www.trifectaaddictionservices.com | Elite, evidence-based Recovery, empowering one life at a time.
+  </div>
+</body>
+</html>

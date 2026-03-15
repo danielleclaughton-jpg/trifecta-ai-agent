@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invoice #{{INVOICE_NUMBER}} - {{CLIENT_NAME}}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #2E3033;
+      background: #FFFFFF;
+      padding: 40px;
+    }
+
+    .invoice-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+    }
+
+    /* Header with Logos */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #E5E7EB;
+    }
+
+    .logo-trifecta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .logo-trifecta img {
+      height: 80px;
+      width: auto;
+    }
+
+    .logo-trifecta .tagline {
+      font-family: Times, serif;
+      font-style: italic;
+      color: #00B4B9;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .logo-illuminate {
+      text-align: right;
+    }
+
+    .logo-illuminate img {
+      height: 60px;
+      width: auto;
+    }
+
+    .logo-illuminate .tagline {
+      font-family: Times, serif;
+      font-style: italic;
+      color: #C9A962;
+      font-size: 12px;
+    }
+
+    /* Placeholder logos using text */
+    .logo-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-placeholder.trifecta .icon {
+      width: 60px;
+      height: 70px;
+      background: linear-gradient(135deg, #00B4B9 0%, #008B8B 100%);
+      
+      margin-bottom: 5px;
+    }
+
+    .logo-placeholder.trifecta .name {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 4px;
+      color: #2E3033;
+    }
+
+    .logo-placeholder.trifecta .tagline {
+      font-family: Times, serif;
+      font-style: italic;
+      color: #00B4B9;
+      font-size: 14px;
+    }
+
+    .logo-placeholder.illuminate .name {
+      font-size: 20px;
+      font-weight: 300;
+      letter-spacing: 3px;
+      color: #2E3033;
+    }
+
+    .logo-placeholder.illuminate .tagline {
+      font-family: Times, serif;
+      font-style: italic;
+      color: #C9A962;
+      font-size: 12px;
+    }
+
+    /* Invoice Title */
+    .invoice-title {
+      margin-bottom: 8px;
+    }
+
+    .invoice-title h1 {
+      font-family: Times, serif;
+      font-size: 42px;
+      font-weight: 700;
+      color: #2E3033;
+      margin-bottom: 8px;
+    }
+
+    .invoice-subtitle {
+      font-size: 13px;
+      color: #6B7280;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #E5E7EB;
+      margin-bottom: 24px;
+    }
+
+    /* Info Grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px 40px;
+      margin-bottom: 30px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6B7280;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 15px;
+      font-weight: 500;
+      color: #2E3033;
+    }
+
+    .info-value.status-partial {
+      color: #00B4B9;
+      font-weight: 600;
+    }
+
+    .info-value.status-paid {
+      color: #10B981;
+      font-weight: 600;
+    }
+
+    .info-value.status-outstanding {
+      color: #F59E0B;
+      font-weight: 600;
+    }
+
+    /* Line Items Table */
+    .line-items {
+      margin-bottom: 24px;
+    }
+
+    .line-items table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .line-items thead th {
+      background: #00B4B9;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 12px 16px;
+      text-align: left;
+    }
+
+    .line-items thead th:nth-child(2),
+    .line-items thead th:nth-child(3) {
+      text-align: right;
+      width: 120px;
+    }
+
+    .line-items tbody td {
+      padding: 16px;
+      border-bottom: 1px solid #E5E7EB;
+      vertical-align: top;
+    }
+
+    .line-items tbody td:nth-child(2),
+    .line-items tbody td:nth-child(3) {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .line-item-title {
+      font-weight: 600;
+      color: #2E3033;
+      margin-bottom: 4px;
+    }
+
+    .line-item-date {
+      font-size: 13px;
+      color: #6B7280;
+    }
+
+    .line-item-focus {
+      font-size: 13px;
+      color: #6B7280;
+    }
+
+    /* Totals */
+    .totals {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 30px;
+    }
+
+    .totals-box {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding-top: 12px;
+      border-top: 2px solid #E5E7EB;
+    }
+
+    .totals-label {
+      font-weight: 600;
+      color: #2E3033;
+    }
+
+    .totals-amount {
+      font-size: 20px;
+      font-weight: 700;
+      color: #00B4B9;
+    }
+
+    /* Summary Note */
+    .summary-note {
+      font-size: 13px;
+      color: #6B7280;
+      line-height: 1.7;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #E5E7EB;
+    }
+
+    /* Payment Info */
+    .payment-info {
+      font-size: 13px;
+      color: #6B7280;
+      margin-bottom: 8px;
+    }
+
+    .payment-info strong {
+      color: #2E3033;
+    }
+
+    .payment-status {
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .payment-instructions {
+      font-size: 13px;
+      color: #6B7280;
+      margin-bottom: 8px;
+    }
+
+    .payment-instructions a {
+      color: #00B4B9;
+      text-decoration: none;
+    }
+
+    .etransfer-password {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2E3033;
+      margin-bottom: 30px;
+    }
+
+    /* Footer / Signature */
+    .footer {
+      border-top: 1px solid #E5E7EB;
+      padding-top: 24px;
+    }
+
+    .footer-signature {
+      font-weight: 600;
+      color: #2E3033;
+      margin-bottom: 4px;
+    }
+
+    .footer-company {
+      font-size: 13px;
+      color: #6B7280;
+      margin-bottom: 4px;
+    }
+
+    .footer-contact {
+      font-size: 13px;
+      color: #6B7280;
+      margin-bottom: 4px;
+    }
+
+    .footer-contact a {
+      color: #00B4B9;
+      text-decoration: none;
+    }
+
+    .footer-website {
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .footer-website a {
+      color: #00B4B9;
+      text-decoration: none;
+    }
+
+    .footer-tagline {
+      font-style: italic;
+      font-size: 13px;
+      color: #6B7280;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        padding: 20px;
+        font-size: 12px;
+      }
+
+      .invoice-container {
+        max-width: 100%;
+      }
+
+      .line-items thead th {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-container">
+    <!-- Header with Logos -->
+    <div class="header">
+      <div class="logo-placeholder trifecta">
+        <div class="icon"></div>
+        <div class="name">TRIFECTA</div>
+        <div class="tagline">Mind Body Soul</div>
+      </div>
+      <div class="logo-placeholder illuminate">
+        <div class="name">ILLUMINATE</div>
+        <div class="tagline">Ignite Your Inner Light</div>
+      </div>
+    </div>
+
+    <!-- Invoice Title -->
+    <div class="invoice-title">
+      <h1>Invoice</h1>
+    </div>
+    <div class="invoice-subtitle">
+      Invoice #{{INVOICE_NUMBER}} &bull; {{CLIENT_NAME}} &bull; {{SERVICE_TYPE}} &bull; Method: {{PAYMENT_METHOD}}
+    </div>
+
+    <!-- Info Grid -->
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Bill To</div>
+        <div class="info-value">{{CLIENT_NAME}}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Issued By</div>
+        <div class="info-value">Trifecta Recovery Services /<br>Illuminate AMHS</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Program / Service</div>
+        <div class="info-value">{{PROGRAM_SERVICE}}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Status</div>
+        <div class="info-value {{STATUS_CLASS}}">{{STATUS}}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Sessions Covered</div>
+        <div class="info-value">{{SESSIONS_COVERED}}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Currency</div>
+        <div class="info-value">CAD</div>
+      </div>
+    </div>
+
+    <!-- Line Items -->
+    <div class="line-items">
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Rate</th>
+            <th>Amount (CAD)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{LINE_ITEMS}}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totals -->
+    <div class="totals">
+      <div class="totals-box">
+        <div class="totals-label">Outstanding Balance (GST Exempt)</div>
+        <div class="totals-amount">${{OUTSTANDING_BALANCE}}</div>
+      </div>
+    </div>
+
+    <!-- Summary Note -->
+    <div class="summary-note">
+      {{SUMMARY_NOTE}}
+    </div>
+
+    <!-- Payment Status -->
+    <div class="payment-status">
+      <strong>Payment Status:</strong> {{PAYMENT_STATUS_TEXT}}
+    </div>
+
+    <!-- Payment Instructions -->
+    <div class="payment-instructions">
+      Please remit the remaining payment by e-transfer to <a href="mailto:info@trifectaaddictionservices.com">info@trifectaaddictionservices.com</a> due upon receipt.
+    </div>
+
+    <div class="etransfer-password">
+      E-Transfer Password: Trifecta {{CURRENT_YEAR}}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-signature">Danielle Claughton, Founding Director &amp; CEO</div>
+      <div class="footer-company">Trifecta Recovery Services | Illuminate Addiction &amp; Mental Health Services</div>
+      <div class="footer-contact">
+        <a href="mailto:info@trifectaaddictionservices.com">info@trifectaaddictionservices.com</a> | +1 (403) 907-0996 &bull; +1 (403) 907-1034
+      </div>
+      <div class="footer-website">
+        <a href="https://www.trifectaaddictionservices.com">www.trifectaaddictionservices.com</a>
+      </div>
+      <div class="footer-tagline">Elite, evidence-based Recovery, empowering one life at a time.</div>
+    </div>
+  </div>
+</body>
+</html>

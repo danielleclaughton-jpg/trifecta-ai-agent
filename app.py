@@ -23,6 +23,7 @@ from functools import wraps
 from requests.exceptions import Timeout, RequestException
 from werkzeug.exceptions import HTTPException
 from collections import defaultdict
+from io import BytesIO
 
 # --- API Key Authentication Middleware ---
 INTERNAL_API_KEY = os.environ.get('INTERNAL_API_KEY', '')
@@ -60,9 +61,16 @@ def rate_limit(f):
         return f(*args, **kwargs)
     return decorated
 
-# Azure SDK imports
-from azure.identity import DefaultAzureCredential, ClientSecretCredential
-from azure.keyvault.secrets import SecretClient
+# Azure SDK imports (optional — not needed for local dev)
+try:
+    from azure.identity import DefaultAzureCredential, ClientSecretCredential
+    from azure.keyvault.secrets import SecretClient
+    AZURE_SDK_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    AZURE_SDK_AVAILABLE = False
+    DefaultAzureCredential = None
+    ClientSecretCredential = None
+    SecretClient = None
 
 # Application Insights
 try:
@@ -1258,7 +1266,7 @@ def api_docs():
 # =============================================================================
 @app.route('/api/dashboard/overview', methods=['GET'])
 def dashboard_overview():
-    """Real-time dashboard overview â€” called by dashboard_index.html."""
+    """Real-time dashboard overview â€" called by dashboard_index.html."""
     try:
         llm_ready = bool(Config.OPENROUTER_API_KEY or Config.OPENAI_API_KEY or Config.ANTHROPIC_API_KEY)
         service_status = {
@@ -1304,7 +1312,7 @@ def agent_status():
 
 @app.route('/api/agent/message', methods=['POST'])
 def agent_message():
-    """Agent message endpoint â€” proxies to /api/chat for dashboard compatibility."""
+    """Agent message endpoint â€" proxies to /api/chat for dashboard compatibility."""
     return chat()
 
 @app.route('/api/clients', methods=['GET'])
@@ -1971,8 +1979,8 @@ def outlook_form_webhook():
 def portal_sync():
     """
     Sync portal data with Claude analysis.
-    GET: Fetch high-risk clients â†’ Claude analysis â†’ return recommendations
-    POST: Apply Claude recommendations â†’ PATCH updates to Graph
+    GET: Fetch high-risk clients â†' Claude analysis â†' return recommendations
+    POST: Apply Claude recommendations â†' PATCH updates to Graph
     Uses: trifecta-ai-agent-orchestration
     """
     try:
@@ -2053,24 +2061,55 @@ Format as JSON array."""
 # =============================================================================
 # API ENDPOINTS - Contract Generation (Task 4)
 # =============================================================================
+def _render_template(template_name, variables):
+    """Render an HTML template with simple variable substitution."""
+    tpl_path = Path(__file__).parent / "templates" / template_name
+    html = tpl_path.read_text(encoding="utf-8")
+    for key, value in variables.items():
+        html = html.replace("{{" + key + "}}", str(value))
+    return html
+
+
+def _html_to_pdf(html: str) -> bytes:
+    """Convert HTML string to PDF bytes using xhtml2pdf."""
+    from xhtml2pdf import pisa
+    buf = BytesIO()
+    pisa_status = pisa.CreatePDF(html, dest=buf)
+    if pisa_status.err:
+        raise RuntimeError(f"PDF generation failed with {pisa_status.err} errors")
+    return buf.getvalue()
+
+
+PROGRAMS = {
+    '28_DAY_VIRTUAL': {
+        'name': '28-Day Virtual Boot Camp',
+        'price': 3777,
+        'description': '28 days of intensive virtual recovery coaching with daily DBT/CBT sessions, neuroplasticity exercises, and 24/7 support access.'
+    },
+    '14_DAY_INPATIENT': {
+        'name': '14-Day Inpatient Program',
+        'price': 13777,
+        'description': '14-day immersive inpatient program with round-the-clock clinical support, group therapy, and personalized recovery planning.'
+    },
+    '28_DAY_INPATIENT': {
+        'name': '28-Day Inpatient Program',
+        'price': 23777,
+        'description': '28-day comprehensive inpatient treatment with full clinical team, family sessions, aftercare planning, and neuroplasticity-based recovery.'
+    }
+}
+
+
 @app.route('/api/contract/<client_id>', methods=['GET', 'POST'])
 @require_api_key
 def generate_contract(client_id):
-    """
-    Generate contract/invoice for client.
-    Uses: trifecta-document-generator â†’ HTML invoice â†’ QuickBooks webhook
-    """
+    """Generate contract + invoice for a client, with PDF output."""
     try:
-        doc_skill = SKILLS.get('trifecta-document-generator', {})
-
         if request.method == 'GET':
-            # Get client info
             try:
                 client = graph_client.get_user(client_id)
-            except:
+            except Exception:
                 client = {'displayName': 'Demo Client', 'mail': 'demo@example.com'}
 
-            # Return contract template info
             return jsonify({
                 'client': {
                     'id': client_id,
@@ -2078,95 +2117,173 @@ def generate_contract(client_id):
                     'email': client.get('mail')
                 },
                 'available_programs': [
-                    {'name': '28-Day Virtual Boot Camp', 'price': 3777, 'code': '28_DAY_VIRTUAL'},
-                    {'name': '14-Day Inpatient', 'price': 13777, 'code': '14_DAY_INPATIENT'},
-                    {'name': '28-Day Inpatient', 'price': 23777, 'code': '28_DAY_INPATIENT'}
+                    {'name': p['name'], 'price': p['price'], 'code': code}
+                    for code, p in PROGRAMS.items()
                 ],
                 'skill_used': 'trifecta-document-generator'
             }), 200
 
-        elif request.method == 'POST':
-            data = request.get_json()
-            program_code = data.get('program', '28_DAY_VIRTUAL')
+        data = request.get_json() or {}
+        program_code = data.get('program', '28_DAY_VIRTUAL')
+        program = PROGRAMS.get(program_code, PROGRAMS['28_DAY_VIRTUAL'])
 
-            # Program pricing
-            programs = {
-                '28_DAY_VIRTUAL': {'name': '28-Day Virtual Boot Camp', 'price': 3777},
-                '14_DAY_INPATIENT': {'name': '14-Day Inpatient Program', 'price': 13777},
-                '28_DAY_INPATIENT': {'name': '28-Day Inpatient Program', 'price': 23777}
-            }
-            program = programs.get(program_code, programs['28_DAY_VIRTUAL'])
+        try:
+            client = graph_client.get_user(client_id)
+        except Exception:
+            client = {'displayName': data.get('client_name', 'Client'), 'mail': data.get('email', '')}
 
-            # Get client info
+        now = datetime.now(timezone.utc)
+        contract_number = f"TRI-{now.strftime('%Y%m%d')}-{client_id[:6].upper()}"
+        invoice_number = f"INV-{now.strftime('%Y%m%d')}-{client_id[:6].upper()}"
+
+        # Render contract HTML from template
+        contract_html = _render_template('contract_template.html', {
+            'CLIENT_NAME': client.get('displayName', ''),
+            'CLIENT_EMAIL': client.get('mail', ''),
+            'DATE': now.strftime('%B %d, %Y'),
+            'CONTRACT_NUMBER': contract_number,
+            'PROGRAM_NAME': program['name'],
+            'PROGRAM_PRICE': f"{program['price']:,}",
+            'PROGRAM_DESCRIPTION': program['description'],
+        })
+
+        # Render invoice HTML from template
+        line_items_html = f"""
+        <tr>
+            <td>
+                <div class="line-item-title">{program['name']}</div>
+                <div class="line-item-date">{now.strftime('%B %d, %Y')}</div>
+            </td>
+            <td>${program['price']:,}.00</td>
+            <td>${program['price']:,}.00</td>
+        </tr>"""
+
+        invoice_html = _render_template('invoice_template_pdf.html', {
+            'INVOICE_NUMBER': invoice_number,
+            'CLIENT_NAME': client.get('displayName', ''),
+            'SERVICE_TYPE': program['name'],
+            'PAYMENT_METHOD': data.get('payment_method', 'E-Transfer'),
+            'PROGRAM_SERVICE': program['name'],
+            'STATUS_CLASS': 'status-outstanding',
+            'STATUS': 'Outstanding',
+            'SESSIONS_COVERED': 'Full Program',
+            'LINE_ITEMS': line_items_html,
+            'OUTSTANDING_BALANCE': f"{program['price']:,}.00",
+            'SUMMARY_NOTE': f"Service agreement for {program['name']}. Full payment due upon receipt.",
+            'PAYMENT_STATUS_TEXT': 'Outstanding - Payment due upon receipt',
+            'CURRENT_YEAR': str(now.year),
+        })
+
+        # Generate PDFs
+        contract_pdf = _html_to_pdf(contract_html)
+        invoice_pdf = _html_to_pdf(invoice_html)
+
+        # Upload to SharePoint
+        sharepoint_urls = {}
+        try:
+            client_folder = client.get('displayName', 'Unknown').replace(' ', '_')
+            for doc_type, content, ctype in [
+                ('Contract', contract_pdf, 'application/pdf'),
+                ('Invoice', invoice_pdf, 'application/pdf'),
+            ]:
+                filename = f"{doc_type}_{now.strftime('%Y%m%d')}_{program_code}.pdf"
+                result = graph_client.upload_to_sharepoint(
+                    folder_path=f"{client_folder}/Documents",
+                    filename=filename,
+                    content=content,
+                    content_type=ctype
+                )
+                sharepoint_urls[doc_type.lower()] = result.get('webUrl')
+        except Exception as e:
+            logger.warning(f"SharePoint upload failed: {e}")
+
+        # Create QuickBooks invoice (if configured)
+        qb_invoice = None
+        if Config.QUICKBOOKS_REALM_ID:
             try:
-                client = graph_client.get_user(client_id)
-            except:
-                client = {'displayName': data.get('client_name', 'Client'), 'mail': data.get('email', '')}
-
-            # Generate HTML invoice using Claude + skill
-            prompt = f"""Generate a professional HTML invoice for:
-
-Client: {client.get('displayName')}
-Email: {client.get('mail')}
-Program: {program['name']}
-Price: ${program['price']} CAD
-Date: {datetime.now(timezone.utc).strftime('%B %d, %Y')}
-Due Date: {(datetime.now(timezone.utc) + timedelta(days=7)).strftime('%B %d, %Y')}
-
-Use Trifecta Addiction & Mental Health Services branding.
-Include payment instructions and terms from the document generator skill.
-Output complete HTML document."""
-
-            html_invoice = call_anthropic(doc_skill.get('content', ''), prompt, max_tokens=4000)
-
-            # Create QuickBooks invoice (if configured)
-            qb_invoice = None
-            if Config.QUICKBOOKS_REALM_ID:
-                try:
-                    line_items = [{
+                qb_invoice = quickbooks_client.create_invoice(
+                    customer_id=client_id,
+                    line_items=[{
                         'Amount': program['price'],
                         'Description': program['name'],
                         'DetailType': 'SalesItemLineDetail',
-                        'SalesItemLineDetail': {
-                            'Qty': 1,
-                            'UnitPrice': program['price']
-                        }
+                        'SalesItemLineDetail': {'Qty': 1, 'UnitPrice': program['price']}
                     }]
-                    qb_invoice = quickbooks_client.create_invoice(
-                        customer_id=client_id,
-                        line_items=line_items
-                    )
-                except Exception as e:
-                    logger.warning(f"QuickBooks invoice failed: {e}")
-
-            # Upload to SharePoint
-            sharepoint_url = None
-            try:
-                client_folder = client.get('displayName', 'Unknown').replace(' ', '_')
-                filename = f"Invoice_{datetime.now(timezone.utc).strftime('%Y%m%d')}_{program_code}.html"
-                result = graph_client.upload_to_sharepoint(
-                    folder_path=f"{client_folder}/Invoices",
-                    filename=filename,
-                    content=html_invoice.encode(),
-                    content_type='text/html'
                 )
-                sharepoint_url = result.get('webUrl')
             except Exception as e:
-                logger.warning(f"SharePoint upload failed: {e}")
+                logger.warning(f"QuickBooks invoice failed: {e}")
 
-            return jsonify({
-                'status': 'generated',
-                'client_id': client_id,
-                'program': program,
-                'html_invoice': html_invoice,
-                'sharepoint_url': sharepoint_url,
-                'quickbooks_invoice': qb_invoice,
-                'skills_used': ['trifecta-document-generator'],
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            }), 200
+        import base64
+        return jsonify({
+            'status': 'generated',
+            'client_id': client_id,
+            'contract_number': contract_number,
+            'invoice_number': invoice_number,
+            'program': program,
+            'contract_pdf_base64': base64.b64encode(contract_pdf).decode(),
+            'invoice_pdf_base64': base64.b64encode(invoice_pdf).decode(),
+            'sharepoint_urls': sharepoint_urls,
+            'quickbooks_invoice': qb_invoice,
+            'skills_used': ['trifecta-document-generator'],
+            'timestamp': now.isoformat()
+        }), 200
 
     except Exception as e:
         logger.error(f"Contract generation error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/invoice/pdf/<client_id>', methods=['POST'])
+@require_api_key
+def generate_invoice_pdf(client_id):
+    """Generate just an invoice PDF and return it directly."""
+    from flask import Response
+    try:
+        data = request.get_json() or {}
+        program_code = data.get('program', '28_DAY_VIRTUAL')
+        program = PROGRAMS.get(program_code, PROGRAMS['28_DAY_VIRTUAL'])
+        now = datetime.now(timezone.utc)
+
+        try:
+            client = graph_client.get_user(client_id)
+        except Exception:
+            client = {'displayName': data.get('client_name', 'Client'), 'mail': data.get('email', '')}
+
+        invoice_number = f"INV-{now.strftime('%Y%m%d')}-{client_id[:6].upper()}"
+        line_items_html = f"""
+        <tr>
+            <td>
+                <div class="line-item-title">{program['name']}</div>
+                <div class="line-item-date">{now.strftime('%B %d, %Y')}</div>
+            </td>
+            <td>${program['price']:,}.00</td>
+            <td>${program['price']:,}.00</td>
+        </tr>"""
+
+        invoice_html = _render_template('invoice_template_pdf.html', {
+            'INVOICE_NUMBER': invoice_number,
+            'CLIENT_NAME': client.get('displayName', ''),
+            'SERVICE_TYPE': program['name'],
+            'PAYMENT_METHOD': data.get('payment_method', 'E-Transfer'),
+            'PROGRAM_SERVICE': program['name'],
+            'STATUS_CLASS': 'status-outstanding',
+            'STATUS': 'Outstanding',
+            'SESSIONS_COVERED': 'Full Program',
+            'LINE_ITEMS': line_items_html,
+            'OUTSTANDING_BALANCE': f"{program['price']:,}.00",
+            'SUMMARY_NOTE': f"Service agreement for {program['name']}. Full payment due upon receipt.",
+            'PAYMENT_STATUS_TEXT': 'Outstanding - Payment due upon receipt',
+            'CURRENT_YEAR': str(now.year),
+        })
+
+        pdf_bytes = _html_to_pdf(invoice_html)
+        return Response(
+            pdf_bytes,
+            mimetype='application/pdf',
+            headers={'Content-Disposition': f'attachment; filename="{invoice_number}.pdf"'}
+        )
+    except Exception as e:
+        logger.error(f"Invoice PDF generation error: {e}")
         return jsonify({'error': str(e)}), 500
 
 # =============================================================================
@@ -2175,7 +2292,7 @@ Output complete HTML document."""
 @app.route('/api/quickbooks/callback', methods=['GET'])
 def quickbooks_callback():
     """
-    QuickBooks OAuth2 callback â€” run this ONCE during initial setup.
+    QuickBooks OAuth2 callback â€" run this ONCE during initial setup.
     Visit: https://developer.intuit.com/app/developer/playground to get auth code.
     Then Azure will redirect here after OAuth consent.
     """
@@ -2744,6 +2861,116 @@ def handle_unexpected_error(error):
     return jsonify({'error': 'Internal server error', 'id': err_id}), 500
 
 # =============================================================================
+# SCHEDULED TASKS (APScheduler)
+# =============================================================================
+def _init_scheduler():
+    """Initialize APScheduler for recurring background tasks."""
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+    except ImportError:
+        logger.warning("APScheduler not installed, scheduled tasks disabled")
+        return None
+
+    scheduler = BackgroundScheduler(daemon=True)
+
+    # --- Daily Lead Summary (8 AM UTC / 1 AM MST) ---
+    def daily_lead_summary():
+        """Send a daily summary of lead pipeline activity."""
+        with app.app_context():
+            try:
+                metrics = lead_store.status_metrics()
+                new_count = sum(v for v in metrics.values())  # total active
+                pending_count = metrics.get('INQUIRY_RECEIVED', 0) + metrics.get('DRAFT_CREATED', 0) + metrics.get('NEEDS_HUMAN_REVIEW', 0)
+                drafts_pending = metrics.get('DRAFT_CREATED', 0)
+                active_count = sum(v for k, v in metrics.items() if k != 'ARCHIVED')
+
+                summary = (
+                    f"Daily Lead Summary:\n"
+                    f"- New leads (24h): {new_count}\n"
+                    f"- Awaiting action: {pending_count}\n"
+                    f"- Drafts pending approval: {drafts_pending}\n"
+                    f"- Total active leads: {active_count}"
+                )
+                logger.info(f"[CRON] {summary}")
+
+                # Send via Telegram if configured
+                telegram_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+                telegram_chat = os.environ.get('TELEGRAM_CHAT_ID')
+                if telegram_token and telegram_chat:
+                    requests.post(
+                        f"https://api.telegram.org/bot{telegram_token}/sendMessage",
+                        json={'chat_id': telegram_chat, 'text': summary},
+                        timeout=10
+                    )
+
+            except Exception as e:
+                logger.error(f"[CRON] Daily lead summary failed: {e}")
+
+    # --- Follow-up Reminder (every 4 hours) ---
+    def check_stale_leads():
+        """Flag leads that haven't been actioned in 48+ hours."""
+        with app.app_context():
+            try:
+                stale = lead_store.list_leads(status='INQUIRY_RECEIVED', limit=50)
+                stale += lead_store.list_leads(status='DRAFT_CREATED', limit=50)
+                # Filter to those older than 2 days
+                cutoff = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+                stale = [l for l in stale if l.get('updated_at', '') < cutoff]
+
+                if stale:
+                    logger.warning(f"[CRON] {len(stale)} stale leads need follow-up")
+                    for lead in stale:
+                        logger.warning(f"[CRON] Stale lead: {lead['id']} ({lead['status']}) - last updated {lead.get('updated_at')}")
+            except Exception as e:
+                logger.error(f"[CRON] Stale lead check failed: {e}")
+
+    # --- Auto-draft for un-drafted leads (every 30 min) ---
+    def auto_draft_undrafted():
+        """Generate drafts for leads that don't have one yet."""
+        if os.environ.get('LEAD_AUTO_DRAFT_ON_INGEST', '').lower() != 'true':
+            return
+        with app.app_context():
+            try:
+                leads = lead_store.list_leads(status='INQUIRY_RECEIVED', limit=10)
+                for lead in leads:
+                    if not lead.get('email'):
+                        continue
+                    existing_draft = lead_store.get_latest_draft(lead['id'])
+                    if existing_draft:
+                        continue
+                    try:
+                        maybe_generate_draft(lead)
+                        logger.info(f"[CRON] Auto-drafted email for lead {lead['id']}")
+                    except Exception as e:
+                        logger.warning(f"[CRON] Auto-draft failed for lead {lead['id']}: {e}")
+            except Exception as e:
+                logger.error(f"[CRON] Auto-draft check failed: {e}")
+
+    scheduler.add_job(daily_lead_summary, 'cron', hour=8, minute=0, id='daily_lead_summary')
+    scheduler.add_job(check_stale_leads, 'interval', hours=4, id='check_stale_leads')
+    scheduler.add_job(auto_draft_undrafted, 'interval', minutes=30, id='auto_draft_undrafted')
+
+    scheduler.start()
+    logger.info("[CRON] Scheduler started with 3 jobs: daily_lead_summary, check_stale_leads, auto_draft_undrafted")
+    return scheduler
+
+
+@app.route('/api/scheduler/status', methods=['GET'])
+def scheduler_status():
+    """Show status of scheduled tasks."""
+    if not hasattr(app, '_scheduler') or app._scheduler is None:
+        return jsonify({'status': 'disabled', 'jobs': []}), 200
+    jobs = []
+    for job in app._scheduler.get_jobs():
+        jobs.append({
+            'id': job.id,
+            'next_run': job.next_run_time.isoformat() if job.next_run_time else None,
+            'trigger': str(job.trigger),
+        })
+    return jsonify({'status': 'running', 'jobs': jobs}), 200
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 if __name__ == '__main__':
@@ -2754,7 +2981,11 @@ if __name__ == '__main__':
     logger.info(f"Skills loaded: {len(SKILLS)}")
     logger.info(f"Debug mode: {debug}")
 
+    app._scheduler = _init_scheduler()
     app.run(host='0.0.0.0', port=port, debug=debug)
+else:
+    # Production (gunicorn) — start scheduler on import
+    app._scheduler = _init_scheduler()
 
 
 
