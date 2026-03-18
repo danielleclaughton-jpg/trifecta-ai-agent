@@ -25,6 +25,6 @@ Get the Trifecta tech ecosystem fully operational and make Danielle's work life 
 - Runtime: gunicorn --bind=0.0.0.0:8000 --workers=4 app:app
 
 ## Context
-Danielle is a CACCF-certified addiction counselor, not a developer. She runs a practice serving oil & gas workers and professionals. Programs include 28-Day Virtual Boot Camp, 14-Day Inpatient, and Outpatient. The approach is neuroplasticity-based with DBT/CBT integration. Minimize her manual work — automate everything possible.
+Danielle is a CACCF-certified addiction counselor, not a developer. She runs a practice serving oil & gas workers and professionals. Programs include 28-Day Virtual Boot Camp, 14-28 Day Inpatient, and Outpatient. The approach is neuroplasticity-based with DBT/CBT integration. Minimize her manual work — automate everything possible.
 
 When idle or between tasks, pick up the next priority item and keep building.

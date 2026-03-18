@@ -13,7 +13,7 @@ import sqlite3
 import hashlib
 import hmac
 import threading
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify, g, send_from_directory
 from flask_cors import CORS
 from datetime import datetime, timedelta, timezone
 import time
@@ -33,7 +33,10 @@ def require_api_key(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not INTERNAL_API_KEY:
-            return f(*args, **kwargs)  # Skip auth in dev if key not set
+            if bool(os.environ.get('WEBSITE_SITE_NAME')):
+                # On Azure: reject if no API key configured (security hardening)
+                return jsonify({'error': 'Server misconfigured: INTERNAL_API_KEY not set', 'code': 'no_api_key'}), 500
+            return f(*args, **kwargs)  # Skip auth in local dev if key not set
         key = request.headers.get('X-API-Key', '')
         if key != INTERNAL_API_KEY:
             return jsonify({'error': 'Unauthorized', 'code': 'invalid_api_key'}), 401
@@ -103,14 +106,27 @@ else:
 # =============================================================================
 # APP INITIALIZATION
 # =============================================================================
-app = Flask(__name__)
+app = Flask(__name__, static_folder=None)
 CORS(app, resources={r"/api/*": {"origins": [
     "https://trifectaaddictionservices.com",
     "https://www.trifectaaddictionservices.com",
     "https://trifecta-agent.azurewebsites.net",
     "http://localhost:5000",
-    "http://127.0.0.1:5000"
+    "http://127.0.0.1:5000",
+    "http://localhost:3015",
+    "http://127.0.0.1:3015"
 ]}})
+
+# --- Dashboard (served from Flask in production) ---
+@app.route('/dashboard')
+def serve_dashboard():
+    """Serve the command center dashboard."""
+    return send_from_directory(_base_dir, 'dashboard_index.html')
+
+@app.route('/dashboard_assets/<path:filename>')
+def serve_dashboard_assets(filename):
+    """Serve dashboard static assets (logos, CSS, etc.)."""
+    return send_from_directory(os.path.join(_base_dir, 'dashboard_assets'), filename)
 
 # Configurable defaults
 DEFAULT_OUTBOUND_TIMEOUT = int(os.environ.get('DEFAULT_OUTBOUND_TIMEOUT', '15'))  # seconds
@@ -193,7 +209,9 @@ class Config:
     GODADDY_WEBHOOK_TOKEN = os.environ.get('GODADDY_WEBHOOK_TOKEN', '')
 
     # Lead pipeline
-    LEAD_DB_PATH = os.environ.get('LEAD_DB_PATH', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lead_pipeline.db'))
+    # On Azure, use persistent storage mount; locally, use app directory
+    _default_db_dir = '/home/data' if bool(os.environ.get('WEBSITE_SITE_NAME')) else os.path.dirname(os.path.abspath(__file__))
+    LEAD_DB_PATH = os.environ.get('LEAD_DB_PATH', os.path.join(_default_db_dir, 'lead_pipeline.db'))
     LEAD_PROMPT_VERSION = os.environ.get('LEAD_PROMPT_VERSION', 'lead-intake-v1')
     LEAD_DRAFT_CONFIDENCE_THRESHOLD = float(os.environ.get('LEAD_DRAFT_CONFIDENCE_THRESHOLD', '0.70'))
     LEAD_AUTO_DRAFT_ON_INGEST = os.environ.get('LEAD_AUTO_DRAFT_ON_INGEST', '0') == '1'
@@ -420,6 +438,46 @@ class LeadPipelineStore:
                 timestamp TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_audit_log_object ON audit_log(object_type, object_id);
+
+            CREATE TABLE IF NOT EXISTS clients (
+                id TEXT PRIMARY KEY,
+                first_name TEXT,
+                last_name TEXT,
+                email TEXT,
+                phone TEXT,
+                program_type TEXT,
+                status TEXT NOT NULL DEFAULT 'intake',
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_clients_status ON clients(status);
+
+            CREATE TABLE IF NOT EXISTS sessions (
+                id TEXT PRIMARY KEY,
+                client_id TEXT NOT NULL,
+                date TEXT,
+                duration INTEGER DEFAULT 60,
+                topics TEXT,
+                mood_rating INTEGER DEFAULT 5,
+                progress_notes TEXT,
+                action_items TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(client_id) REFERENCES clients(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_sessions_client_id ON sessions(client_id);
+
+            CREATE TABLE IF NOT EXISTS appointments (
+                id TEXT PRIMARY KEY,
+                client_id TEXT NOT NULL,
+                client_name TEXT,
+                type TEXT DEFAULT 'session',
+                datetime TEXT,
+                duration INTEGER DEFAULT 60,
+                location TEXT DEFAULT 'Virtual',
+                status TEXT NOT NULL DEFAULT 'scheduled',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(client_id) REFERENCES clients(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_appointments_client_id ON appointments(client_id);
             """)
 
     def _fetchone(self, conn, sql, params=()):
@@ -756,6 +814,63 @@ class LeadPipelineStore:
             )
 
 
+    # --- Client / Session / Appointment persistence ---
+
+    def upsert_client(self, client):
+        with self._lock, self._connect() as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO clients (id, first_name, last_name, email, phone, program_type, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (client['id'], client.get('first_name', ''), client.get('last_name', ''),
+                  client.get('email', ''), client.get('phone', ''), client.get('program_type', ''),
+                  client.get('status', 'intake'), client.get('created_at', utcnow_iso())))
+        return client
+
+    def get_client(self, client_id):
+        with self._connect() as conn:
+            return self._fetchone(conn, "SELECT * FROM clients WHERE id = ?", (client_id,))
+
+    def list_clients(self):
+        with self._connect() as conn:
+            return self._fetchall(conn, "SELECT * FROM clients ORDER BY created_at DESC")
+
+    def count_clients(self, status=None):
+        with self._connect() as conn:
+            if status:
+                return self._fetchone(conn, "SELECT COUNT(*) AS count FROM clients WHERE status = ?", (status,))['count']
+            return self._fetchone(conn, "SELECT COUNT(*) AS count FROM clients")['count']
+
+    def insert_session(self, session):
+        with self._lock, self._connect() as conn:
+            conn.execute("""
+                INSERT INTO sessions (id, client_id, date, duration, topics, mood_rating, progress_notes, action_items, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (session['id'], session.get('client_id', ''), session.get('date', ''),
+                  session.get('duration', 60), json.dumps(session.get('topics', [])),
+                  session.get('mood_rating', 5), session.get('progress_notes', ''),
+                  json.dumps(session.get('action_items', [])), session.get('created_at', utcnow_iso())))
+        return session
+
+    def count_sessions(self):
+        with self._connect() as conn:
+            return self._fetchone(conn, "SELECT COUNT(*) AS count FROM sessions")['count']
+
+    def insert_appointment(self, appointment):
+        with self._lock, self._connect() as conn:
+            conn.execute("""
+                INSERT INTO appointments (id, client_id, client_name, type, datetime, duration, location, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (appointment['id'], appointment.get('client_id', ''), appointment.get('client_name', ''),
+                  appointment.get('type', 'session'), appointment.get('datetime', ''),
+                  appointment.get('duration', 60), appointment.get('location', 'Virtual'),
+                  appointment.get('status', 'scheduled'), appointment.get('created_at', utcnow_iso())))
+        return appointment
+
+    def count_appointments(self):
+        with self._connect() as conn:
+            return self._fetchone(conn, "SELECT COUNT(*) AS count FROM appointments")['count']
+
+
 lead_store = LeadPipelineStore(Config.LEAD_DB_PATH)
 
 # Simple API key protection (optional; only enforced if TRIFECTA_API_KEY is set)
@@ -764,8 +879,8 @@ def enforce_api_key():
     if not Config.API_KEY:
         return None
 
-    allowed_paths = {'/', '/health', '/api-docs'}
-    if request.path in allowed_paths or request.path.startswith('/static/'):
+    allowed_paths = {'/', '/health', '/api-docs', '/dashboard'}
+    if request.path in allowed_paths or request.path.startswith('/static/') or request.path.startswith('/dashboard_assets/'):
         return None
 
     header_key = request.headers.get('X-API-Key', '').strip()
@@ -1299,6 +1414,178 @@ def dashboard_overview():
     except Exception as e:
         logger.error(f"Dashboard overview error: {e}")
         return jsonify({'error': str(e), 'timestamp': datetime.now(timezone.utc).isoformat()}), 500
+
+def _status_count_map(metrics):
+    return {row.get('status'): row.get('count', 0) for row in metrics.get('by_status', [])}
+
+
+def _source_count_map(metrics):
+    return {row.get('source'): row.get('count', 0) for row in metrics.get('by_source', [])}
+
+
+def _humanize_age(timestamp_value):
+    if not timestamp_value:
+        return "unknown"
+    try:
+        dt = datetime.fromisoformat(timestamp_value.replace('Z', '+00:00'))
+        delta = datetime.now(timezone.utc) - dt.astimezone(timezone.utc)
+    except Exception:
+        return timestamp_value
+    seconds = max(int(delta.total_seconds()), 0)
+    if seconds < 60:
+        return f"{seconds}s ago"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes}m ago"
+    hours = minutes // 60
+    if hours < 48:
+        return f"{hours}h ago"
+    days = hours // 24
+    return f"{days}d ago"
+
+
+def _mission_control_payload():
+    metrics = lead_store.status_metrics()
+    status_counts = _status_count_map(metrics)
+    source_counts = _source_count_map(metrics)
+    review_queue = status_counts.get(LEAD_STATUS['NEEDS_HUMAN_REVIEW'], 0)
+    draft_queue = status_counts.get(LEAD_STATUS['DRAFT_CREATED'], 0)
+    fresh_inquiries = status_counts.get(LEAD_STATUS['INQUIRY_RECEIVED'], 0)
+    sent_count = status_counts.get(LEAD_STATUS['PROGRAM_INFO_SENT'], 0)
+    error_count = status_counts.get(LEAD_STATUS['ERROR'], 0)
+    archived_count = status_counts.get(LEAD_STATUS['ARCHIVED'], 0)
+
+    active_clients = lead_store.count_clients()
+    intake_clients = lead_store.count_clients(status='intake')
+    sessions_total = lead_store.count_sessions()
+    upcoming_appointments = lead_store.count_appointments()
+    total_leads = metrics.get('total_leads', 0)
+    active_pipeline = fresh_inquiries + draft_queue + review_queue
+
+    service_status = {
+        'anthropic': bool(Config.ANTHROPIC_API_KEY),
+        'openai': bool(Config.OPENAI_API_KEY),
+        'openrouter': bool(Config.OPENROUTER_API_KEY),
+        'microsoft_graph': bool(Config.MS_CLIENT_ID),
+        'sharepoint': bool(Config.SHAREPOINT_SITE_ID),
+        'dialpad': bool(Config.DIALPAD_API_KEY),
+        'quickbooks': bool(Config.QUICKBOOKS_CLIENT_ID),
+    }
+    services_online = sum(1 for enabled in service_status.values() if enabled)
+
+    recent_leads = []
+    for lead in lead_store.list_leads(limit=6):
+        recent_leads.append({
+            'id': lead.get('id'),
+            'title': lead.get('name') or lead.get('email') or 'Unnamed lead',
+            'status': lead.get('status'),
+            'source': lead.get('source'),
+            'summary': lead.get('initial_question') or 'No intake summary captured yet.',
+            'age': _humanize_age(lead.get('updated_at') or lead.get('created_at')),
+        })
+
+    mission_agents = [
+        {
+            'name': 'Lead Intake',
+            'lane': 'Growth',
+            'status': 'hot' if fresh_inquiries else 'steady',
+            'model': 'anthropic/claude-opus-4-6',
+            'current_work': f"Processing {fresh_inquiries} fresh inquiries and normalizing inbound contact data.",
+            'queue': fresh_inquiries,
+            'target': 'Website chat, forms, Dialpad inbound',
+        },
+        {
+            'name': 'Draft Desk',
+            'lane': 'Comms',
+            'status': 'watch' if review_queue else 'steady',
+            'model': 'anthropic/claude-sonnet-4-6',
+            'current_work': f"{draft_queue} drafts ready, {review_queue} waiting on founder review.",
+            'queue': draft_queue + review_queue,
+            'target': 'Program info replies and approvals',
+        },
+        {
+            'name': 'Client Operations',
+            'lane': 'Care',
+            'status': 'steady' if active_clients or intake_clients else 'idle',
+            'model': 'system',
+            'current_work': f"{active_clients} active clients, {intake_clients} currently in intake, {upcoming_appointments} appointments queued.",
+            'queue': upcoming_appointments,
+            'target': 'Appointments, records, portal sync',
+        },
+        {
+            'name': 'Founder Radar',
+            'lane': 'Exec',
+            'status': 'watch' if error_count else 'steady',
+            'model': 'mission-control',
+            'current_work': f"Watching {active_pipeline} open pipeline items with {error_count} errors needing intervention.",
+            'queue': error_count,
+            'target': 'Escalations, daily priorities, blockers',
+        },
+    ]
+
+    return {
+        'generated_at': utcnow_iso(),
+        'business': {
+            'headline': 'Trifecta Mission Control',
+            'subhead': 'Live operating view across intake, client delivery, and founder priorities.',
+            'lead_pipeline_open': active_pipeline,
+            'total_leads': total_leads,
+            'conversion_rate': metrics.get('conversion_rate', 0.0),
+            'active_clients': active_clients,
+            'intake_clients': intake_clients,
+            'sessions_logged': sessions_total,
+            'upcoming_appointments': upcoming_appointments,
+            'program_info_sent': sent_count,
+            'archived_leads': archived_count,
+            'integrations_online': services_online,
+            'integrations_total': len(service_status),
+            'revenue_tracking_configured': bool(Config.QUICKBOOKS_REALM_ID),
+        },
+        'pulse': [
+            {
+                'label': 'Lead Pipeline',
+                'value': str(active_pipeline),
+                'detail': f"{fresh_inquiries} new, {draft_queue} drafted, {review_queue} in review",
+                'tone': 'hot' if active_pipeline >= 8 else 'steady'
+            },
+            {
+                'label': 'Client Load',
+                'value': str(active_clients),
+                'detail': f"{intake_clients} in intake, {upcoming_appointments} upcoming appointments",
+                'tone': 'steady' if active_clients else 'watch'
+            },
+            {
+                'label': 'Throughput',
+                'value': f"{metrics.get('conversion_rate', 0.0)}%",
+                'detail': f"{sent_count} leads reached program info sent",
+                'tone': 'steady' if sent_count else 'watch'
+            },
+            {
+                'label': 'Integrations',
+                'value': f"{services_online}/{len(service_status)}",
+                'detail': 'Anthropic, Graph, SharePoint, Dialpad, QuickBooks readiness',
+                'tone': 'steady' if services_online >= 4 else 'watch'
+            },
+        ],
+        'agents': mission_agents,
+        'focus': [
+            f"Founder review queue currently sits at {review_queue} lead(s).",
+            f"Lead sources are led by {max(source_counts, key=source_counts.get) if source_counts else 'manual intake'} right now.",
+            "OpenAI/Codex is not wired yet in this app environment." if not Config.OPENAI_API_KEY else "OpenAI/Codex is configured and ready to be assigned.",
+        ],
+        'recent_work': recent_leads,
+        'services': service_status,
+    }
+
+
+@app.route('/api/dashboard/mission-control', methods=['GET'])
+def dashboard_mission_control():
+    """Mission-control payload for founder dashboard and board-room views."""
+    try:
+        return jsonify(_mission_control_payload()), 200
+    except Exception as exc:
+        logger.error("Mission control payload error: %s", exc)
+        return jsonify({'error': str(exc), 'generated_at': utcnow_iso()}), 500
 
 @app.route('/api/agent/status', methods=['GET'])
 def agent_status():
@@ -2340,9 +2627,7 @@ def quickbooks_callback():
 # Added for MCP server integration (Phase III)
 # =============================================================================
 
-clients_db = {}
-sessions_db = {}
-appointments_db = {}
+# Client/session/appointment records now persisted in SQLite via lead_store
 
 
 def _parse_json_field(value, default):
@@ -2686,8 +2971,8 @@ def create_client():
             'status': data.get('status', 'intake'),
             'created_at': datetime.now(timezone.utc).isoformat()
         }
-        clients_db[client_id] = client
-        
+        lead_store.upsert_client(client)
+
         return jsonify({
             'success': True,
             'client': client,
@@ -2700,13 +2985,13 @@ def create_client():
 @app.route('/clients/<client_id>', methods=['GET'])
 def get_client(client_id):
     """Get client by ID."""
-    client = clients_db.get(client_id)
+    client = lead_store.get_client(client_id)
     if not client:
         # Try Graph API as fallback
         try:
             graph_client.get_user(client_id)
             return jsonify({'id': client_id, 'source': 'graph'}), 200
-        except:
+        except Exception:
             pass
         return jsonify({'error': 'Client not found'}), 404
     return jsonify(client), 200
@@ -2731,8 +3016,8 @@ def create_session():
             'action_items': data.get('action_items', []),
             'created_at': datetime.now(timezone.utc).isoformat()
         }
-        sessions_db[session_id] = session
-        
+        lead_store.insert_session(session)
+
         return jsonify({
             'success': True,
             'session': session,
@@ -2762,8 +3047,8 @@ def create_appointment():
             'status': 'scheduled',
             'created_at': datetime.now(timezone.utc).isoformat()
         }
-        appointments_db[appointment_id] = appointment
-        
+        lead_store.insert_appointment(appointment)
+
         return jsonify({
             'success': True,
             'appointment': appointment,
@@ -2779,9 +3064,9 @@ def get_metrics():
     """Get dashboard metrics - called by MCP server."""
     metrics = lead_store.status_metrics()
     total_leads = metrics['total_leads']
-    active_clients = len(clients_db)
-    sessions_total = len(sessions_db)
-    upcoming_count = len(appointments_db)
+    active_clients = lead_store.count_clients()
+    sessions_total = lead_store.count_sessions()
+    upcoming_count = lead_store.count_appointments()
 
     return jsonify({
         # Flat keys for dashboard UI
@@ -2814,7 +3099,7 @@ def get_metrics():
         },
         'clients': {
             'active': active_clients,
-            'in_intake': sum(1 for c in clients_db.values() if c.get('status') == 'intake')
+            'in_intake': lead_store.count_clients(status='intake')
         },
         'sessions': {
             'completed_this_week': sessions_total,
@@ -2969,6 +3254,31 @@ def scheduler_status():
         })
     return jsonify({'status': 'running', 'jobs': jobs}), 200
 
+
+# =============================================================================
+# STARTUP WARNINGS
+# =============================================================================
+def _log_startup_warnings():
+    """Log warnings for missing production configuration."""
+    warnings = []
+    if not INTERNAL_API_KEY:
+        warnings.append("INTERNAL_API_KEY not set - API auth disabled" + (" (CRITICAL on Azure!)" if IS_AZURE else " (OK for local dev)"))
+    if not Config.ANTHROPIC_API_KEY and not Config.OPENAI_API_KEY and not Config.OPENROUTER_API_KEY:
+        warnings.append("No LLM API key configured - /api/chat will fail")
+    if not Config.MS_CLIENT_ID:
+        warnings.append("MS_CLIENT_ID not set - Microsoft Graph/SharePoint disabled")
+    if not Config.DIALPAD_API_KEY:
+        warnings.append("DIALPAD_API_KEY not set - Dialpad integration disabled")
+    if not Config.DIALPAD_WEBHOOK_SECRET:
+        warnings.append("DIALPAD_WEBHOOK_SECRET not set - webhook signature verification disabled")
+    if not Config.GODADDY_WEBHOOK_SECRET:
+        warnings.append("GODADDY_WEBHOOK_SECRET not set - webhook signature verification disabled")
+    for w in warnings:
+        logger.warning(f"[STARTUP] {w}")
+    if not warnings:
+        logger.info("[STARTUP] All critical secrets configured")
+
+_log_startup_warnings()
 
 # =============================================================================
 # MAIN

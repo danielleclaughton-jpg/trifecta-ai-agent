@@ -214,6 +214,247 @@
       font-weight: 500;
     }
 
+    .mission-shell{
+      background:
+        radial-gradient(circle at top right, rgba(45, 206, 211, .18), transparent 35%),
+        linear-gradient(180deg, rgba(20, 25, 39, .96), rgba(10, 14, 26, .96));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .mission-top{
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .mission-hero{
+      padding: 4px 0;
+    }
+
+    .eyebrow{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(45, 206, 211, .09);
+      border: 1px solid rgba(45, 206, 211, .18);
+      color: var(--teal);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .mission-headline{
+      font-size: clamp(28px, 5vw, 42px);
+      line-height: 1.05;
+      letter-spacing: -1.4px;
+      margin-bottom: 10px;
+    }
+
+    .mission-copy{
+      max-width: 760px;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .mission-focus{
+      display: grid;
+      gap: 10px;
+    }
+
+    .focus-card{
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .focus-card strong{
+      display: block;
+      color: var(--text);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .pulse-grid{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .pulse-card{
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      min-height: 124px;
+    }
+
+    .pulse-card[data-tone="hot"]{
+      border-color: rgba(255, 92, 119, .35);
+      box-shadow: inset 0 0 0 1px rgba(255, 92, 119, .12);
+    }
+
+    .pulse-card[data-tone="watch"]{
+      border-color: rgba(255, 204, 102, .35);
+      box-shadow: inset 0 0 0 1px rgba(255, 204, 102, .10);
+    }
+
+    .pulse-label{
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-subtle);
+      margin-bottom: 8px;
+    }
+
+    .pulse-value{
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -.8px;
+      margin-bottom: 8px;
+    }
+
+    .pulse-detail{
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .agent-grid{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .agent-card{
+      background: linear-gradient(180deg, rgba(24, 30, 48, .98), rgba(14, 18, 30, .98));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .agent-card[data-status="hot"]{
+      border-color: rgba(255, 92, 119, .36);
+    }
+
+    .agent-card[data-status="watch"]{
+      border-color: rgba(255, 204, 102, .36);
+    }
+
+    .agent-top{
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: flex-start;
+    }
+
+    .agent-lane{
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--teal);
+      margin-bottom: 4px;
+    }
+
+    .agent-name{
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .agent-badge{
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .agent-copy{
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .agent-meta{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .agent-meta-item{
+      padding: 10px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: 12px;
+    }
+
+    .agent-meta-item strong{
+      display: block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-subtle);
+      margin-bottom: 5px;
+    }
+
+    .agent-meta-item span{
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .recent-grid{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .recent-card{
+      background: rgba(255,255,255,.02);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .recent-top{
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .recent-status{
+      color: var(--teal);
+      font-weight: 600;
+    }
+
+    .recent-summary{
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
     /* Main Grid */
     .main-grid{
       display: grid;
@@ -393,6 +634,13 @@
       .leads-layout{
         grid-template-columns: 1fr;
       }
+
+      .mission-top,
+      .pulse-grid,
+      .agent-grid,
+      .recent-grid{
+        grid-template-columns: 1fr;
+      }
     }
 
     .leads-list{
@@ -512,6 +760,30 @@
 
     <!-- Service Status -->
     <div class="services-grid" id="servicesGrid"></div>
+
+    <section class="mission-shell">
+      <div class="mission-top">
+        <div class="mission-hero">
+          <div class="eyebrow">Mission Control OS</div>
+          <h2 class="mission-headline" id="missionHeadline">Loading board room...</h2>
+          <p class="mission-copy" id="missionCopy">Pulling live pipeline, client operations, and founder priority signals from your current stack.</p>
+        </div>
+        <div class="mission-focus" id="missionFocus">
+          <div class="focus-card"><strong>Focus</strong>Waiting for live founder priorities.</div>
+        </div>
+      </div>
+
+      <div class="pulse-grid" id="pulseGrid">
+        <div class="pulse-card">
+          <div class="pulse-label">Loading</div>
+          <div class="pulse-value">--</div>
+          <div class="pulse-detail">Mission control metrics are loading.</div>
+        </div>
+      </div>
+
+      <div class="agent-grid" id="agentGrid"></div>
+      <div class="recent-grid" id="recentGrid"></div>
+    </section>
 
     <!-- Main Content Grid -->
     <div class="main-grid">
@@ -887,15 +1159,14 @@
     </div>
 
     <div class="footer">
-      <div>Dev dashboard served by <span class="code">python dashboard_dev.py</span> (port 3015)</div>
-      <div class="mt-xs">API should run separately on <span class="code">localhost:5000</span> or Azure URL</div>
+      <div>Trifecta Command Center &mdash; <span class="code">v1.0</span></div>
     </div>
   </div>
 
   <script>
     const STORAGE_KEY = 'trifecta_admin_api_base';
     const TOKEN_KEY = 'trifecta_admin_auth_token';
-    const DEFAULT_LOCAL = 'http://localhost:5000';
+    const DEFAULT_LOCAL = window.location.origin;
     const DEFAULT_LOCAL_ALT = 'http://localhost:5000';
 
     function normalizeBase(url) {
@@ -1159,6 +1430,76 @@
       }
     }
 
+    function renderMissionControl(data) {
+      if (!data) return;
+      document.getElementById('missionHeadline').textContent = data.business?.headline || 'Trifecta Mission Control';
+      document.getElementById('missionCopy').textContent = data.business?.subhead || 'Live operating view for the current business.';
+
+      const focusEl = document.getElementById('missionFocus');
+      const focusItems = Array.isArray(data.focus) && data.focus.length ? data.focus : ['No focus items available yet.'];
+      focusEl.innerHTML = focusItems.map((item, index) => `
+        <div class="focus-card">
+          <strong>${index === 0 ? 'Founder Focus' : index === 1 ? 'Top Signal' : 'Model Readiness'}</strong>
+          ${item}
+        </div>
+      `).join('');
+
+      const pulseEl = document.getElementById('pulseGrid');
+      pulseEl.innerHTML = (data.pulse || []).map((item) => `
+        <div class="pulse-card" data-tone="${item.tone || 'steady'}">
+          <div class="pulse-label">${item.label || 'Metric'}</div>
+          <div class="pulse-value">${item.value || '--'}</div>
+          <div class="pulse-detail">${item.detail || ''}</div>
+        </div>
+      `).join('');
+
+      const agentEl = document.getElementById('agentGrid');
+      agentEl.innerHTML = (data.agents || []).map((agent) => `
+        <article class="agent-card" data-status="${agent.status || 'steady'}">
+          <div class="agent-top">
+            <div>
+              <div class="agent-lane">${agent.lane || 'Ops'}</div>
+              <div class="agent-name">${agent.name || 'Agent'}</div>
+            </div>
+            <div class="agent-badge">${agent.status || 'steady'}</div>
+          </div>
+          <div class="agent-copy">${agent.current_work || 'No current work reported.'}</div>
+          <div class="agent-meta">
+            <div class="agent-meta-item">
+              <strong>Queue</strong>
+              <span>${agent.queue ?? 0}</span>
+            </div>
+            <div class="agent-meta-item">
+              <strong>Model</strong>
+              <span>${agent.model || 'system'}</span>
+            </div>
+            <div class="agent-meta-item">
+              <strong>Target</strong>
+              <span>${agent.target || 'General operations'}</span>
+            </div>
+          </div>
+        </article>
+      `).join('');
+
+      const recentEl = document.getElementById('recentGrid');
+      recentEl.innerHTML = (data.recent_work || []).map((item) => `
+        <article class="recent-card">
+          <div class="recent-top">
+            <span>${item.title || 'Lead'}</span>
+            <span class="recent-status">${item.status || 'UNKNOWN'}</span>
+          </div>
+          <div class="pulse-label">${item.source || 'SOURCE'} • ${item.age || 'unknown'}</div>
+          <div class="recent-summary">${item.summary || 'No summary captured yet.'}</div>
+        </article>
+      `).join('');
+    }
+
+    async function loadMissionControl() {
+      const res = await fetchJson('/api/dashboard/mission-control', { method: 'GET', timeoutMs: 12000 });
+      if (res.ok) renderMissionControl(res.data);
+      return res;
+    }
+
     // Helper to bind buttons to API actions
     function bindAction(btnId, metaId, outId, loadingText, actionFn) {
       const btn = document.getElementById(btnId);
@@ -1278,8 +1619,9 @@
 
     // Initialize
     setApiBase(getApiBase());
-    ping();
+    ping().then(() => loadMissionControl());
     setInterval(ping, 15000);
+    setInterval(loadMissionControl, 20000);
     window.addEventListener('load', showMissingBrandAssetsIfAny);
   </script>
 </body>
