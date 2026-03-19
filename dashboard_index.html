@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Trifecta Admin Dashboard</title>
+  <title>Trifecta Command Center</title>
   <style>
     :root{
       --bg: #0a0e1a;
@@ -615,6 +615,211 @@
     .mr-sm{ margin-right: 8px; }
     .mt-xs{ margin-top: 4px; }
 
+    /* Sticky Header */
+    .header{
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Toast Notifications */
+    .toast-container{
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast{
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5);
+      pointer-events: auto;
+      animation: toastIn .3s ease-out;
+      cursor: pointer;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast.success{
+      background: rgba(57, 217, 138, .15);
+      border: 1px solid rgba(57, 217, 138, .4);
+      color: var(--success);
+    }
+
+    .toast.error{
+      background: rgba(255, 92, 119, .15);
+      border: 1px solid rgba(255, 92, 119, .4);
+      color: var(--danger);
+    }
+
+    .toast.info{
+      background: rgba(45, 206, 211, .15);
+      border: 1px solid rgba(45, 206, 211, .4);
+      color: var(--teal);
+    }
+
+    .toast-icon{ font-size: 16px; flex-shrink: 0; }
+
+    @keyframes toastIn{
+      from{ opacity: 0; transform: translateX(40px); }
+      to{ opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes toastOut{
+      from{ opacity: 1; transform: translateX(0); }
+      to{ opacity: 0; transform: translateX(40px); }
+    }
+
+    /* Collapsible Cards */
+    .card-toggle{
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all .15s;
+      line-height: 1;
+    }
+
+    .card-toggle:hover{
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+    }
+
+    .card-body.collapsed{
+      display: none;
+    }
+
+    .card-toggle.collapsed{
+      transform: rotate(-90deg);
+    }
+
+    /* Copy Button */
+    .copy-btn{
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      transition: all .15s;
+    }
+
+    .copy-btn:hover{
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      border-color: var(--border-hover);
+    }
+
+    /* Loading Spinner */
+    .spinner{
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid transparent;
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    /* Lead Status Badges */
+    .lead-status-badge{
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    .lead-status-badge.inquiry{ background: rgba(45, 206, 211, .15); color: var(--teal); }
+    .lead-status-badge.draft{ background: rgba(255, 204, 102, .15); color: var(--warning); }
+    .lead-status-badge.review{ background: rgba(255, 92, 119, .15); color: var(--danger); }
+    .lead-status-badge.sent{ background: rgba(57, 217, 138, .15); color: var(--success); }
+    .lead-status-badge.error{ background: rgba(255, 92, 119, .25); color: var(--danger); }
+    .lead-status-badge.archived{ background: rgba(255,255,255,.08); color: var(--text-muted); }
+
+    /* Lead Approval Queue Stats */
+    .lead-stats{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .lead-stat{
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .lead-stat:hover{
+      border-color: var(--teal);
+      background: rgba(45, 206, 211, .05);
+    }
+
+    .lead-stat.active{
+      border-color: var(--teal);
+      background: rgba(45, 206, 211, .08);
+    }
+
+    .lead-stat-count{
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -.5px;
+    }
+
+    .lead-stat-label{
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Card accent colors */
+    .card[data-accent="leads"] .card-title{ color: #4ecdc4; }
+    .card[data-accent="leads"] { border-top: 2px solid rgba(78, 205, 196, .4); }
+    .card[data-accent="chat"] .card-title{ color: #a78bfa; }
+    .card[data-accent="chat"] { border-top: 2px solid rgba(167, 139, 250, .4); }
+    .card[data-accent="docs"] .card-title{ color: #fbbf24; }
+    .card[data-accent="docs"] { border-top: 2px solid rgba(251, 191, 36, .4); }
+    .card[data-accent="comms"] .card-title{ color: #34d399; }
+    .card[data-accent="comms"] { border-top: 2px solid rgba(52, 211, 153, .4); }
+
+    /* Improved subtle text contrast */
+    .text-subtle-improved{ color: rgba(255,255,255,.55); }
+
+    /* Button disabled state */
+    .btn:disabled{
+      opacity: .4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
     .footer{
       margin-top: 32px;
       padding-top: 24px;
@@ -718,6 +923,7 @@
   </style>
 </head>
 <body>
+  <div class="toast-container" id="toastContainer"></div>
   <div class="container">
     <!-- Header -->
     <div class="header">
@@ -788,13 +994,16 @@
     <!-- Main Content Grid -->
     <div class="main-grid">
       <!-- Chat -->
-      <div class="card">
+      <div class="card" data-accent="chat" data-card="chat">
         <div class="card-header">
           <div>
             <div class="card-title">AI Chat (Claude)</div>
-            <div class="card-desc">POST <span class="code">/api/chat</span> — Chat with AI agent</div>
+            <div class="card-desc">Chat with your AI agent</div>
           </div>
-          <button class="btn btn-primary" id="chatBtn">Send</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="chatBtn">Send</button>
+            <button class="card-toggle" onclick="toggleCard('chat')">&#9660;</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="form-group">
@@ -814,15 +1023,16 @@
       </div>
 
       <!-- Skills -->
-      <div class="card">
+      <div class="card" data-card="skills">
         <div class="card-header">
           <div>
             <div class="card-title">Skills</div>
-            <div class="card-desc">GET <span class="code">/api/skills</span> — List loaded skills</div>
+            <div class="card-desc">Loaded agent skills</div>
           </div>
-          <div>
+          <div style="display:flex;gap:8px;align-items:center;">
             <button class="btn mr-sm" id="skillsReloadBtn">Reload</button>
             <button class="btn btn-primary" id="skillsBtn">Load</button>
+            <button class="card-toggle" onclick="toggleCard('skills')">&#9660;</button>
           </div>
         </div>
         <div class="card-body">
@@ -839,15 +1049,27 @@
       </div>
 
       <!-- Leads Pipeline -->
-      <div class="card">
+      <div class="card" data-accent="leads" data-card="leads">
         <div class="card-header">
           <div>
             <div class="card-title">Leads Pipeline</div>
-            <div class="card-desc">List, inspect, approve/send, reject leads</div>
+            <div class="card-desc">Approve, send, and manage your lead queue</div>
           </div>
-          <button class="btn btn-primary" id="leadsLoadBtn">Load Leads</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="leadsLoadBtn">Load Leads</button>
+            <button class="card-toggle" onclick="toggleCard('leads')">&#9660;</button>
+          </div>
         </div>
         <div class="card-body">
+          <div class="lead-stats" id="leadStats">
+            <div class="lead-stat" onclick="filterLeadsByStatus('')"><div class="lead-stat-count" id="statTotal">--</div><div class="lead-stat-label">Total</div></div>
+            <div class="lead-stat" onclick="filterLeadsByStatus('NEEDS_HUMAN_REVIEW')"><div class="lead-stat-count" id="statReview" style="color:var(--danger)">--</div><div class="lead-stat-label">Needs Review</div></div>
+            <div class="lead-stat" onclick="filterLeadsByStatus('DRAFT_CREATED')"><div class="lead-stat-count" id="statDraft" style="color:var(--warning)">--</div><div class="lead-stat-label">Drafts</div></div>
+            <div class="lead-stat" onclick="filterLeadsByStatus('INQUIRY_RECEIVED')"><div class="lead-stat-count" id="statInquiry" style="color:var(--teal)">--</div><div class="lead-stat-label">New</div></div>
+            <div class="lead-stat" onclick="filterLeadsByStatus('PROGRAM_INFO_SENT')"><div class="lead-stat-count" id="statSent" style="color:var(--success)">--</div><div class="lead-stat-label">Sent</div></div>
+            <div class="lead-stat" onclick="filterLeadsByStatus('ERROR')"><div class="lead-stat-count" id="statError" style="color:var(--danger)">--</div><div class="lead-stat-label">Errors</div></div>
+          </div>
+
           <div class="form-row">
             <div class="form-group">
               <label for="leadStatusFilter">Status</label>
@@ -928,13 +1150,16 @@
       </div>
 
       <!-- GoDaddy WebChat -->
-      <div class="card">
+      <div class="card" data-accent="comms" data-card="godaddy">
         <div class="card-header">
           <div>
             <div class="card-title">GoDaddy WebChat</div>
-            <div class="card-desc">GET <span class="code">/api/godaddy/conversations</span> — Fetch conversations</div>
+            <div class="card-desc">Website chat conversations</div>
           </div>
-          <button class="btn btn-primary" id="godaddyBtn">Fetch</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="godaddyBtn">Fetch</button>
+            <button class="card-toggle" onclick="toggleCard('godaddy')">&#9660;</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="form-row">
@@ -964,13 +1189,16 @@
       </div>
 
       <!-- Portal Sync -->
-      <div class="card">
+      <div class="card" data-card="portal">
         <div class="card-header">
           <div>
             <div class="card-title">Portal Sync</div>
-            <div class="card-desc">GET <span class="code">/api/portal-sync</span> — Client analysis</div>
+            <div class="card-desc">Client risk analysis</div>
           </div>
-          <button class="btn btn-primary" id="portalBtn">Run</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="portalBtn">Run</button>
+            <button class="card-toggle" onclick="toggleCard('portal')">&#9660;</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="form-group">
@@ -994,13 +1222,16 @@
       </div>
 
       <!-- Graph Clients -->
-      <div class="card">
+      <div class="card" data-accent="comms" data-card="graph">
         <div class="card-header">
           <div>
             <div class="card-title">Microsoft Graph Clients</div>
-            <div class="card-desc">GET <span class="code">/api/graph/clients</span> — Fetch Azure AD clients</div>
+            <div class="card-desc">Azure AD client roster</div>
           </div>
-          <button class="btn btn-primary" id="graphBtn">Fetch</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="graphBtn">Fetch</button>
+            <button class="card-toggle" onclick="toggleCard('graph')">&#9660;</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="output-box">
@@ -1016,13 +1247,16 @@
       </div>
 
       <!-- Dialpad Calls -->
-      <div class="card">
+      <div class="card" data-accent="comms" data-card="dialpad">
         <div class="card-header">
           <div>
             <div class="card-title">Dialpad Calls</div>
-            <div class="card-desc">GET <span class="code">/api/dialpad/calls</span> — Recent calls</div>
+            <div class="card-desc">Recent call history</div>
           </div>
-          <button class="btn btn-primary" id="dialpadBtn">Fetch</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="dialpadBtn">Fetch</button>
+            <button class="card-toggle" onclick="toggleCard('dialpad')">&#9660;</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="form-group">
@@ -1042,13 +1276,16 @@
       </div>
 
       <!-- Dialpad Transcription -->
-      <div class="card">
+      <div class="card" data-accent="comms" data-card="dialpadTrans">
         <div class="card-header">
           <div>
             <div class="card-title">Dialpad Transcription</div>
-            <div class="card-desc">GET <span class="code">/api/dialpad/transcription/&lt;id&gt;</span> — Get call transcription</div>
+            <div class="card-desc">Call transcription viewer</div>
           </div>
-          <button class="btn btn-primary" id="dialpadTransBtn">Get</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="dialpadTransBtn">Get</button>
+            <button class="card-toggle" onclick="toggleCard('dialpadTrans')">&#9660;</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="form-group">
@@ -1068,13 +1305,16 @@
       </div>
 
       <!-- SharePoint Upload -->
-      <div class="card">
+      <div class="card" data-accent="docs" data-card="sharepoint">
         <div class="card-header">
           <div>
             <div class="card-title">SharePoint Upload</div>
-            <div class="card-desc">POST <span class="code">/api/sharepoint/upload</span> — Upload document</div>
+            <div class="card-desc">Upload documents to SharePoint</div>
           </div>
-          <button class="btn btn-primary" id="sharepointBtn">Upload</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="sharepointBtn">Upload</button>
+            <button class="card-toggle" onclick="toggleCard('sharepoint')">&#9660;</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="form-row">
@@ -1112,13 +1352,16 @@
       </div>
 
       <!-- Contract Generator -->
-      <div class="card">
+      <div class="card" data-accent="docs" data-card="contract">
         <div class="card-header">
           <div>
             <div class="card-title">Contract Generator</div>
-            <div class="card-desc">POST <span class="code">/api/contract/&lt;id&gt;</span> — Generate invoice</div>
+            <div class="card-desc">Generate contracts and invoices</div>
           </div>
-          <button class="btn btn-primary" id="contractBtn">Generate</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="contractBtn">Generate</button>
+            <button class="card-toggle" onclick="toggleCard('contract')">&#9660;</button>
+          </div>
         </div>
         <div class="card-body">
           <div class="form-row">
@@ -1209,6 +1452,74 @@
       try { return JSON.stringify(obj, null, 2); } catch { return String(obj); }
     }
 
+    // --- Toast Notification System ---
+    function showToast(message, type = 'info', duration = 4000) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const icons = { success: '\u2713', error: '\u2717', info: '\u2139' };
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span>${message}</span>`;
+      toast.addEventListener('click', () => { toast.style.animation = 'toastOut .2s ease-in forwards'; setTimeout(() => toast.remove(), 200); });
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) { toast.style.animation = 'toastOut .2s ease-in forwards'; setTimeout(() => toast.remove(), 200); } }, duration);
+    }
+
+    // --- Collapsible Cards ---
+    const CARD_STATE_KEY = 'trifecta_card_states';
+    function getCardStates() {
+      try { return JSON.parse(localStorage.getItem(CARD_STATE_KEY) || '{}'); } catch { return {}; }
+    }
+    function toggleCard(cardName) {
+      const card = document.querySelector(`[data-card="${cardName}"]`);
+      if (!card) return;
+      const body = card.querySelector('.card-body');
+      const toggle = card.querySelector('.card-toggle');
+      const states = getCardStates();
+      if (body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        toggle.classList.remove('collapsed');
+        states[cardName] = 'open';
+      } else {
+        body.classList.add('collapsed');
+        toggle.classList.add('collapsed');
+        states[cardName] = 'collapsed';
+      }
+      localStorage.setItem(CARD_STATE_KEY, JSON.stringify(states));
+    }
+    function restoreCardStates() {
+      const states = getCardStates();
+      for (const [name, state] of Object.entries(states)) {
+        if (state === 'collapsed') {
+          const card = document.querySelector(`[data-card="${name}"]`);
+          if (!card) continue;
+          const body = card.querySelector('.card-body');
+          const toggle = card.querySelector('.card-toggle');
+          if (body) body.classList.add('collapsed');
+          if (toggle) toggle.classList.add('collapsed');
+        }
+      }
+    }
+
+    // --- Copy Button for Output Boxes ---
+    function addCopyButtons() {
+      document.querySelectorAll('.output-header').forEach(header => {
+        if (header.querySelector('.copy-btn')) return;
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = 'Copy';
+        btn.addEventListener('click', () => {
+          const pre = header.parentElement.querySelector('pre');
+          if (pre) {
+            navigator.clipboard.writeText(pre.textContent).then(() => {
+              btn.textContent = 'Copied!';
+              setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+            });
+          }
+        });
+        header.appendChild(btn);
+      });
+    }
+
     function setOut(metaEl, outEl, status, ms, body) {
       metaEl.textContent = `status=${status}  time=${ms}ms`;
       outEl.textContent = typeof body === 'string' ? body : pretty(body);
@@ -1228,8 +1539,45 @@
       pre.textContent = lead ? pretty(lead) : 'Select a lead to view detail.';
     }
 
+    function statusBadgeClass(status) {
+      const map = { INQUIRY_RECEIVED: 'inquiry', DRAFT_CREATED: 'draft', NEEDS_HUMAN_REVIEW: 'review', PROGRAM_INFO_SENT: 'sent', ERROR: 'error', ARCHIVED: 'archived' };
+      return map[status] || '';
+    }
+
+    function statusShortName(status) {
+      const map = { INQUIRY_RECEIVED: 'New', DRAFT_CREATED: 'Draft', NEEDS_HUMAN_REVIEW: 'Review', PROGRAM_INFO_SENT: 'Sent', ERROR: 'Error', ARCHIVED: 'Archived' };
+      return map[status] || status;
+    }
+
+    function updateLeadStats(leads) {
+      if (!Array.isArray(leads)) return;
+      const counts = {};
+      for (const l of leads) counts[l.status] = (counts[l.status] || 0) + 1;
+      document.getElementById('statTotal').textContent = leads.length;
+      document.getElementById('statReview').textContent = counts['NEEDS_HUMAN_REVIEW'] || 0;
+      document.getElementById('statDraft').textContent = counts['DRAFT_CREATED'] || 0;
+      document.getElementById('statInquiry').textContent = counts['INQUIRY_RECEIVED'] || 0;
+      document.getElementById('statSent').textContent = counts['PROGRAM_INFO_SENT'] || 0;
+      document.getElementById('statError').textContent = counts['ERROR'] || 0;
+    }
+
+    function filterLeadsByStatus(status) {
+      document.getElementById('leadStatusFilter').value = status;
+      // Highlight active stat
+      document.querySelectorAll('.lead-stat').forEach(el => el.classList.remove('active'));
+      if (status) {
+        const idx = { NEEDS_HUMAN_REVIEW: 1, DRAFT_CREATED: 2, INQUIRY_RECEIVED: 3, PROGRAM_INFO_SENT: 4, ERROR: 5 }[status];
+        const stats = document.querySelectorAll('.lead-stat');
+        if (idx !== undefined && stats[idx]) stats[idx].classList.add('active');
+      } else {
+        document.querySelector('.lead-stat')?.classList.add('active');
+      }
+      loadLeads();
+    }
+
     function renderLeadsList(leads) {
       const listEl = document.getElementById('leadsList');
+      updateLeadStats(leads);
       if (!Array.isArray(leads) || !leads.length) {
         listEl.innerHTML = '<div style="padding:10px 12px;color:var(--text-muted);font-size:12px;">No leads found.</div>';
         selectedLeadId = '';
@@ -1246,11 +1594,11 @@
         row.innerHTML = `
           <div class="lead-row-main">
             <span>${lead.name || 'Unknown Lead'}</span>
-            <span>${lead.status || 'UNKNOWN'}</span>
+            <span class="lead-status-badge ${statusBadgeClass(lead.status)}">${statusShortName(lead.status)}</span>
           </div>
           <div class="lead-row-sub">
             <span>${lead.source || ''}</span>
-            <span>${lead.updated_at || ''}</span>
+            <span>${lead.updated_at ? new Date(lead.updated_at).toLocaleDateString() : ''}</span>
           </div>
         `;
         row.addEventListener('click', () => {
@@ -1340,31 +1688,63 @@
       return res;
     }
 
+    let _actionInProgress = false;
+
     async function approveSendSelectedLead() {
-      if (!selectedLeadId) return { status: 400, ms: 0, data: { error: 'No lead selected' } };
-      const actor = document.getElementById('leadActor').value.trim() || 'dashboard-operator';
-      const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/approve-send`, {
-        method: 'POST',
-        body: JSON.stringify({ approved_by: actor }),
-        timeoutMs: 45000
-      });
-      setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
-      if (res.ok) await loadLeadDetail(selectedLeadId, false);
-      return res;
+      if (!selectedLeadId || _actionInProgress) return { status: 400, ms: 0, data: { error: 'No lead selected or action in progress' } };
+      _actionInProgress = true;
+      const btn = document.getElementById('leadApproveSendBtn');
+      btn.innerHTML = '<span class="spinner"></span>Sending...';
+      btn.disabled = true;
+      try {
+        const actor = document.getElementById('leadActor').value.trim() || 'dashboard-operator';
+        const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/approve-send`, {
+          method: 'POST',
+          body: JSON.stringify({ approved_by: actor }),
+          timeoutMs: 45000
+        });
+        setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
+        if (res.ok) {
+          showToast('Lead approved and program info sent!', 'success');
+          await loadLeads(); // refresh the full list
+        } else {
+          showToast(`Approve failed: ${res.data?.error || res.status}`, 'error');
+        }
+        return res;
+      } finally {
+        _actionInProgress = false;
+        btn.innerHTML = 'Approve + Send';
+        btn.disabled = !selectedLeadId;
+      }
     }
 
     async function rejectSelectedLead() {
-      if (!selectedLeadId) return { status: 400, ms: 0, data: { error: 'No lead selected' } };
-      const actor = document.getElementById('leadActor').value.trim() || 'dashboard-operator';
-      const reason = document.getElementById('leadRejectReason').value.trim() || 'Requires manual rewrite';
-      const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/reject`, {
-        method: 'POST',
-        body: JSON.stringify({ rejected_by: actor, reason }),
-        timeoutMs: 30000
-      });
-      setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
-      if (res.ok) await loadLeadDetail(selectedLeadId, false);
-      return res;
+      if (!selectedLeadId || _actionInProgress) return { status: 400, ms: 0, data: { error: 'No lead selected or action in progress' } };
+      _actionInProgress = true;
+      const btn = document.getElementById('leadRejectBtn');
+      btn.innerHTML = '<span class="spinner"></span>Rejecting...';
+      btn.disabled = true;
+      try {
+        const actor = document.getElementById('leadActor').value.trim() || 'dashboard-operator';
+        const reason = document.getElementById('leadRejectReason').value.trim() || 'Requires manual rewrite';
+        const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/reject`, {
+          method: 'POST',
+          body: JSON.stringify({ rejected_by: actor, reason }),
+          timeoutMs: 30000
+        });
+        setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
+        if (res.ok) {
+          showToast('Lead rejected', 'info');
+          await loadLeads(); // refresh the full list
+        } else {
+          showToast(`Reject failed: ${res.data?.error || res.status}`, 'error');
+        }
+        return res;
+      } finally {
+        _actionInProgress = false;
+        btn.innerHTML = 'Reject';
+        btn.disabled = !selectedLeadId;
+      }
     }
 
     async function fetchSelectedLeadAudit() {
@@ -1374,6 +1754,7 @@
         timeoutMs: 25000
       });
       setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
+      if (res.ok) showToast('Audit trail loaded', 'info');
       return res;
     }
 
@@ -1507,12 +1888,24 @@
       btn.addEventListener('click', async () => {
         const meta = document.getElementById(metaId);
         const out = document.getElementById(outId);
+        const origText = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner"></span>${loadingText}`;
+        btn.disabled = true;
         meta.textContent = loadingText;
         try {
           const res = await actionFn();
           setOut(meta, out, res.status, res.ms, res.data);
+          if (res.ok) {
+            showToast(`${origText} completed (${res.ms}ms)`, 'success');
+          } else if (res.status > 0) {
+            showToast(`${origText} failed: ${res.data?.error || res.status}`, 'error');
+          }
         } catch (err) {
           setOut(meta, out, 0, 0, { error: err.message });
+          showToast(`Error: ${err.message}`, 'error');
+        } finally {
+          btn.innerHTML = origText;
+          btn.disabled = false;
         }
       });
     }
@@ -1619,10 +2012,17 @@
 
     // Initialize
     setApiBase(getApiBase());
-    ping().then(() => loadMissionControl());
+    restoreCardStates();
+    ping().then(() => {
+      loadMissionControl();
+      loadLeads(); // Auto-load leads on startup
+    });
     setInterval(ping, 15000);
     setInterval(loadMissionControl, 20000);
-    window.addEventListener('load', showMissingBrandAssetsIfAny);
+    window.addEventListener('load', () => {
+      showMissingBrandAssetsIfAny();
+      addCopyButtons();
+    });
   </script>
 </body>
 </html>
