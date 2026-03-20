@@ -273,6 +273,10 @@ LEAD_STATUS = {
     'DRAFT_CREATED': 'DRAFT_CREATED',
     'PROGRAM_INFO_SENT': 'PROGRAM_INFO_SENT',
     'NEEDS_HUMAN_REVIEW': 'NEEDS_HUMAN_REVIEW',
+    'REPLIED': 'REPLIED',
+    'CONSULTATION_BOOKED': 'CONSULTATION_BOOKED',
+    'ENROLLED': 'ENROLLED',
+    'CLOSED': 'CLOSED',
     'ERROR': 'ERROR',
     'ARCHIVED': 'ARCHIVED',
 }
@@ -304,7 +308,25 @@ VALID_LEAD_TRANSITIONS = {
         LEAD_STATUS['ERROR'],
         LEAD_STATUS['ARCHIVED'],
     },
-    LEAD_STATUS['PROGRAM_INFO_SENT']: {LEAD_STATUS['ARCHIVED']},
+    LEAD_STATUS['PROGRAM_INFO_SENT']: {
+        LEAD_STATUS['REPLIED'],
+        LEAD_STATUS['ARCHIVED'],
+    },
+    LEAD_STATUS['REPLIED']: {
+        LEAD_STATUS['CONSULTATION_BOOKED'],
+        LEAD_STATUS['CLOSED'],
+        LEAD_STATUS['ARCHIVED'],
+    },
+    LEAD_STATUS['CONSULTATION_BOOKED']: {
+        LEAD_STATUS['ENROLLED'],
+        LEAD_STATUS['CLOSED'],
+        LEAD_STATUS['ARCHIVED'],
+    },
+    LEAD_STATUS['ENROLLED']: {
+        LEAD_STATUS['CLOSED'],
+        LEAD_STATUS['ARCHIVED'],
+    },
+    LEAD_STATUS['CLOSED']: {LEAD_STATUS['ARCHIVED']},
     LEAD_STATUS['ERROR']: {
         LEAD_STATUS['INQUIRY_RECEIVED'],
         LEAD_STATUS['NEEDS_HUMAN_REVIEW'],
@@ -1278,6 +1300,9 @@ class GraphClient:
 
 # Global Graph client instance
 graph_client = GraphClient()
+# TODO: Wire MS Graph mail webhook (or poll /me/mailFolders/inbox/messages)
+# to call update_lead_status() when a reply is received from a known lead email address.
+# See: https://learn.microsoft.com/en-us/graph/webhooks
 
 # =============================================================================
 # DIALPAD INTEGRATION
@@ -2300,6 +2325,61 @@ def process_inbound_lead_event(normalized, raw_payload):
     return {'lead': lead, 'event': event, 'duplicate': False, 'draft_generated': bool(draft)}
 
 
+def update_lead_status(email: str = None, phone: str = None, new_status: str = None, notes: str = None) -> bool:
+    """Update lead status when they reply. Updates SQLite + Google Sheets."""
+    if not email and not phone:
+        return False
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        email_norm = normalize_email(email) if email else None
+        phone_norm = normalize_phone(phone) if phone else None
+
+        # Find the lead
+        lead = lead_store.get_lead_by_identity(email_norm, phone_norm, None)
+        if not lead:
+            return False
+
+        # Update status
+        lead_before = dict(lead)
+        lead_after, err = lead_store.set_lead_status(lead['id'], new_status)
+        if err:
+            # If transition isn't in VALID_LEAD_TRANSITIONS, force-update directly
+            with lead_store._connect() as conn:
+                conn.execute(
+                    'UPDATE leads SET status = ?, updated_at = ? WHERE id = ?',
+                    (new_status, now, lead['id'])
+                )
+            lead_after = lead_store.get_lead_by_id(lead['id'])
+
+        lead_store.add_audit('system', 'status_updated', 'lead', lead['id'], lead_before, lead_after)
+
+        # Update Google Sheets if credentials exist
+        try:
+            creds_path = os.path.join(_base_dir, 'google-credentials.json')
+            if os.path.exists(creds_path):
+                import gspread
+                from google.oauth2.service_account import Credentials
+                scopes = ['https://www.googleapis.com/auth/spreadsheets']
+                creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+                client = gspread.authorize(creds)
+                sheet = client.open_by_key(os.environ.get('GOOGLE_SHEETS_ID', '1aV55LlDzyfqVu4maXLxfN55cb_NPBnU21BjeqVbqnL0')).sheet1
+
+                # Find the row with this email/phone and update status column (H) and date responded (G)
+                cell = sheet.find(email_norm or phone_norm)
+                if cell:
+                    sheet.update_cell(cell.row, 7, now[:10])   # G: Date Responded
+                    sheet.update_cell(cell.row, 8, new_status)  # H: Status
+        except Exception as e:
+            logger.warning(f"Sheets status update failed (non-fatal): {e}")
+
+        logger.info(f"Lead status updated: {email or phone} -> {new_status}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Lead status update error: {e}")
+        return False
+
+
 def _extract_customer_identity(conversation):
     last_message = conversation.get('last_message') if isinstance(conversation.get('last_message'), dict) else {}
     author = conversation.get('author') if isinstance(conversation.get('author'), dict) else {}
@@ -2547,6 +2627,16 @@ def godaddy_webhook():
         event = request.get_json(force=True) or {}
         normalized = normalize_godaddy_event(event)
         result = process_inbound_lead_event(normalized, event)
+
+        # Auto-update lead status to REPLIED if this is a returning lead (duplicate event = they replied)
+        if result.get('duplicate') and result.get('lead'):
+            lead = result['lead']
+            lead_email = normalize_email(lead.get('email'))
+            lead_phone = normalize_phone(lead.get('phone'))
+            if lead.get('status') in (LEAD_STATUS['PROGRAM_INFO_SENT'], LEAD_STATUS['DRAFT_CREATED'], LEAD_STATUS['INQUIRY_RECEIVED']):
+                update_lead_status(email=lead_email, phone=lead_phone, new_status=LEAD_STATUS['REPLIED'], notes='Auto-detected reply via GoDaddy webhook')
+                logger.info(f"[GoDaddy] Auto-marked lead {lead['id']} as REPLIED")
+
         return jsonify({'status': 'received', 'source': normalized['source'], 'source_event_id': normalized['source_event_id'], 'duplicate': result['duplicate'], 'lead_id': result['lead']['id'] if result['lead'] else None, 'draft_generated': result['draft_generated']}), 200
     except Exception as e:
         logger.error("GoDaddy webhook error: %s", e)
@@ -3004,6 +3094,10 @@ WORKFLOW_STAGE = {
     'AWAITING_EMAIL': 'AWAITING_EMAIL',
     'PROGRAM_INFO_READY': 'PROGRAM_INFO_READY',
     'PROGRAM_INFO_SENT': 'PROGRAM_INFO_SENT',
+    'REPLIED': 'REPLIED',
+    'CONSULTATION_BOOKED': 'CONSULTATION_BOOKED',
+    'ENROLLED': 'ENROLLED',
+    'CLOSED': 'CLOSED',
     'NEEDS_REVIEW_ERROR': 'NEEDS_REVIEW_ERROR',
     'ARCHIVED_CLOSED': 'ARCHIVED_CLOSED',
 }
@@ -3070,8 +3164,14 @@ def _derive_lead_operational_state(lead, events=None, draft=None, outbound=None)
         }
     )
 
-    if status == LEAD_STATUS['ARCHIVED']:
+    if status == LEAD_STATUS['ARCHIVED'] or status == LEAD_STATUS['CLOSED']:
         workflow_stage = WORKFLOW_STAGE['ARCHIVED_CLOSED']
+    elif status == LEAD_STATUS['ENROLLED']:
+        workflow_stage = WORKFLOW_STAGE['ENROLLED']
+    elif status == LEAD_STATUS['CONSULTATION_BOOKED']:
+        workflow_stage = WORKFLOW_STAGE['CONSULTATION_BOOKED']
+    elif status == LEAD_STATUS['REPLIED']:
+        workflow_stage = WORKFLOW_STAGE['REPLIED']
     elif status in {LEAD_STATUS['ERROR'], LEAD_STATUS['NEEDS_HUMAN_REVIEW']}:
         workflow_stage = WORKFLOW_STAGE['NEEDS_REVIEW_ERROR']
     elif status == LEAD_STATUS['PROGRAM_INFO_SENT'] or outbound_status == 'sent':
@@ -3232,6 +3332,30 @@ def _reconcile_upstream_snapshots(upstream_snapshots, serialized_leads, stale_af
         'activity_mismatches': mismatches,
         'stale_cutoff': stale_cutoff.isoformat().replace('+00:00', 'Z'),
     }
+
+
+@app.route('/api/leads/update-status', methods=['POST'])
+def lead_update_status():
+    """Update lead status when they reply to email or chat."""
+    data = request.get_json() or {}
+    email = data.get('email')
+    phone = data.get('phone')
+    new_status = data.get('status', 'REPLIED')
+    notes = data.get('notes', '')
+
+    if not email and not phone:
+        return jsonify({'error': 'email or phone required'}), 400
+
+    valid_statuses = set(LEAD_STATUS.values())
+    if new_status not in valid_statuses:
+        return jsonify({'error': f'Invalid status. Valid: {sorted(valid_statuses)}'}), 400
+
+    success = update_lead_status(email=email, phone=phone, new_status=new_status, notes=notes)
+
+    if success:
+        return jsonify({'ok': True, 'status': new_status}), 200
+    else:
+        return jsonify({'error': 'Lead not found'}), 404
 
 
 @app.route('/api/leads', methods=['POST'])
