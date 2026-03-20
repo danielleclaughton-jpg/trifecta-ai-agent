@@ -14,3 +14,6 @@ intuit-oauth==1.2.6
 httpx==0.27.0
 xhtml2pdf==0.2.16
 apscheduler==3.10.4
+
+gspread>=6.0
+google-auth>=2.0

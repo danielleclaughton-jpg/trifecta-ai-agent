@@ -2226,6 +2226,46 @@ def maybe_generate_draft(lead):
     return draft
 
 
+def log_lead_to_sheets(lead_data: dict) -> bool:
+    """Log a new lead to Google Sheets. Returns True if successful."""
+    try:
+        creds_path = os.path.join(_base_dir, 'google-credentials.json')
+        if not os.path.exists(creds_path):
+            logger.warning("Google Sheets: google-credentials.json not found, skipping")
+            return False
+
+        import gspread
+        from google.oauth2.service_account import Credentials
+
+        scopes = ['https://www.googleapis.com/auth/spreadsheets']
+        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        client = gspread.authorize(creds)
+
+        sheet_id = os.environ.get('GOOGLE_SHEETS_ID', '1aV55LlDzyfqVu4maXLxfN55cb_NPBnU21BjeqVbqnL0')
+        sheet = client.open_by_key(sheet_id).sheet1
+
+        row = [
+            lead_data.get('created_at', '')[:10],           # A: Date Contacted
+            lead_data.get('name', ''),                       # B: Name
+            lead_data.get('email', ''),                      # C: Email
+            lead_data.get('phone', ''),                      # D: Phone
+            lead_data.get('source', ''),                     # E: Source
+            lead_data.get('initial_question', ''),           # F: Initial Question
+            '',                                               # G: Date Responded (blank)
+            lead_data.get('status', 'INQUIRY_RECEIVED'),     # H: Status
+            'No',                                            # I: Follow-up Sent
+            lead_data.get('program_interest', ''),           # J: Notes
+        ]
+
+        sheet.append_row(row)
+        logger.info(f"Lead logged to Google Sheets: {lead_data.get('name')}")
+        return True
+
+    except Exception as e:
+        logger.warning(f"Google Sheets logging failed (non-fatal): {e}")
+        return False
+
+
 def process_inbound_lead_event(normalized, raw_payload):
     existing = lead_store.lead_event_exists(normalized['source'], normalized['source_event_id'])
     if existing:
@@ -2252,6 +2292,8 @@ def process_inbound_lead_event(normalized, raw_payload):
     )
     if created:
         lead_store.add_audit('system', 'lead_created', 'lead', lead['id'], None, lead)
+        # Log new lead to Google Sheets (non-fatal)
+        log_lead_to_sheets(dict(lead))
     else:
         lead_store.add_audit('system', 'lead_updated', 'lead', lead['id'], lead_before, lead)
     draft = maybe_generate_draft(lead) if normalized.get('has_contact') else None

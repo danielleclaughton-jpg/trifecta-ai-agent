@@ -3,57 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trifecta Leads Pipeline</title>
+    <title>Trifecta Command Center | Leads</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
+        :root{
             --bg: #0a0e1a;
-            --panel: #111827;
-            --panel-2: #182235;
-            --border: #253244;
-            --text: #eef4ff;
-            --muted: #94a3b8;
-            --subtle: #64748b;
-            --blue: #3b82f6;
-            --cyan: #06b6d4;
-            --green: #10b981;
-            --yellow: #f59e0b;
-            --red: #ef4444;
-            --purple: #8b5cf6;
+            --surface: #131722;
+            --surface-elevated: #1a1f2e;
+            --border: rgba(255,255,255,.08);
+            --border-hover: rgba(255,255,255,.15);
+            --text: rgba(255,255,255,.95);
+            --text-muted: rgba(255,255,255,.65);
+            --text-subtle: rgba(255,255,255,.45);
+            --teal: #2dced3;
+            --teal-dark: #26c8cb;
+            --success: #39d98a;
+            --warning: #ffcc66;
+            --danger: #ff5c77;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --shadow: 0 4px 20px rgba(0,0,0,.3);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,.4);
         }
         body {
-            font-family: "Segoe UI", system-ui, sans-serif;
-            background: radial-gradient(circle at top, #15213a 0%, var(--bg) 45%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg);
             color: var(--text);
             min-height: 100vh;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px;
         }
         .header {
-            padding: 18px 28px;
-            border-bottom: 1px solid rgba(59, 130, 246, 0.25);
-            background: rgba(10, 14, 26, 0.85);
-            backdrop-filter: blur(10px);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
+            gap: 20px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top right, rgba(45, 206, 211, .18), transparent 35%),
+                linear-gradient(180deg, rgba(20, 25, 39, .96), rgba(10, 14, 26, .96));
+            pointer-events: none;
+        }
+        .hero, .status-panel { position: relative; z-index: 1; }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(45, 206, 211, .09);
+            border: 1px solid rgba(45, 206, 211, .18);
+            color: var(--teal);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .hero h1 {
+            font-size: clamp(28px, 4vw, 42px);
+            line-height: 1.04;
+            letter-spacing: -1.2px;
+            margin-bottom: 10px;
+        }
+        .hero p {
+            color: var(--text-muted);
+            font-size: 14px;
+            max-width: 760px;
+        }
+        .hero-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .hero-chip {
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+        }
+        .hero-chip strong {
+            display: block;
+            font-size: 11px;
+            letter-spacing: .8px;
+            text-transform: uppercase;
+            color: var(--text-subtle);
+            margin-bottom: 4px;
+        }
+        .hero-chip span {
+            font-size: 14px;
+            color: var(--text);
+        }
+        .status-panel {
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            gap: 12px;
+        }
+        .status-box {
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 14px 16px;
+        }
+        .status-row {
             display: flex;
             justify-content: space-between;
-            gap: 16px;
             align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
         }
-        .header h1 { font-size: 22px; margin-bottom: 4px; }
-        .header p, .meta { color: var(--muted); font-size: 12px; }
-        .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .status-row:last-child { margin-bottom: 0; }
+        .status-label, .meta { color: var(--text-muted); font-size: 12px; }
+        .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
         .btn {
             border: 1px solid var(--border);
-            background: var(--panel);
+            background: var(--surface-elevated);
             color: var(--text);
             padding: 8px 14px;
             border-radius: 10px;
             cursor: pointer;
             font-size: 12px;
+            transition: all .2s;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--border-hover);
+            background: var(--surface);
         }
         .btn.primary {
-            border-color: rgba(59, 130, 246, 0.45);
-            background: rgba(59, 130, 246, 0.12);
+            border-color: var(--teal);
+            background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+            color: #0a0e1a;
+            font-weight: 700;
         }
-        .container { padding: 22px 28px 32px; }
         .topbar {
             display: flex;
             justify-content: space-between;
@@ -69,13 +167,26 @@
             margin-bottom: 16px;
         }
         .stat, .alert, .detail, .column {
-            background: rgba(17, 24, 39, 0.92);
+            background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 14px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
         }
-        .stat { padding: 14px; }
+        .stat {
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat::after {
+            content: "";
+            position: absolute;
+            inset: auto -10% -60% 50%;
+            height: 90px;
+            background: radial-gradient(circle, rgba(45, 206, 211, .16), transparent 65%);
+            pointer-events: none;
+        }
         .stat .value { font-size: 28px; font-weight: 700; }
-        .stat .label { margin-top: 6px; font-size: 10px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.8px; }
+        .stat .label { margin-top: 6px; font-size: 10px; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.8px; }
         .alerts {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -84,17 +195,20 @@
         }
         .alert { padding: 14px; }
         .alert strong { display: block; margin-bottom: 5px; font-size: 12px; }
-        .alert p { font-size: 12px; color: var(--muted); line-height: 1.45; }
-        .alert.danger { border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.09); }
-        .alert.warn { border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.09); }
-        .alert.ok { border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.06); }
+        .alert p { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+        .alert.danger { border-color: rgba(255, 92, 119, .35); background: rgba(255, 92, 119, .08); }
+        .alert.warn { border-color: rgba(255, 204, 102, .35); background: rgba(255, 204, 102, .08); }
+        .alert.ok { border-color: rgba(57, 217, 138, .28); background: rgba(57, 217, 138, .06); }
         .board {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
+            gap: 14px;
             margin-bottom: 18px;
         }
-        .column { min-height: 260px; }
+        .column {
+            min-height: 320px;
+            background: var(--bg);
+        }
         .column-header {
             padding: 12px 14px;
             border-bottom: 1px solid var(--border);
@@ -106,7 +220,7 @@
         .column-title { font-size: 12px; font-weight: 700; }
         .column-count {
             font-size: 11px;
-            color: var(--muted);
+            color: var(--text-muted);
             border: 1px solid var(--border);
             border-radius: 999px;
             padding: 2px 8px;
@@ -116,16 +230,17 @@
             width: 100%;
             border: 1px solid var(--border);
             border-radius: 12px;
-            background: var(--panel-2);
+            background: rgba(255,255,255,.02);
             padding: 10px;
             text-align: left;
             color: var(--text);
             cursor: pointer;
-            transition: transform 0.15s ease, border-color 0.15s ease;
+            transition: transform 0.15s ease, border-color 0.15s ease, background .15s ease;
         }
         .lead-card:hover, .lead-card.active {
             transform: translateY(-1px);
-            border-color: rgba(59, 130, 246, 0.45);
+            border-color: var(--teal);
+            background: rgba(0,194,199,.08);
         }
         .lead-top, .lead-sub {
             display: flex;
@@ -139,21 +254,25 @@
             padding: 2px 7px;
             border-radius: 999px;
             border: 1px solid var(--border);
-            color: var(--muted);
+            color: var(--text-muted);
         }
-        .badge.urgent { color: #fecaca; border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.1); }
-        .badge.info { color: #bae6fd; border-color: rgba(6, 182, 212, 0.35); background: rgba(6, 182, 212, 0.1); }
-        .badge.ready { color: #fde68a; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.1); }
-        .lead-sub { margin: 6px 0; font-size: 10px; color: var(--subtle); }
-        .lead-preview { font-size: 11px; color: var(--muted); line-height: 1.45; margin-bottom: 8px; }
+        .badge.urgent { color: var(--danger); border-color: rgba(255, 92, 119, .35); background: rgba(255, 92, 119, .08); }
+        .badge.info { color: var(--teal); border-color: rgba(45, 206, 211, .35); background: rgba(45, 206, 211, .1); }
+        .badge.ready { color: var(--warning); border-color: rgba(255, 204, 102, .35); background: rgba(255, 204, 102, .1); }
+        .lead-sub { margin: 6px 0; font-size: 10px; color: var(--text-subtle); }
+        .lead-preview { font-size: 11px; color: var(--text-muted); line-height: 1.45; margin-bottom: 8px; }
         .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-        .empty { color: var(--subtle); font-size: 12px; padding: 8px 2px; }
+        .empty { color: var(--text-subtle); font-size: 12px; padding: 8px 2px; }
         .detail-grid {
             display: grid;
             grid-template-columns: 1.1fr 0.9fr;
             gap: 12px;
         }
-        .detail { padding: 14px; min-height: 220px; }
+        .detail {
+            padding: 16px;
+            min-height: 240px;
+            background: var(--surface);
+        }
         .detail h2 { font-size: 18px; margin-bottom: 8px; }
         .detail-meta {
             display: grid;
@@ -165,12 +284,12 @@
             border: 1px solid var(--border);
             border-radius: 10px;
             padding: 10px;
-            background: rgba(255, 255, 255, 0.02);
+            background: var(--bg);
         }
         .detail-meta strong {
             display: block;
             font-size: 10px;
-            color: var(--subtle);
+            color: var(--text-subtle);
             text-transform: uppercase;
             margin-bottom: 4px;
             letter-spacing: 0.8px;
@@ -182,32 +301,80 @@
             color: #cbd5e1;
             line-height: 1.45;
         }
+        .shell-label {
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-subtle);
+            margin-bottom: 8px;
+        }
         @media (max-width: 1180px) {
+            .header { grid-template-columns: 1fr; }
             .stats, .alerts, .board, .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 760px) {
+            .container { padding: 16px; }
+            .hero-strip { grid-template-columns: 1fr; }
             .stats, .alerts, .board, .detail-grid { grid-template-columns: 1fr; }
-            .header, .topbar { align-items: flex-start; }
+            .topbar { align-items: flex-start; }
+            .actions { justify-content: flex-start; }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div>
-            <h1>Scout's Live Lead Pipeline</h1>
-            <p>Real-time workflow board for GoDaddy, Outlook, Dialpad, and manual leads.</p>
-        </div>
-        <div class="actions">
-            <div class="meta" id="clock">--</div>
-            <button class="btn" id="editApiBtn">API</button>
-            <button class="btn primary" id="syncBtn">Sync Now</button>
-        </div>
-    </div>
-
     <div class="container">
+        <div class="header">
+            <div class="hero">
+                <div class="eyebrow">Trifecta Command Center</div>
+                <h1>Live Leads Mission Board</h1>
+                <p>Real-time command center for GoDaddy, Outlook, Dialpad, and manual lead intake. This board is tuned to surface missed replies, missing contact info, and follow-up bottlenecks first.</p>
+                <div class="hero-strip">
+                    <div class="hero-chip">
+                        <strong>Primary Queue</strong>
+                        <span>People not replied to yet</span>
+                    </div>
+                    <div class="hero-chip">
+                        <strong>Sync Source</strong>
+                        <span>OpenClaw browser + Flask pipeline</span>
+                    </div>
+                    <div class="hero-chip">
+                        <strong>Refresh Rhythm</strong>
+                        <span>Auto-refresh every 30 seconds</span>
+                    </div>
+                </div>
+            </div>
+            <div class="status-panel">
+                <div class="status-box">
+                    <div class="status-row">
+                        <span class="status-label">Clock</span>
+                        <span class="meta" id="clock">--</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">API</span>
+                        <span class="meta" id="apiMeta">API: http://localhost:5000</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Last Sync</span>
+                        <span class="meta" id="syncMeta">Last synced: never</span>
+                    </div>
+                </div>
+                <div class="status-box">
+                    <div class="shell-label">Controls</div>
+                    <div class="actions">
+                        <button class="btn" id="editApiBtn">API</button>
+                        <button class="btn primary" id="syncBtn">Sync Board</button>
+                    </div>
+                </div>
+                <div class="status-box">
+                    <div class="shell-label">Visual Focus</div>
+                    <div class="meta">Red means urgent human attention. Yellow means contact or follow-up friction. Teal means the command center is connected and current.</div>
+                </div>
+            </div>
+        </div>
+
         <div class="topbar">
-            <div class="meta" id="syncMeta">Last synced: never</div>
-            <div class="meta" id="apiMeta">API: http://localhost:5000</div>
+            <div class="shell-label">Live Workflow Snapshot</div>
+            <div class="meta">Matching the Command Center shell and lead operations flow.</div>
         </div>
 
         <div class="stats">
