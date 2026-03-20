@@ -13,7 +13,8 @@ import sqlite3
 import hashlib
 import hmac
 import threading
-from flask import Flask, request, jsonify, g, send_from_directory
+import subprocess
+from flask import Flask, request, jsonify, g, send_from_directory, redirect
 from flask_cors import CORS
 from datetime import datetime, timedelta, timezone
 import time
@@ -207,6 +208,19 @@ class Config:
     # GoDaddy
     GODADDY_WEBHOOK_SECRET = os.environ.get('GODADDY_WEBHOOK_SECRET', '')
     GODADDY_WEBHOOK_TOKEN = os.environ.get('GODADDY_WEBHOOK_TOKEN', '')
+    GODADDY_LIVE_SYNC_ENABLED = os.environ.get('GODADDY_LIVE_SYNC_ENABLED', '1' if not IS_AZURE else '0') == '1'
+    GODADDY_LIVE_SYNC_MAX_PAGES = max(1, int(os.environ.get('GODADDY_LIVE_SYNC_MAX_PAGES', '2')))
+    GODADDY_LIVE_SYNC_PAGE_SIZE = min(max(int(os.environ.get('GODADDY_LIVE_SYNC_PAGE_SIZE', '30')), 1), 100)
+    GODADDY_REAMAZE_BRAND_URL = os.environ.get('GODADDY_REAMAZE_BRAND_URL', '296192a1-995f-4939-9ee8-40270af7aaa5')
+    GODADDY_BROWSER_USER_DATA_DIR = os.environ.get(
+        'GODADDY_BROWSER_USER_DATA_DIR',
+        r'C:\Users\TrifectaAgent\.openclaw\browser\openclaw\user-data'
+    )
+    GODADDY_CHROME_PATH = os.environ.get(
+        'GODADDY_CHROME_PATH',
+        r'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    )
+    GODADDY_BROWSER_DEBUG_URL = os.environ.get('GODADDY_BROWSER_DEBUG_URL', 'http://127.0.0.1:18800')
 
     # Lead pipeline
     # On Azure, use persistent storage mount; locally, use app directory
@@ -322,6 +336,16 @@ Return ONLY valid JSON with this exact schema:
 
 def utcnow_iso():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+
+
+def parse_iso_datetime(value):
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        normalized = value.replace('Z', '+00:00')
+        return datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
 
 
 def normalize_email(email):
@@ -639,6 +663,14 @@ class LeadPipelineStore:
                 (lead_id,)
             )
 
+    def get_latest_outbound_message(self, lead_id):
+        with self._connect() as conn:
+            return self._fetchone(
+                conn,
+                "SELECT * FROM outbound_messages WHERE lead_id = ? ORDER BY COALESCE(sent_at, created_at) DESC LIMIT 1",
+                (lead_id,)
+            )
+
     def create_draft(self, lead_id, model, prompt_version, subject, html, text, confidence, risk_flags, citations):
         draft_id = str(uuid.uuid4())
         now = utcnow_iso()
@@ -812,6 +844,20 @@ class LeadPipelineStore:
                    LIMIT ?""",
                 (lead_id, limit)
             )
+
+    def list_leads_needing_attention(self, statuses, updated_before=None, limit=100):
+        if not statuses:
+            return []
+        placeholders = ','.join('?' for _ in statuses)
+        params = list(statuses)
+        sql = f"SELECT * FROM leads WHERE status IN ({placeholders})"
+        if updated_before:
+            sql += " AND updated_at < ?"
+            params.append(updated_before)
+        sql += " ORDER BY updated_at ASC LIMIT ?"
+        params.append(limit)
+        with self._connect() as conn:
+            return self._fetchall(conn, sql, tuple(params))
 
 
     # --- Client / Session / Appointment persistence ---
@@ -1282,16 +1328,41 @@ dialpad_client = DialpadClient()
 # QUICKBOOKS INTEGRATION
 # =============================================================================
 class QuickBooksClient:
-    """QuickBooks Online API client for invoicing."""
+    """QuickBooks Online API client for invoicing with auto-refresh."""
 
     def __init__(self):
         self.base_url = 'https://quickbooks.api.intuit.com/v3'
-        self._token = None
+        self._access_token = None
+        self._token_expiry = None
 
     def get_token(self):
-        """Get OAuth2 access token (requires stored refresh token)."""
-        # Implementation would use intuit-oauth library
-        # For now, return stored token
+        """Get OAuth2 access token, auto-refreshing if expired."""
+        # If we have a valid cached token, return it
+        if self._access_token and self._token_expiry and datetime.now(timezone.utc) < self._token_expiry:
+            return self._access_token
+
+        # Try to refresh using stored refresh token
+        refresh_token = os.environ.get('QUICKBOOKS_REFRESH_TOKEN', '')
+        if refresh_token and Config.QUICKBOOKS_CLIENT_ID and Config.QUICKBOOKS_CLIENT_SECRET:
+            try:
+                from intuitlib.client import AuthClient
+                auth_client = AuthClient(
+                    client_id=Config.QUICKBOOKS_CLIENT_ID,
+                    client_secret=Config.QUICKBOOKS_CLIENT_SECRET,
+                    redirect_uri=os.environ.get('QUICKBOOKS_REDIRECT_URI',
+                        'https://trifecta-agent.azurewebsites.net/api/quickbooks/callback'),
+                    environment='production'
+                )
+                auth_client.refresh(refresh_token=refresh_token)
+                self._access_token = auth_client.access_token
+                # QuickBooks tokens expire in 1 hour, refresh 5 min early
+                self._token_expiry = datetime.now(timezone.utc) + timedelta(minutes=55)
+                logger.info("QuickBooks token refreshed successfully")
+                return self._access_token
+            except Exception as e:
+                logger.error(f"QuickBooks token refresh failed: {e}")
+
+        # Fallback to env var
         return os.environ.get('QUICKBOOKS_ACCESS_TOKEN', '')
 
     def create_invoice(self, customer_id, line_items, due_date=None):
@@ -2187,6 +2258,229 @@ def process_inbound_lead_event(normalized, raw_payload):
     return {'lead': lead, 'event': event, 'duplicate': False, 'draft_generated': bool(draft)}
 
 
+def _extract_customer_identity(conversation):
+    last_message = conversation.get('last_message') if isinstance(conversation.get('last_message'), dict) else {}
+    author = conversation.get('author') if isinstance(conversation.get('author'), dict) else {}
+    followers = conversation.get('followers') if isinstance(conversation.get('followers'), list) else []
+    candidates = []
+    if isinstance(last_message.get('user'), dict):
+        candidates.append(last_message.get('user'))
+    if author:
+        candidates.append(author)
+    candidates.extend([item for item in followers if isinstance(item, dict)])
+
+    for candidate in candidates:
+        if candidate.get('staff?') or candidate.get('bot?'):
+            continue
+        return candidate
+    return {}
+
+
+def _extract_conversation_phone(conversation, customer):
+    data = conversation.get('data') if isinstance(conversation.get('data'), dict) else {}
+    candidates = [
+        data.get('Phone'),
+        data.get('phone'),
+        data.get('Mobile'),
+        data.get('mobile'),
+        customer.get('mobile') if isinstance(customer, dict) else '',
+    ]
+    for candidate in candidates:
+        normalized = normalize_phone(candidate)
+        if normalized:
+            return normalized
+    return ''
+
+
+def _extract_conversation_email(conversation, customer):
+    data = conversation.get('data') if isinstance(conversation.get('data'), dict) else {}
+    candidates = [
+        data.get('Email'),
+        data.get('email'),
+        customer.get('email') if isinstance(customer, dict) else '',
+    ]
+    identities = customer.get('identities') if isinstance(customer, dict) else []
+    for identity in identities or []:
+        if not isinstance(identity, dict):
+            continue
+        if identity.get('type') == 'email':
+            candidates.append(identity.get('identifier'))
+
+    for candidate in candidates:
+        normalized = normalize_email(candidate)
+        if normalized:
+            return normalized
+    return ''
+
+
+def _extract_conversation_name(conversation, customer):
+    data = conversation.get('data') if isinstance(conversation.get('data'), dict) else {}
+    candidates = [
+        data.get('Name (First, Last)'),
+        data.get('name'),
+        customer.get('friendly_name') if isinstance(customer, dict) else '',
+        customer.get('name') if isinstance(customer, dict) else '',
+        conversation.get('subject'),
+    ]
+    for candidate in candidates:
+        if not candidate or not isinstance(candidate, str):
+            continue
+        cleaned = re.sub(r'\s+', ' ', candidate).strip()
+        if cleaned and not cleaned.lower().startswith('guest user'):
+            return cleaned
+    return 'Website Lead'
+
+
+def _extract_conversation_text(conversation, messages):
+    last_message = conversation.get('last_message') if isinstance(conversation.get('last_message'), dict) else {}
+    data = conversation.get('data') if isinstance(conversation.get('data'), dict) else {}
+    conversation_message = conversation.get('message') if isinstance(conversation.get('message'), dict) else {}
+    candidates = [
+        last_message.get('body'),
+        conversation_message.get('body'),
+        data.get('How Can We Help You?'),
+        data.get('Message'),
+        data.get('Question'),
+        conversation.get('display_subject'),
+        conversation.get('subject'),
+    ]
+    for message in messages or []:
+        if not isinstance(message, dict):
+            continue
+        body = message.get('body')
+        if body:
+            candidates.append(body)
+    for candidate in candidates:
+        if candidate and isinstance(candidate, str):
+            cleaned = re.sub(r'\s+', ' ', candidate).strip()
+            if cleaned:
+                return cleaned[:400]
+    return ''
+
+
+def _build_godaddy_sync_event(conversation, messages):
+    customer = _extract_customer_identity(conversation)
+    last_message = conversation.get('last_message') if isinstance(conversation.get('last_message'), dict) else {}
+    conversation_id = conversation.get('id')
+    message_id = last_message.get('id') or f"conversation-{conversation_id}"
+    email = _extract_conversation_email(conversation, customer)
+    phone = _extract_conversation_phone(conversation, customer)
+    return {
+        'type': 'conversation.sync',
+        'event_id': f"godaddy-sync:{conversation_id}:{message_id}",
+        'timestamp': last_message.get('created_at') or conversation.get('newest_message_timestamp') or conversation.get('updated_at') or utcnow_iso(),
+        'name': _extract_conversation_name(conversation, customer),
+        'email': email,
+        'phone': phone,
+        'initial_question': _extract_conversation_text(conversation, messages),
+        'program_interest': '',
+        'contact': {
+            'id': customer.get('id') or conversation_id,
+            'name': _extract_conversation_name(conversation, customer),
+            'email': email,
+            'phone': phone,
+        },
+        'conversation': {
+            'id': conversation_id,
+            'contact_id': customer.get('id') or conversation_id,
+            'updated_at': conversation.get('newest_message_timestamp') or conversation.get('updated_at'),
+            'subject': conversation.get('display_subject') or conversation.get('subject'),
+            'status': conversation.get('status'),
+            'read': conversation.get('read'),
+        },
+        'message': {
+            'id': message_id,
+            'text': _extract_conversation_text(conversation, messages),
+            'created_at': last_message.get('created_at') or conversation.get('newest_message_timestamp') or conversation.get('updated_at'),
+            'staff': bool(((last_message.get('user') or {}).get('staff?')) if isinstance(last_message, dict) else False),
+        },
+        'messages': messages or [],
+        'raw_conversation': conversation,
+    }
+
+
+def _fetch_godaddy_live_payload(max_pages=None, page_size=None):
+    script_path = Path(_base_dir) / 'scripts' / 'godaddy_live_sync.js'
+    if not script_path.exists():
+        raise FileNotFoundError(f"Missing live sync script: {script_path}")
+
+    command = [
+        'node',
+        str(script_path),
+        '--brand',
+        Config.GODADDY_REAMAZE_BRAND_URL,
+        '--pages',
+        str(max_pages or Config.GODADDY_LIVE_SYNC_MAX_PAGES),
+        '--page-size',
+        str(page_size or Config.GODADDY_LIVE_SYNC_PAGE_SIZE),
+        '--browser-url',
+        Config.GODADDY_BROWSER_DEBUG_URL,
+        '--user-data-dir',
+        Config.GODADDY_BROWSER_USER_DATA_DIR,
+        '--chrome',
+        Config.GODADDY_CHROME_PATH,
+    ]
+    completed = subprocess.run(
+        command,
+        cwd=_base_dir,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    stdout = (completed.stdout or '').strip()
+    stderr = (completed.stderr or '').strip()
+    if completed.returncode != 0:
+        details = stderr or stdout or f'Exit code {completed.returncode}'
+        raise RuntimeError(f"GoDaddy live sync command failed: {details}")
+    payload = json.loads(stdout or '{}')
+    if not payload.get('success'):
+        raise RuntimeError(payload.get('error') or 'GoDaddy live sync payload was unsuccessful')
+    return payload
+
+
+def sync_godaddy_live_conversations(max_pages=None, page_size=None):
+    payload = _fetch_godaddy_live_payload(max_pages=max_pages, page_size=page_size)
+    conversations = payload.get('conversations') or []
+    message_map = payload.get('messages') or {}
+    snapshots = []
+    ingested = 0
+    duplicates = 0
+
+    for conversation in conversations:
+        if not isinstance(conversation, dict):
+            continue
+        conversation_id = conversation.get('id')
+        messages = message_map.get(str(conversation_id)) or []
+        event = _build_godaddy_sync_event(conversation, messages)
+        normalized = normalize_godaddy_event(event)
+        result = process_inbound_lead_event(normalized, event)
+        if result.get('duplicate'):
+            duplicates += 1
+        else:
+            ingested += 1
+        snapshots.append({
+            'contact': event.get('contact'),
+            'conversation': event.get('conversation'),
+            'message': event.get('message'),
+            'messages': messages,
+            'name': event.get('name'),
+            'email': event.get('email'),
+            'phone': event.get('phone'),
+            'initial_question': event.get('initial_question'),
+        })
+
+    return {
+        'success': True,
+        'source': LEAD_SOURCE['GODADDY_CHAT'],
+        'checked_at': payload.get('fetched_at') or utcnow_iso(),
+        'upstream_count': len(conversations),
+        'ingested_count': ingested,
+        'duplicate_count': duplicates,
+        'snapshots': snapshots,
+    }
+
+
 def send_outlook_with_retries(to_email, subject, html_body, text_body=None):
     attempts = 3
     last_exc = None
@@ -2574,8 +2868,30 @@ def generate_invoice_pdf(client_id):
         return jsonify({'error': str(e)}), 500
 
 # =============================================================================
-# API ENDPOINTS - QuickBooks OAuth Callback
+# API ENDPOINTS - QuickBooks OAuth
 # =============================================================================
+@app.route('/api/quickbooks/connect', methods=['GET'])
+def quickbooks_connect():
+    """Start QuickBooks OAuth2 flow — redirects to Intuit login."""
+    if not all([Config.QUICKBOOKS_CLIENT_ID, Config.QUICKBOOKS_CLIENT_SECRET]):
+        return jsonify({'error': 'QuickBooks credentials not configured',
+                        'hint': 'Add QUICKBOOKS_CLIENT_ID and QUICKBOOKS_CLIENT_SECRET to env vars'}), 500
+    try:
+        from intuitlib.client import AuthClient
+        from intuitlib.enums import Scopes
+        auth_client = AuthClient(
+            client_id=Config.QUICKBOOKS_CLIENT_ID,
+            client_secret=Config.QUICKBOOKS_CLIENT_SECRET,
+            redirect_uri=request.url_root.rstrip('/') + '/api/quickbooks/callback',
+            environment='production'
+        )
+        auth_url = auth_client.get_authorization_url([Scopes.ACCOUNTING])
+        return redirect(auth_url)
+    except Exception as e:
+        logger.error(f"QuickBooks OAuth start error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/quickbooks/callback', methods=['GET'])
 def quickbooks_callback():
     """
@@ -2641,21 +2957,238 @@ def _parse_json_field(value, default):
         return default
 
 
-def _serialize_lead(lead):
-    if not lead:
-        return None
-    events = lead_store.latest_events_for_lead(lead['id'], limit=5)
-    draft = lead_store.get_latest_draft(lead['id'])
+WORKFLOW_STAGE = {
+    'AWAITING_HUMAN_RESPONSE': 'AWAITING_HUMAN_RESPONSE',
+    'AWAITING_EMAIL': 'AWAITING_EMAIL',
+    'PROGRAM_INFO_READY': 'PROGRAM_INFO_READY',
+    'PROGRAM_INFO_SENT': 'PROGRAM_INFO_SENT',
+    'NEEDS_REVIEW_ERROR': 'NEEDS_REVIEW_ERROR',
+    'ARCHIVED_CLOSED': 'ARCHIVED_CLOSED',
+}
+
+
+def _extract_latest_message_preview(events):
+    for event in events or []:
+        payload = _parse_json_field(event.get('payload_json'), {})
+        if not isinstance(payload, dict):
+            continue
+        last_message = payload.get('last_message') if isinstance(payload.get('last_message'), dict) else {}
+        message = payload.get('message') if isinstance(payload.get('message'), dict) else {}
+        conversation_data = payload.get('data') if isinstance(payload.get('data'), dict) else {}
+        candidates = [
+            message.get('text'),
+            message.get('body'),
+            last_message.get('body'),
+            payload.get('text'),
+            payload.get('initial_question'),
+            conversation_data.get('How Can We Help You?'),
+            payload.get('message') if isinstance(payload.get('message'), str) else None,
+        ]
+        for candidate in candidates:
+            if candidate and isinstance(candidate, str):
+                preview = re.sub(r'\s+', ' ', candidate).strip()
+                return preview[:180]
+    return ''
+
+
+def _derive_lead_operational_state(lead, events=None, draft=None, outbound=None):
+    events = events or []
+    has_contact = bool(normalize_email(lead.get('email')) or normalize_phone(lead.get('phone')))
+    latest_inbound = events[0] if events else None
+    latest_message_preview = _extract_latest_message_preview(events)
+    last_inbound_at = None
+    if latest_inbound:
+        last_inbound_at = latest_inbound.get('occurred_at') or latest_inbound.get('received_at')
+    last_outbound_at = None
+    outbound_status = None
+    if outbound:
+        last_outbound_at = outbound.get('sent_at') or outbound.get('created_at')
+        outbound_status = outbound.get('status')
+
+    status = lead.get('status')
+    last_activity = parse_iso_datetime(last_inbound_at) or parse_iso_datetime(lead.get('updated_at'))
+    hours_since_activity = None
+    if last_activity:
+        hours_since_activity = max(0.0, (datetime.now(timezone.utc) - last_activity).total_seconds() / 3600.0)
+
+    needs_response = False
+    if status == LEAD_STATUS['INQUIRY_RECEIVED']:
+        needs_response = not has_contact or not draft
+    elif status in {LEAD_STATUS['NEEDS_HUMAN_REVIEW'], LEAD_STATUS['ERROR']}:
+        needs_response = True
+
+    is_stale = bool(
+        hours_since_activity is not None
+        and hours_since_activity >= 48
+        and status in {
+            LEAD_STATUS['INQUIRY_RECEIVED'],
+            LEAD_STATUS['DRAFT_CREATED'],
+            LEAD_STATUS['NEEDS_HUMAN_REVIEW'],
+            LEAD_STATUS['ERROR'],
+        }
+    )
+
+    if status == LEAD_STATUS['ARCHIVED']:
+        workflow_stage = WORKFLOW_STAGE['ARCHIVED_CLOSED']
+    elif status in {LEAD_STATUS['ERROR'], LEAD_STATUS['NEEDS_HUMAN_REVIEW']}:
+        workflow_stage = WORKFLOW_STAGE['NEEDS_REVIEW_ERROR']
+    elif status == LEAD_STATUS['PROGRAM_INFO_SENT'] or outbound_status == 'sent':
+        workflow_stage = WORKFLOW_STAGE['PROGRAM_INFO_SENT']
+    elif status == LEAD_STATUS['DRAFT_CREATED'] or (draft and draft.get('state') in {'drafted', 'approved'}):
+        workflow_stage = WORKFLOW_STAGE['PROGRAM_INFO_READY']
+    elif lead.get('source') == LEAD_SOURCE['GODADDY_CHAT'] and not has_contact:
+        workflow_stage = WORKFLOW_STAGE['AWAITING_EMAIL']
+    else:
+        workflow_stage = WORKFLOW_STAGE['AWAITING_HUMAN_RESPONSE']
+
+    return {
+        'workflow_stage': workflow_stage,
+        'needs_response': needs_response,
+        'has_contact': has_contact,
+        'last_inbound_at': last_inbound_at,
+        'last_outbound_at': last_outbound_at,
+        'latest_message_preview': latest_message_preview,
+        'latest_outbound': outbound,
+        'is_stale': is_stale,
+        'hours_since_activity': round(hours_since_activity, 2) if hours_since_activity is not None else None,
+    }
+
+
+def _serialize_lead_with_context(lead, events, draft, outbound):
     if draft:
         draft = {
             **draft,
             'risk_flags': _parse_json_field(draft.get('risk_flags_json'), []),
             'citations_used': _parse_json_field(draft.get('citations_json'), []),
         }
+    operational = _derive_lead_operational_state(lead, events=events, draft=draft, outbound=outbound)
     return {
         **lead,
         'recent_events': events,
-        'latest_draft': draft
+        'latest_draft': draft,
+        **operational,
+        'is_missing_from_pipeline': False,
+    }
+
+
+def _serialize_lead(lead):
+    if not lead:
+        return None
+    events = lead_store.latest_events_for_lead(lead['id'], limit=5)
+    draft = lead_store.get_latest_draft(lead['id'])
+    outbound = lead_store.get_latest_outbound_message(lead['id'])
+    return _serialize_lead_with_context(lead, events, draft, outbound)
+
+
+def _build_workflow_counts(leads):
+    counts = {stage: 0 for stage in WORKFLOW_STAGE.values()}
+    for lead in leads:
+        counts[lead.get('workflow_stage')] = counts.get(lead.get('workflow_stage'), 0) + 1
+    return counts
+
+
+def _normalize_upstream_snapshot(snapshot):
+    if not isinstance(snapshot, dict):
+        return None
+    conversation = snapshot.get('conversation') if isinstance(snapshot.get('conversation'), dict) else snapshot
+    contact = snapshot.get('contact') if isinstance(snapshot.get('contact'), dict) else {}
+    message = snapshot.get('message') if isinstance(snapshot.get('message'), dict) else {}
+    if not message and isinstance(snapshot.get('last_message'), dict):
+        message = snapshot.get('last_message')
+    contact_id = contact.get('id') or conversation.get('contact_id') or conversation.get('contactId')
+    conversation_id = conversation.get('id') or snapshot.get('id') or snapshot.get('conversation_id')
+    email = normalize_email(contact.get('email') or snapshot.get('email'))
+    phone = normalize_phone(contact.get('phone') or snapshot.get('phone'))
+    latest_at = (
+        message.get('created_at')
+        or snapshot.get('updated_at')
+        or conversation.get('updated_at')
+        or snapshot.get('timestamp')
+        or utcnow_iso()
+    )
+    preview = message.get('text') or snapshot.get('text') or snapshot.get('initial_question') or ''
+    return {
+        'source': LEAD_SOURCE['GODADDY_CHAT'],
+        'conversation_id': str(conversation_id) if conversation_id else '',
+        'external_contact_key': f"godaddy:{contact_id}" if contact_id else '',
+        'email': email,
+        'phone': phone,
+        'name': contact.get('name') or snapshot.get('name') or 'Website Lead',
+        'latest_message_preview': re.sub(r'\s+', ' ', preview).strip()[:180],
+        'last_activity_at': latest_at,
+    }
+
+
+def _reconcile_upstream_snapshots(upstream_snapshots, serialized_leads, stale_after_hours=48):
+    leads_by_external = {}
+    leads_by_email = {}
+    leads_by_phone = {}
+    for lead in serialized_leads:
+        if lead.get('external_contact_key'):
+            leads_by_external[lead['external_contact_key']] = lead
+        if lead.get('email'):
+            leads_by_email[normalize_email(lead['email'])] = lead
+        if lead.get('phone'):
+            leads_by_phone[normalize_phone(lead['phone'])] = lead
+
+    missing = []
+    mismatches = []
+    for raw_snapshot in upstream_snapshots or []:
+        snapshot = _normalize_upstream_snapshot(raw_snapshot)
+        if not snapshot:
+            continue
+        match = None
+        if snapshot['external_contact_key']:
+            match = leads_by_external.get(snapshot['external_contact_key'])
+        if not match and snapshot['email']:
+            match = leads_by_email.get(snapshot['email'])
+        if not match and snapshot['phone']:
+            match = leads_by_phone.get(snapshot['phone'])
+
+        if not match:
+            missing.append({
+                **snapshot,
+                'is_missing_from_pipeline': True,
+            })
+            continue
+
+        upstream_dt = parse_iso_datetime(snapshot['last_activity_at'])
+        local_dt = parse_iso_datetime(match.get('last_inbound_at')) or parse_iso_datetime(match.get('updated_at'))
+        if upstream_dt and local_dt and upstream_dt > local_dt:
+            mismatches.append({
+                'lead_id': match.get('id'),
+                'name': match.get('name') or snapshot.get('name'),
+                'source': match.get('source'),
+                'upstream_last_activity_at': snapshot['last_activity_at'],
+                'pipeline_last_activity_at': match.get('last_inbound_at') or match.get('updated_at'),
+                'latest_message_preview': snapshot.get('latest_message_preview', ''),
+            })
+
+    stale_cutoff = (datetime.now(timezone.utc) - timedelta(hours=stale_after_hours)).replace(microsecond=0)
+    stale = []
+    for lead in serialized_leads:
+        if lead.get('is_stale'):
+            stale.append({
+                'lead_id': lead.get('id'),
+                'name': lead.get('name'),
+                'source': lead.get('source'),
+                'workflow_stage': lead.get('workflow_stage'),
+                'hours_since_activity': lead.get('hours_since_activity'),
+                'latest_message_preview': lead.get('latest_message_preview'),
+                'updated_at': lead.get('updated_at'),
+            })
+
+    return {
+        'checked_at': utcnow_iso(),
+        'stale_after_hours': stale_after_hours,
+        'upstream_count': len(upstream_snapshots or []),
+        'missing_count': len(missing),
+        'stale_count': len(stale),
+        'mismatch_count': len(mismatches),
+        'missing_leads': missing,
+        'stale_leads': stale,
+        'activity_mismatches': mismatches,
+        'stale_cutoff': stale_cutoff.isoformat().replace('+00:00', 'Z'),
     }
 
 
@@ -2704,15 +3237,98 @@ def query_leads():
         limit = min(int(data.get('limit', 50)), 200)
         offset = max(int(data.get('offset', 0)), 0)
         leads = lead_store.list_leads(status=status, source=source, limit=limit, offset=offset)
+        serialized = [_serialize_lead(l) for l in leads]
         return jsonify({
             'count': len(leads),
-            'leads': [_serialize_lead(l) for l in leads],
+            'leads': serialized,
+            'workflow_counts': _build_workflow_counts(serialized),
+            'needs_response_count': sum(1 for lead in serialized if lead.get('needs_response')),
             'limit': limit,
             'offset': offset
         }), 200
     except Exception as e:
         logger.error("Lead query error: %s", e)
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/leads/board', methods=['GET'])
+def lead_board():
+    """Return a board-oriented view of the live lead pipeline."""
+    try:
+        source = request.args.get('source') or None
+        limit = min(max(int(request.args.get('limit', 100)), 1), 200)
+        offset = max(int(request.args.get('offset', 0)), 0)
+        stale_after_hours = min(max(int(request.args.get('stale_after_hours', 48)), 1), 168)
+        sync_live = request.args.get('sync_live', '1').lower() not in {'0', 'false', 'no'}
+        sync_summary = None
+        upstream_snapshots = []
+        if sync_live and Config.GODADDY_LIVE_SYNC_ENABLED and (not source or source == LEAD_SOURCE['GODADDY_CHAT']):
+            try:
+                sync_summary = sync_godaddy_live_conversations()
+                upstream_snapshots = sync_summary.get('snapshots') or []
+            except Exception as exc:
+                logger.warning("GoDaddy live sync skipped: %s", exc)
+                sync_summary = {
+                    'success': False,
+                    'source': LEAD_SOURCE['GODADDY_CHAT'],
+                    'checked_at': utcnow_iso(),
+                    'error': str(exc),
+                    'upstream_count': 0,
+                    'ingested_count': 0,
+                    'duplicate_count': 0,
+                }
+        leads = lead_store.list_leads(source=source, limit=limit, offset=offset)
+        serialized = [_serialize_lead(lead) for lead in leads]
+        reconciliation = _reconcile_upstream_snapshots(upstream_snapshots, serialized, stale_after_hours=stale_after_hours)
+        return jsonify({
+            'count': len(serialized),
+            'leads': serialized,
+            'workflow_counts': _build_workflow_counts(serialized),
+            'needs_response_count': sum(1 for lead in serialized if lead.get('needs_response')),
+            'reconciliation': reconciliation,
+            'live_sync': sync_summary,
+            'timestamp': utcnow_iso(),
+            'limit': limit,
+            'offset': offset,
+        }), 200
+    except Exception as exc:
+        logger.error("Lead board error: %s", exc)
+        return jsonify({'error': str(exc), 'code': 'lead_board_failed'}), 500
+
+
+@app.route('/api/leads/reconcile', methods=['POST'])
+def reconcile_leads():
+    """Compare upstream GoDaddy/OpenClaw snapshots with the live pipeline."""
+    try:
+        data = request.get_json(silent=True) or {}
+        snapshots = data.get('upstream_conversations') or data.get('snapshots') or []
+        source = data.get('source')
+        stale_after_hours = min(max(int(data.get('stale_after_hours', 48)), 1), 168)
+        leads = lead_store.list_leads(source=source, limit=200, offset=0)
+        serialized = [_serialize_lead(lead) for lead in leads]
+        reconciliation = _reconcile_upstream_snapshots(snapshots, serialized, stale_after_hours=stale_after_hours)
+        return jsonify({
+            'success': True,
+            'source': source or 'ALL',
+            'reconciliation': reconciliation,
+        }), 200
+    except Exception as exc:
+        logger.error("Lead reconciliation error: %s", exc)
+        return jsonify({'error': str(exc), 'code': 'lead_reconciliation_failed'}), 500
+
+
+@app.route('/api/leads/sync/godaddy-live', methods=['POST', 'GET'])
+def sync_godaddy_live():
+    """Pull live GoDaddy conversations from the local browser session into the lead pipeline."""
+    try:
+        data = request.get_json(silent=True) or {}
+        max_pages = min(max(int(data.get('max_pages', request.args.get('max_pages', Config.GODADDY_LIVE_SYNC_MAX_PAGES))), 1), 5)
+        page_size = min(max(int(data.get('page_size', request.args.get('page_size', Config.GODADDY_LIVE_SYNC_PAGE_SIZE))), 1), 100)
+        summary = sync_godaddy_live_conversations(max_pages=max_pages, page_size=page_size)
+        return jsonify({'success': True, 'sync': summary}), 200
+    except Exception as exc:
+        logger.error("GoDaddy live sync error: %s", exc)
+        return jsonify({'success': False, 'error': str(exc), 'code': 'godaddy_live_sync_failed'}), 500
 
 
 @app.route('/api/leads/<lead_id>', methods=['GET'])

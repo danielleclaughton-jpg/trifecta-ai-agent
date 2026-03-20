@@ -915,6 +915,224 @@
       margin-top: 10px;
     }
 
+    .lead-toolbar{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+
+    .lead-sync-meta{
+      font-size:11px;
+      color:var(--text-muted);
+    }
+
+    .lead-alerts{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+      gap:10px;
+      margin-bottom:14px;
+    }
+
+    .lead-alert{
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:12px;
+    }
+
+    .lead-alert strong{
+      display:block;
+      font-size:12px;
+      margin-bottom:4px;
+    }
+
+    .lead-alert.danger{ border-color: rgba(255, 92, 119, .35); background: rgba(255, 92, 119, .08); }
+    .lead-alert.warn{ border-color: rgba(255, 204, 102, .35); background: rgba(255, 204, 102, .08); }
+    .lead-alert.ok{ border-color: rgba(57, 217, 138, .28); background: rgba(57, 217, 138, .06); }
+
+    .lead-board{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .lead-column{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      background:var(--bg);
+      min-height:260px;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .lead-column-header{
+      padding:10px 12px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+    }
+
+    .lead-column-title{
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.3px;
+    }
+
+    .lead-column-count{
+      font-size:11px;
+      color:var(--text-muted);
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:2px 8px;
+    }
+
+    .lead-column-body{
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .lead-board-card{
+      width:100%;
+      text-align:left;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:rgba(255,255,255,.02);
+      color:var(--text);
+      padding:10px;
+      cursor:pointer;
+      transition:all .15s;
+    }
+
+    .lead-board-card:hover{
+      border-color:var(--teal);
+      transform:translateY(-1px);
+    }
+
+    .lead-board-card.active{
+      border-color:var(--teal);
+      box-shadow:0 0 0 1px rgba(0,194,199,.25) inset;
+      background:rgba(0,194,199,.08);
+    }
+
+    .lead-board-card-top,
+    .lead-board-card-sub{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:flex-start;
+    }
+
+    .lead-board-card-top{
+      margin-bottom:6px;
+    }
+
+    .lead-board-name{
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .lead-board-preview{
+      font-size:11px;
+      color:var(--text-muted);
+      line-height:1.45;
+      margin-bottom:8px;
+    }
+
+    .lead-board-card-sub{
+      font-size:10px;
+      color:var(--text-subtle);
+      margin-bottom:6px;
+    }
+
+    .lead-chip-row{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+
+    .lead-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:2px 6px;
+      border-radius:999px;
+      font-size:10px;
+      border:1px solid var(--border);
+      color:var(--text-muted);
+      background:rgba(255,255,255,.03);
+    }
+
+    .lead-chip.urgent{
+      color:var(--danger);
+      border-color:rgba(255,92,119,.3);
+      background:rgba(255,92,119,.08);
+    }
+
+    .lead-empty{
+      font-size:11px;
+      color:var(--text-muted);
+      padding:8px 4px;
+    }
+
+    .lead-detail-grid{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:14px;
+      align-items:start;
+      margin-bottom:12px;
+    }
+
+    .lead-detail-summary{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      background:var(--bg);
+      padding:12px;
+      min-height:260px;
+    }
+
+    .lead-detail-summary h3{
+      font-size:16px;
+      margin-bottom:6px;
+    }
+
+    .lead-detail-meta{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:8px;
+      margin:12px 0;
+    }
+
+    .lead-detail-meta div{
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px;
+      background:rgba(255,255,255,.02);
+    }
+
+    .lead-detail-meta strong{
+      display:block;
+      font-size:10px;
+      color:var(--text-muted);
+      text-transform:uppercase;
+      letter-spacing:.6px;
+      margin-bottom:4px;
+    }
+
+    @media (max-width: 1100px){
+      .lead-board,
+      .lead-detail-grid{
+        grid-template-columns:1fr;
+      }
+    }
+
     @media (max-width: 700px){
       .lead-actions{
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1053,35 +1271,32 @@
         <div class="card-header">
           <div>
             <div class="card-title">Leads Pipeline</div>
-            <div class="card-desc">Approve, send, and manage your lead queue</div>
+            <div class="card-desc">Live workflow board with stale and missed-lead detection</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="leadsLoadBtn">Load Leads</button>
+            <button class="btn btn-primary" id="leadsLoadBtn">Sync Board</button>
             <button class="card-toggle" onclick="toggleCard('leads')">&#9660;</button>
           </div>
         </div>
         <div class="card-body">
+          <div class="lead-toolbar">
+            <div class="lead-sync-meta" id="leadSyncMeta">Last synced: never</div>
+            <div class="lead-sync-meta" id="leadAlertMeta">Monitoring GoDaddy, Dialpad, Outlook, and manual leads.</div>
+          </div>
+
           <div class="lead-stats" id="leadStats">
-            <div class="lead-stat" onclick="filterLeadsByStatus('')"><div class="lead-stat-count" id="statTotal">--</div><div class="lead-stat-label">Total</div></div>
-            <div class="lead-stat" onclick="filterLeadsByStatus('NEEDS_HUMAN_REVIEW')"><div class="lead-stat-count" id="statReview" style="color:var(--danger)">--</div><div class="lead-stat-label">Needs Review</div></div>
-            <div class="lead-stat" onclick="filterLeadsByStatus('DRAFT_CREATED')"><div class="lead-stat-count" id="statDraft" style="color:var(--warning)">--</div><div class="lead-stat-label">Drafts</div></div>
-            <div class="lead-stat" onclick="filterLeadsByStatus('INQUIRY_RECEIVED')"><div class="lead-stat-count" id="statInquiry" style="color:var(--teal)">--</div><div class="lead-stat-label">New</div></div>
-            <div class="lead-stat" onclick="filterLeadsByStatus('PROGRAM_INFO_SENT')"><div class="lead-stat-count" id="statSent" style="color:var(--success)">--</div><div class="lead-stat-label">Sent</div></div>
-            <div class="lead-stat" onclick="filterLeadsByStatus('ERROR')"><div class="lead-stat-count" id="statError" style="color:var(--danger)">--</div><div class="lead-stat-label">Errors</div></div>
+            <div class="lead-stat"><div class="lead-stat-count" id="statTotal">--</div><div class="lead-stat-label">Total Leads</div></div>
+            <div class="lead-stat"><div class="lead-stat-count" id="statNeedsResponse" style="color:var(--danger)">--</div><div class="lead-stat-label">Needs Response</div></div>
+            <div class="lead-stat"><div class="lead-stat-count" id="statAwaitingHuman" style="color:var(--teal)">--</div><div class="lead-stat-label">Awaiting Human</div></div>
+            <div class="lead-stat"><div class="lead-stat-count" id="statAwaitingEmail" style="color:var(--warning)">--</div><div class="lead-stat-label">Awaiting Email</div></div>
+            <div class="lead-stat"><div class="lead-stat-count" id="statReady" style="color:var(--warning)">--</div><div class="lead-stat-label">Draft Ready</div></div>
+            <div class="lead-stat"><div class="lead-stat-count" id="statSent" style="color:var(--success)">--</div><div class="lead-stat-label">Program Info Sent</div></div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label for="leadStatusFilter">Status</label>
-              <select id="leadStatusFilter">
-                <option value="">All</option>
-                <option value="INQUIRY_RECEIVED">INQUIRY_RECEIVED</option>
-                <option value="DRAFT_CREATED">DRAFT_CREATED</option>
-                <option value="NEEDS_HUMAN_REVIEW">NEEDS_HUMAN_REVIEW</option>
-                <option value="PROGRAM_INFO_SENT">PROGRAM_INFO_SENT</option>
-                <option value="ERROR">ERROR</option>
-                <option value="ARCHIVED">ARCHIVED</option>
-              </select>
+              <label for="leadStaleAfterHours">Stale Threshold (hours)</label>
+              <input type="number" id="leadStaleAfterHours" value="48" min="1" max="168" />
             </div>
             <div class="form-group">
               <label for="leadSourceFilter">Source</label>
@@ -1104,6 +1319,23 @@
             </div>
           </div>
 
+          <div class="lead-alerts" id="leadAlerts">
+            <div class="lead-alert warn">
+              <strong>Board syncing</strong>
+              Waiting for the first live pipeline refresh.
+            </div>
+          </div>
+
+          <div class="lead-board" id="leadBoard">
+            <div class="lead-column">
+              <div class="lead-column-header">
+                <span class="lead-column-title">Awaiting Human Response</span>
+                <span class="lead-column-count">--</span>
+              </div>
+              <div class="lead-column-body"><div class="lead-empty">Sync the board to load leads.</div></div>
+            </div>
+          </div>
+
           <div class="form-row">
             <div class="form-group">
               <label for="leadActor">Actor</label>
@@ -1115,15 +1347,15 @@
             </div>
           </div>
 
-          <div class="leads-layout">
+          <div class="lead-detail-grid">
             <div>
-              <label>Lead List</label>
-              <div id="leadsList" class="leads-list">
-                <div style="padding:10px 12px;color:var(--text-muted);font-size:12px;">Load leads to begin.</div>
+              <label>Lead Summary</label>
+              <div id="leadDetailSummary" class="lead-detail-summary">
+                <div class="lead-empty">Select a lead card to inspect details.</div>
               </div>
             </div>
             <div>
-              <label>Lead Detail</label>
+              <label>Lead JSON</label>
               <div id="leadDetail" class="lead-detail">
                 <pre id="leadDetailPre">Select a lead to view detail.</pre>
               </div>
@@ -1526,6 +1758,8 @@
     }
 
     let selectedLeadId = '';
+    let latestBoardLeads = [];
+    let leadBoardPollHandle = null;
 
     function setLeadActionState(disabled) {
       document.getElementById('leadRefreshBtn').disabled = disabled;
@@ -1534,9 +1768,51 @@
       document.getElementById('leadAuditBtn').disabled = disabled;
     }
 
+    function workflowStageLabel(stage) {
+      const map = {
+        AWAITING_HUMAN_RESPONSE: 'Awaiting Human Response',
+        AWAITING_EMAIL: 'Awaiting Email',
+        PROGRAM_INFO_READY: 'Program Info Ready / Drafted',
+        PROGRAM_INFO_SENT: 'Program Info Sent',
+        NEEDS_REVIEW_ERROR: 'Needs Review / Error',
+        ARCHIVED_CLOSED: 'Archived / Closed',
+      };
+      return map[stage] || stage || 'Unknown';
+    }
+
     function renderLeadDetail(lead) {
       const pre = document.getElementById('leadDetailPre');
       pre.textContent = lead ? pretty(lead) : 'Select a lead to view detail.';
+      const summary = document.getElementById('leadDetailSummary');
+      if (!lead) {
+        summary.innerHTML = '<div class="lead-empty">Select a lead card to inspect details.</div>';
+        return;
+      }
+      summary.innerHTML = `
+        <h3>${lead.name || 'Unknown Lead'}</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <span class="lead-status-badge ${statusBadgeClass(lead.status)}">${statusShortName(lead.status)}</span>
+          <span class="lead-chip">${workflowStageLabel(lead.workflow_stage)}</span>
+          ${lead.needs_response ? '<span class="lead-chip urgent">Needs response</span>' : ''}
+          ${lead.is_stale ? '<span class="lead-chip urgent">Stale</span>' : ''}
+        </div>
+        <div class="lead-detail-meta">
+          <div><strong>Source</strong><span>${lead.source || 'Unknown'}</span></div>
+          <div><strong>Contact</strong><span>${lead.email || lead.phone || 'No contact info yet'}</span></div>
+          <div><strong>Last Inbound</strong><span>${formatDateTime(lead.last_inbound_at)}</span></div>
+          <div><strong>Last Outbound</strong><span>${formatDateTime(lead.last_outbound_at)}</span></div>
+          <div><strong>Draft State</strong><span>${lead.latest_draft?.state || 'No draft'}</span></div>
+          <div><strong>Outbound</strong><span>${lead.latest_outbound?.status || 'No email sent'}</span></div>
+        </div>
+        <div style="margin-bottom:10px;font-size:12px;line-height:1.5;color:var(--text-muted);">
+          ${escapeHtml(lead.latest_message_preview || lead.initial_question || 'No inbound message preview captured yet.')}
+        </div>
+        <div class="lead-chip-row">
+          ${lead.program_interest ? `<span class="lead-chip">${escapeHtml(lead.program_interest)}</span>` : ''}
+          ${lead.has_contact ? '<span class="lead-chip">Has contact</span>' : '<span class="lead-chip">Missing contact</span>'}
+          ${lead.hours_since_activity != null ? `<span class="lead-chip">${lead.hours_since_activity}h since activity</span>` : ''}
+        </div>
+      `;
     }
 
     function statusBadgeClass(status) {
@@ -1549,63 +1825,112 @@
       return map[status] || status;
     }
 
-    function updateLeadStats(leads) {
-      if (!Array.isArray(leads)) return;
-      const counts = {};
-      for (const l of leads) counts[l.status] = (counts[l.status] || 0) + 1;
-      document.getElementById('statTotal').textContent = leads.length;
-      document.getElementById('statReview').textContent = counts['NEEDS_HUMAN_REVIEW'] || 0;
-      document.getElementById('statDraft').textContent = counts['DRAFT_CREATED'] || 0;
-      document.getElementById('statInquiry').textContent = counts['INQUIRY_RECEIVED'] || 0;
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatDateTime(value) {
+      if (!value) return 'Not recorded';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function updateLeadStats(leads, workflowCounts = {}) {
+      const counts = workflowCounts || {};
+      document.getElementById('statTotal').textContent = Array.isArray(leads) ? leads.length : 0;
+      document.getElementById('statNeedsResponse').textContent = Array.isArray(leads) ? leads.filter((lead) => lead.needs_response).length : 0;
+      document.getElementById('statAwaitingHuman').textContent = counts['AWAITING_HUMAN_RESPONSE'] || 0;
+      document.getElementById('statAwaitingEmail').textContent = counts['AWAITING_EMAIL'] || 0;
+      document.getElementById('statReady').textContent = counts['PROGRAM_INFO_READY'] || 0;
       document.getElementById('statSent').textContent = counts['PROGRAM_INFO_SENT'] || 0;
-      document.getElementById('statError').textContent = counts['ERROR'] || 0;
     }
 
-    function filterLeadsByStatus(status) {
-      document.getElementById('leadStatusFilter').value = status;
-      // Highlight active stat
-      document.querySelectorAll('.lead-stat').forEach(el => el.classList.remove('active'));
-      if (status) {
-        const idx = { NEEDS_HUMAN_REVIEW: 1, DRAFT_CREATED: 2, INQUIRY_RECEIVED: 3, PROGRAM_INFO_SENT: 4, ERROR: 5 }[status];
-        const stats = document.querySelectorAll('.lead-stat');
-        if (idx !== undefined && stats[idx]) stats[idx].classList.add('active');
-      } else {
-        document.querySelector('.lead-stat')?.classList.add('active');
-      }
-      loadLeads();
+    function renderLeadAlerts(reconciliation) {
+      const alertEl = document.getElementById('leadAlerts');
+      const stale = reconciliation?.stale_count || 0;
+      const missing = reconciliation?.missing_count || 0;
+      const mismatches = reconciliation?.mismatch_count || 0;
+      const upstreamCount = reconciliation?.upstream_count || 0;
+      alertEl.innerHTML = `
+        <div class="lead-alert ${missing ? 'danger' : 'ok'}">
+          <strong>Missing Upstream Leads</strong>
+          ${missing ? `${missing} upstream conversations are not in the pipeline.` : 'No missing upstream leads detected in the current reconciliation run.'}
+        </div>
+        <div class="lead-alert ${stale ? 'warn' : 'ok'}">
+          <strong>Stale Leads</strong>
+          ${stale ? `${stale} leads have been idle beyond the stale threshold.` : 'No stale leads right now.'}
+        </div>
+        <div class="lead-alert ${mismatches ? 'warn' : 'ok'}">
+          <strong>Activity Mismatches</strong>
+          ${mismatches ? `${mismatches} upstream records are newer than the pipeline snapshot.` : 'Pipeline activity is current for the records checked.'}
+        </div>
+        <div class="lead-alert ${upstreamCount ? 'ok' : 'warn'}">
+          <strong>Reconciliation Feed</strong>
+          ${upstreamCount ? `Checked ${upstreamCount} upstream conversation snapshots.` : 'No upstream snapshot feed attached yet; stale local leads are still being monitored.'}
+        </div>
+      `;
+      document.getElementById('leadAlertMeta').textContent = stale
+        ? `${stale} stale leads need attention.`
+        : 'No stale lead alerts right now.';
     }
 
-    function renderLeadsList(leads) {
-      const listEl = document.getElementById('leadsList');
-      updateLeadStats(leads);
-      if (!Array.isArray(leads) || !leads.length) {
-        listEl.innerHTML = '<div style="padding:10px 12px;color:var(--text-muted);font-size:12px;">No leads found.</div>';
-        selectedLeadId = '';
-        setLeadActionState(true);
-        renderLeadDetail(null);
-        return;
+    function renderLeadBoard(leads) {
+      const boardEl = document.getElementById('leadBoard');
+      const stageOrder = [
+        'AWAITING_HUMAN_RESPONSE',
+        'AWAITING_EMAIL',
+        'PROGRAM_INFO_READY',
+        'PROGRAM_INFO_SENT',
+        'NEEDS_REVIEW_ERROR',
+        'ARCHIVED_CLOSED',
+      ];
+      const grouped = Object.fromEntries(stageOrder.map((stage) => [stage, []]));
+      for (const lead of (leads || [])) {
+        const stage = grouped[lead.workflow_stage] ? lead.workflow_stage : 'AWAITING_HUMAN_RESPONSE';
+        grouped[stage].push(lead);
       }
-      listEl.innerHTML = '';
-      for (const lead of leads) {
-        const row = document.createElement('button');
-        row.className = 'lead-row' + (lead.id === selectedLeadId ? ' active' : '');
-        row.type = 'button';
-        row.dataset.leadId = lead.id;
-        row.innerHTML = `
-          <div class="lead-row-main">
-            <span>${lead.name || 'Unknown Lead'}</span>
-            <span class="lead-status-badge ${statusBadgeClass(lead.status)}">${statusShortName(lead.status)}</span>
-          </div>
-          <div class="lead-row-sub">
-            <span>${lead.source || ''}</span>
-            <span>${lead.updated_at ? new Date(lead.updated_at).toLocaleDateString() : ''}</span>
+
+      boardEl.innerHTML = stageOrder.map((stage) => {
+        const items = grouped[stage] || [];
+        const cards = items.length ? items.map((lead) => `
+          <button class="lead-board-card ${lead.id === selectedLeadId ? 'active' : ''}" type="button" data-lead-id="${escapeHtml(lead.id)}">
+            <div class="lead-board-card-top">
+              <span class="lead-board-name">${escapeHtml(lead.name || 'Unknown Lead')}</span>
+              <span class="lead-status-badge ${statusBadgeClass(lead.status)}">${escapeHtml(statusShortName(lead.status))}</span>
+            </div>
+            <div class="lead-board-card-sub">
+              <span>${escapeHtml(lead.source || 'Unknown')}</span>
+              <span>${escapeHtml(formatDateTime(lead.last_inbound_at || lead.updated_at))}</span>
+            </div>
+            <div class="lead-board-preview">${escapeHtml(lead.latest_message_preview || lead.initial_question || 'No message preview captured.')}</div>
+            <div class="lead-chip-row">
+              ${lead.needs_response ? '<span class="lead-chip urgent">Needs response</span>' : ''}
+              ${lead.is_stale ? '<span class="lead-chip urgent">Stale</span>' : ''}
+              ${lead.has_contact ? '<span class="lead-chip">Has contact</span>' : '<span class="lead-chip">Missing contact</span>'}
+            </div>
+          </button>
+        `).join('') : '<div class="lead-empty">No leads in this workflow stage.</div>';
+
+        return `
+          <div class="lead-column">
+            <div class="lead-column-header">
+              <span class="lead-column-title">${workflowStageLabel(stage)}</span>
+              <span class="lead-column-count">${items.length}</span>
+            </div>
+            <div class="lead-column-body">${cards}</div>
           </div>
         `;
-        row.addEventListener('click', () => {
-          loadLeadDetail(lead.id);
-        });
-        listEl.appendChild(row);
-      }
+      }).join('');
+
+      boardEl.querySelectorAll('.lead-board-card').forEach((card) => {
+        card.addEventListener('click', () => loadLeadDetail(card.dataset.leadId));
+      });
     }
 
     async function fetchJson(path, options = {}) {
@@ -1644,26 +1969,32 @@
     }
 
     async function loadLeads() {
-      const status = document.getElementById('leadStatusFilter').value;
       const source = document.getElementById('leadSourceFilter').value;
       const limit = parseInt(document.getElementById('leadLimit').value || '20', 10);
       const offset = parseInt(document.getElementById('leadOffset').value || '0', 10);
-      const payload = { limit, offset };
-      if (status) payload.status = status;
-      if (source) payload.source = source;
-      const res = await fetchJson('/api/leads/query', {
-        method: 'POST',
-        body: JSON.stringify(payload),
+      const staleAfterHours = parseInt(document.getElementById('leadStaleAfterHours').value || '48', 10);
+      let path = `/api/leads/board?limit=${encodeURIComponent(String(limit))}&offset=${encodeURIComponent(String(offset))}&stale_after_hours=${encodeURIComponent(String(staleAfterHours))}&sync_live=1`;
+      if (source) path += `&source=${encodeURIComponent(source)}`;
+      const res = await fetchJson(path, {
+        method: 'GET',
         timeoutMs: 25000
       });
       setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
       if (res.ok && res.data) {
         const leads = res.data.leads || [];
+        latestBoardLeads = leads;
         if (!selectedLeadId && leads.length) selectedLeadId = leads[0].id;
-        renderLeadsList(leads);
+        updateLeadStats(leads, res.data.workflow_counts || {});
+        renderLeadAlerts(res.data.reconciliation || {});
+        renderLeadBoard(leads);
+        const syncStamp = res.data.live_sync?.checked_at || res.data.timestamp;
+        const syncStatus = res.data.live_sync?.success === false ? ` | Live sync issue: ${res.data.live_sync.error}` : '';
+        document.getElementById('leadSyncMeta').textContent = `Last synced: ${formatDateTime(syncStamp)} • Auto-refresh every 30s${syncStatus}`;
         if (selectedLeadId) {
           await loadLeadDetail(selectedLeadId, false);
         }
+      } else if (!res.ok) {
+        latestBoardLeads = [];
       }
       return res;
     }
@@ -1678,7 +2009,7 @@
         selectedLeadId = leadId;
         setLeadActionState(false);
         renderLeadDetail(res.data);
-        const leadsSnapshot = Array.from(document.querySelectorAll('.lead-row'));
+        const leadsSnapshot = Array.from(document.querySelectorAll('.lead-board-card'));
         for (const row of leadsSnapshot) row.classList.remove('active');
         const selected = leadsSnapshot.find((el) => el.dataset.leadId === leadId);
         if (selected) selected.classList.add('active');
@@ -1935,6 +2266,11 @@
     document.getElementById('leadAuditBtn').addEventListener('click', () => fetchSelectedLeadAudit());
     setLeadActionState(true);
 
+    ['leadSourceFilter', 'leadLimit', 'leadOffset', 'leadStaleAfterHours'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', () => loadLeads());
+    });
+
     // Chat
     bindAction('chatBtn', 'chatMeta', 'chatOut', 'sending...', async () => {
       const message = document.getElementById('chatMsg').value;
@@ -2019,6 +2355,7 @@
     });
     setInterval(ping, 15000);
     setInterval(loadMissionControl, 20000);
+    leadBoardPollHandle = setInterval(loadLeads, 30000);
     window.addEventListener('load', () => {
       showMissingBrandAssetsIfAny();
       addCopyButtons();

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trifecta Leads Pipeline</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0a0e1a;
+            --panel: #111827;
+            --panel-2: #182235;
+            --border: #253244;
+            --text: #eef4ff;
+            --muted: #94a3b8;
+            --subtle: #64748b;
+            --blue: #3b82f6;
+            --cyan: #06b6d4;
+            --green: #10b981;
+            --yellow: #f59e0b;
+            --red: #ef4444;
+            --purple: #8b5cf6;
+        }
+        body {
+            font-family: "Segoe UI", system-ui, sans-serif;
+            background: radial-gradient(circle at top, #15213a 0%, var(--bg) 45%);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .header {
+            padding: 18px 28px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.25);
+            background: rgba(10, 14, 26, 0.85);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: center;
+        }
+        .header h1 { font-size: 22px; margin-bottom: 4px; }
+        .header p, .meta { color: var(--muted); font-size: 12px; }
+        .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .btn {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn.primary {
+            border-color: rgba(59, 130, 246, 0.45);
+            background: rgba(59, 130, 246, 0.12);
+        }
+        .container { padding: 22px 28px 32px; }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stat, .alert, .detail, .column {
+            background: rgba(17, 24, 39, 0.92);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+        .stat { padding: 14px; }
+        .stat .value { font-size: 28px; font-weight: 700; }
+        .stat .label { margin-top: 6px; font-size: 10px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.8px; }
+        .alerts {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .alert { padding: 14px; }
+        .alert strong { display: block; margin-bottom: 5px; font-size: 12px; }
+        .alert p { font-size: 12px; color: var(--muted); line-height: 1.45; }
+        .alert.danger { border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.09); }
+        .alert.warn { border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.09); }
+        .alert.ok { border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.06); }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .column { min-height: 260px; }
+        .column-header {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .column-title { font-size: 12px; font-weight: 700; }
+        .column-count {
+            font-size: 11px;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 2px 8px;
+        }
+        .column-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .lead-card {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--panel-2);
+            padding: 10px;
+            text-align: left;
+            color: var(--text);
+            cursor: pointer;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .lead-card:hover, .lead-card.active {
+            transform: translateY(-1px);
+            border-color: rgba(59, 130, 246, 0.45);
+        }
+        .lead-top, .lead-sub {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .lead-name { font-size: 13px; font-weight: 700; }
+        .badge {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+        .badge.urgent { color: #fecaca; border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.1); }
+        .badge.info { color: #bae6fd; border-color: rgba(6, 182, 212, 0.35); background: rgba(6, 182, 212, 0.1); }
+        .badge.ready { color: #fde68a; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.1); }
+        .lead-sub { margin: 6px 0; font-size: 10px; color: var(--subtle); }
+        .lead-preview { font-size: 11px; color: var(--muted); line-height: 1.45; margin-bottom: 8px; }
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .empty { color: var(--subtle); font-size: 12px; padding: 8px 2px; }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 12px;
+        }
+        .detail { padding: 14px; min-height: 220px; }
+        .detail h2 { font-size: 18px; margin-bottom: 8px; }
+        .detail-meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin: 12px 0;
+        }
+        .detail-meta div {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .detail-meta strong {
+            display: block;
+            font-size: 10px;
+            color: var(--subtle);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.8px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 11px;
+            color: #cbd5e1;
+            line-height: 1.45;
+        }
+        @media (max-width: 1180px) {
+            .stats, .alerts, .board, .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 760px) {
+            .stats, .alerts, .board, .detail-grid { grid-template-columns: 1fr; }
+            .header, .topbar { align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>Scout's Live Lead Pipeline</h1>
+            <p>Real-time workflow board for GoDaddy, Outlook, Dialpad, and manual leads.</p>
+        </div>
+        <div class="actions">
+            <div class="meta" id="clock">--</div>
+            <button class="btn" id="editApiBtn">API</button>
+            <button class="btn primary" id="syncBtn">Sync Now</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="topbar">
+            <div class="meta" id="syncMeta">Last synced: never</div>
+            <div class="meta" id="apiMeta">API: http://localhost:5000</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat"><div class="value" id="s-total">0</div><div class="label">Total Leads</div></div>
+            <div class="stat"><div class="value" id="s-response" style="color:var(--red)">0</div><div class="label">Needs Response</div></div>
+            <div class="stat"><div class="value" id="s-human" style="color:var(--cyan)">0</div><div class="label">Awaiting Human</div></div>
+            <div class="stat"><div class="value" id="s-email" style="color:var(--yellow)">0</div><div class="label">Awaiting Email</div></div>
+            <div class="stat"><div class="value" id="s-ready" style="color:var(--purple)">0</div><div class="label">Draft Ready</div></div>
+            <div class="stat"><div class="value" id="s-sent" style="color:var(--green)">0</div><div class="label">Program Info Sent</div></div>
+        </div>
+
+        <div class="alerts" id="alerts"></div>
+        <div class="board" id="board"></div>
+
+        <div class="detail-grid">
+            <div class="detail" id="detailSummary">
+                <div class="empty">Click a lead card to inspect it.</div>
+            </div>
+            <div class="detail">
+                <pre id="detailJson">Select a lead to view raw detail.</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'trifecta_openclaw_api_base';
+        const DEFAULT_API = localStorage.getItem(STORAGE_KEY) || 'http://localhost:5000';
+        const STAGES = [
+            ['AWAITING_HUMAN_RESPONSE', 'Awaiting Human Response'],
+            ['AWAITING_EMAIL', 'Awaiting Email'],
+            ['PROGRAM_INFO_READY', 'Program Info Ready / Drafted'],
+            ['PROGRAM_INFO_SENT', 'Program Info Sent'],
+            ['NEEDS_REVIEW_ERROR', 'Needs Review / Error'],
+            ['ARCHIVED_CLOSED', 'Archived / Closed'],
+        ];
+        let apiBase = DEFAULT_API.replace(/\/$/, '');
+        let selectedLeadId = '';
+        let boardCache = [];
+
+        function tick() {
+            document.getElementById('clock').textContent = new Date().toLocaleString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+            });
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function pretty(obj) {
+            return JSON.stringify(obj, null, 2);
+        }
+
+        function formatDateTime(value) {
+            if (!value) return 'Not recorded';
+            const dt = new Date(value);
+            if (Number.isNaN(dt.getTime())) return value;
+            return `${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        function badgeHtml(lead) {
+            const out = [];
+            if (lead.needs_response) out.push('<span class="badge urgent">Needs response</span>');
+            if (lead.is_stale) out.push('<span class="badge urgent">Stale</span>');
+            if (lead.has_contact) out.push('<span class="badge info">Has contact</span>');
+            else out.push('<span class="badge">Missing contact</span>');
+            if (lead.latest_draft?.state) out.push(`<span class="badge ready">${escapeHtml(lead.latest_draft.state)}</span>`);
+            return out.join('');
+        }
+
+        async function fetchJson(path) {
+            const res = await fetch(`${apiBase}${path}`, { headers: { 'Content-Type': 'application/json' } });
+            const text = await res.text();
+            let data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+            if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+            return data;
+        }
+
+        function renderStats(leads, workflowCounts) {
+            document.getElementById('s-total').textContent = leads.length;
+            document.getElementById('s-response').textContent = leads.filter((lead) => lead.needs_response).length;
+            document.getElementById('s-human').textContent = workflowCounts.AWAITING_HUMAN_RESPONSE || 0;
+            document.getElementById('s-email').textContent = workflowCounts.AWAITING_EMAIL || 0;
+            document.getElementById('s-ready').textContent = workflowCounts.PROGRAM_INFO_READY || 0;
+            document.getElementById('s-sent').textContent = workflowCounts.PROGRAM_INFO_SENT || 0;
+        }
+
+        function renderAlerts(reconciliation) {
+            const html = [
+                {
+                    cls: reconciliation.missing_count ? 'danger' : 'ok',
+                    title: 'Missing Upstream Leads',
+                    body: reconciliation.missing_count
+                        ? `${reconciliation.missing_count} upstream conversations are not in the lead pipeline.`
+                        : 'No missing upstream leads detected in this check.',
+                },
+                {
+                    cls: reconciliation.stale_count ? 'warn' : 'ok',
+                    title: 'Stale Leads',
+                    body: reconciliation.stale_count
+                        ? `${reconciliation.stale_count} leads have been idle beyond the stale threshold.`
+                        : 'No stale leads right now.',
+                },
+                {
+                    cls: reconciliation.mismatch_count ? 'warn' : 'ok',
+                    title: 'Activity Mismatches',
+                    body: reconciliation.mismatch_count
+                        ? `${reconciliation.mismatch_count} upstream records are newer than the pipeline view.`
+                        : 'Pipeline activity is current for the records checked.',
+                },
+                {
+                    cls: reconciliation.upstream_count ? 'ok' : 'warn',
+                    title: 'Reconciliation Feed',
+                    body: reconciliation.upstream_count
+                        ? `Checked ${reconciliation.upstream_count} upstream snapshots.`
+                        : 'No upstream snapshot feed is attached yet. Local stale lead monitoring is active.',
+                },
+            ];
+            document.getElementById('alerts').innerHTML = html.map((item) => `
+                <div class="alert ${item.cls}">
+                    <strong>${item.title}</strong>
+                    <p>${item.body}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderBoard(leads) {
+            const grouped = Object.fromEntries(STAGES.map(([key]) => [key, []]));
+            for (const lead of leads) {
+                const stage = grouped[lead.workflow_stage] ? lead.workflow_stage : 'AWAITING_HUMAN_RESPONSE';
+                grouped[stage].push(lead);
+            }
+            document.getElementById('board').innerHTML = STAGES.map(([stage, label]) => `
+                <section class="column">
+                    <div class="column-header">
+                        <span class="column-title">${label}</span>
+                        <span class="column-count">${grouped[stage].length}</span>
+                    </div>
+                    <div class="column-body">
+                        ${grouped[stage].length ? grouped[stage].map((lead) => `
+                            <button class="lead-card ${lead.id === selectedLeadId ? 'active' : ''}" data-id="${escapeHtml(lead.id)}">
+                                <div class="lead-top">
+                                    <span class="lead-name">${escapeHtml(lead.name || 'Unknown Lead')}</span>
+                                    <span class="badge">${escapeHtml(lead.status || 'UNKNOWN')}</span>
+                                </div>
+                                <div class="lead-sub">
+                                    <span>${escapeHtml(lead.source || 'Unknown')}</span>
+                                    <span>${escapeHtml(formatDateTime(lead.last_inbound_at || lead.updated_at))}</span>
+                                </div>
+                                <div class="lead-preview">${escapeHtml(lead.latest_message_preview || lead.initial_question || 'No message preview captured.')}</div>
+                                <div class="chips">${badgeHtml(lead)}</div>
+                            </button>
+                        `).join('') : '<div class="empty">No leads in this stage.</div>'}
+                    </div>
+                </section>
+            `).join('');
+
+            document.querySelectorAll('.lead-card').forEach((card) => {
+                card.addEventListener('click', () => {
+                    const lead = boardCache.find((item) => item.id === card.dataset.id);
+                    if (!lead) return;
+                    selectedLeadId = lead.id;
+                    renderSelectedLead(lead);
+                    renderBoard(boardCache);
+                });
+            });
+        }
+
+        function renderSelectedLead(lead) {
+            document.getElementById('detailSummary').innerHTML = `
+                <h2>${escapeHtml(lead.name || 'Unknown Lead')}</h2>
+                <div class="chips" style="margin-bottom:10px">${badgeHtml(lead)}</div>
+                <div class="detail-meta">
+                    <div><strong>Workflow Stage</strong>${escapeHtml(lead.workflow_stage || 'Unknown')}</div>
+                    <div><strong>Source</strong>${escapeHtml(lead.source || 'Unknown')}</div>
+                    <div><strong>Contact</strong>${escapeHtml(lead.email || lead.phone || 'No contact info yet')}</div>
+                    <div><strong>Program Interest</strong>${escapeHtml(lead.program_interest || 'Not captured')}</div>
+                    <div><strong>Last Inbound</strong>${escapeHtml(formatDateTime(lead.last_inbound_at))}</div>
+                    <div><strong>Last Outbound</strong>${escapeHtml(formatDateTime(lead.last_outbound_at))}</div>
+                    <div><strong>Draft State</strong>${escapeHtml(lead.latest_draft?.state || 'No draft')}</div>
+                    <div><strong>Email Send State</strong>${escapeHtml(lead.latest_outbound?.status || 'No outbound yet')}</div>
+                </div>
+                <div class="meta" style="margin-bottom:8px">Latest message</div>
+                <div style="font-size:13px;line-height:1.5;color:var(--muted)">${escapeHtml(lead.latest_message_preview || lead.initial_question || 'No message preview captured.')}</div>
+            `;
+            document.getElementById('detailJson').textContent = pretty(lead);
+        }
+
+        async function loadBoard() {
+            try {
+                const data = await fetchJson('/api/leads/board?limit=200&stale_after_hours=48&sync_live=1');
+                boardCache = data.leads || [];
+                document.getElementById('apiMeta').textContent = `API: ${apiBase}`;
+                const syncStamp = data.live_sync?.checked_at || data.timestamp;
+                const syncStatus = data.live_sync?.success === false ? ` | Live sync issue: ${data.live_sync.error}` : '';
+                document.getElementById('syncMeta').textContent = `Last synced: ${formatDateTime(syncStamp)} | Auto-refresh every 30s${syncStatus}`;
+                renderStats(boardCache, data.workflow_counts || {});
+                renderAlerts(data.reconciliation || {});
+                if (!selectedLeadId && boardCache.length) selectedLeadId = boardCache[0].id;
+                renderBoard(boardCache);
+                const selected = boardCache.find((lead) => lead.id === selectedLeadId);
+                if (selected) renderSelectedLead(selected);
+            } catch (err) {
+                document.getElementById('syncMeta').textContent = `Sync failed: ${err.message}`;
+                document.getElementById('alerts').innerHTML = `<div class="alert danger"><strong>Connection Error</strong><p>${escapeHtml(err.message)}</p></div>`;
+            }
+        }
+
+        document.getElementById('syncBtn').addEventListener('click', loadBoard);
+        document.getElementById('editApiBtn').addEventListener('click', () => {
+            const next = prompt('Flask API base URL', apiBase);
+            if (!next) return;
+            apiBase = next.replace(/\/$/, '');
+            localStorage.setItem(STORAGE_KEY, apiBase);
+            loadBoard();
+        });
+
+        setInterval(tick, 1000);
+        setInterval(loadBoard, 30000);
+        tick();
+        loadBoard();
+    </script>
+</body>
+</html>

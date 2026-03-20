@@ -17,6 +17,7 @@ def client(tmp_path, monkeypatch):
     app_module.Config.DIALPAD_WEBHOOK_TOKEN = "dialpad-test-token"
     app_module.Config.OUTLOOK_FORM_WEBHOOK_TOKEN = "outlook-test-token"
     app_module.Config.OUTLOOK_SENDER_UPN = "sender@example.com"
+    app_module.Config.GODADDY_LIVE_SYNC_ENABLED = False
     app_module.Config.API_KEY = ""
     monkeypatch.setattr(app_module, "INTERNAL_API_KEY", "internal-test-key")
 
@@ -161,6 +162,10 @@ def test_get_lead_detail_returns_events_and_draft(client):
     assert isinstance(body["recent_events"], list)
     assert len(body["recent_events"]) >= 1
     assert body["latest_draft"] is not None
+    assert body["workflow_stage"] == app_module.WORKFLOW_STAGE["PROGRAM_INFO_READY"]
+    assert body["has_contact"] is True
+    assert body["last_inbound_at"]
+    assert "latest_message_preview" in body
 
 
 def test_dialpad_webhook_ingestion_is_idempotent(client):
@@ -245,6 +250,7 @@ def test_outlook_form_webhook_missing_contact_skips_draft(client):
     lead_state = client.get(f"/api/leads/{body['lead_id']}")
     assert lead_state.status_code == 200
     assert lead_state.get_json()["latest_draft"] is None
+    assert lead_state.get_json()["workflow_stage"] == app_module.WORKFLOW_STAGE["AWAITING_HUMAN_RESPONSE"]
 
 
 def test_outlook_form_webhook_rejects_missing_auth(client):
@@ -335,3 +341,139 @@ def test_lead_admin_metrics_returns_funnel_stats(client, monkeypatch):
     assert isinstance(body["by_status"], list)
     assert isinstance(body["by_source"], list)
     assert body["conversion_rate"] > 0
+
+
+def test_godaddy_contactless_lead_maps_to_awaiting_email(client):
+    payload = {
+        "event_id": "gd-evt-001",
+        "conversation": {"id": "conv-1", "contact_id": "contact-1"},
+        "contact": {"name": "Guest User 1"},
+        "message": {"id": "msg-1", "text": "Can I get pricing?", "created_at": "2026-03-18T18:00:00Z"},
+    }
+    res = client.post("/api/webhooks/godaddy", json=payload, headers={"X-GoDaddy-Token": "godaddy-test-token"})
+    assert res.status_code == 200
+    lead_id = res.get_json()["lead_id"]
+
+    lead_res = client.get(f"/api/leads/{lead_id}")
+    assert lead_res.status_code == 200
+    lead = lead_res.get_json()
+    assert lead["has_contact"] is False
+    assert lead["workflow_stage"] == app_module.WORKFLOW_STAGE["AWAITING_EMAIL"]
+    assert lead["needs_response"] is True
+
+
+def test_lead_board_endpoint_returns_workflow_counts_and_reconciliation(client):
+    _create_manual_lead(client, email="board@example.com", auto_generate_draft=True)
+    board_res = client.get("/api/leads/board?limit=20&stale_after_hours=48")
+    assert board_res.status_code == 200
+    body = board_res.get_json()
+    assert body["count"] >= 1
+    assert "workflow_counts" in body
+    assert "reconciliation" in body
+    assert "timestamp" in body
+    assert body["reconciliation"]["stale_count"] >= 0
+
+
+def test_build_godaddy_sync_event_maps_contact_form_fields():
+    conversation = {
+        "id": 822998992,
+        "subject": "Contact Form: Contact Us",
+        "display_subject": "Contact Form: Contact Us",
+        "updated_at": "2026-03-20T03:32:12.488Z",
+        "newest_message_timestamp": "2026-03-20T03:32:12.381Z",
+        "data": {
+            "Name (First, Last)": "kyle schiltroth",
+            "Phone": "2047618439",
+            "Email": "Kschiltroth@gmail.com",
+            "How Can We Help You?": "I'm looking for alcohol treatment and wondering about the cost and availability",
+        },
+        "last_message": {
+            "id": 1900915140,
+            "created_at": "2026-03-20T03:32:12.381Z",
+            "body": "",
+            "user": {
+                "id": 852715239,
+                "email": "Kschiltroth@gmail.com",
+                "staff?": False,
+                "friendly_name": "Kschiltroth@gmail.com",
+                "identities": [
+                    {"type": "email", "identifier": "Kschiltroth@gmail.com"},
+                ],
+            },
+        },
+    }
+
+    event = app_module._build_godaddy_sync_event(conversation, messages=[])
+    normalized = app_module.normalize_godaddy_event(event)
+
+    assert event["contact"]["name"] == "kyle schiltroth"
+    assert event["contact"]["email"] == "kschiltroth@gmail.com"
+    assert event["contact"]["phone"] == "2047618439"
+    assert "alcohol treatment" in event["message"]["text"].lower()
+    assert normalized["external_contact_key"] == "godaddy:852715239"
+    assert normalized["has_contact"] is True
+
+
+def test_lead_board_live_sync_includes_sync_summary(client, monkeypatch):
+    app_module.Config.GODADDY_LIVE_SYNC_ENABLED = True
+    monkeypatch.setattr(
+        app_module,
+        "sync_godaddy_live_conversations",
+        lambda max_pages=None, page_size=None: {
+            "success": True,
+            "source": app_module.LEAD_SOURCE["GODADDY_CHAT"],
+            "checked_at": "2026-03-20T10:00:00Z",
+            "upstream_count": 1,
+            "ingested_count": 1,
+            "duplicate_count": 0,
+            "snapshots": [
+                {
+                    "conversation": {"id": "conv-live", "contact_id": "contact-live", "updated_at": "2026-03-20T10:00:00Z"},
+                    "contact": {"id": "contact-live", "name": "Live Lead", "email": "live@example.com"},
+                    "message": {"id": "msg-live", "text": "Need help", "created_at": "2026-03-20T10:00:00Z"},
+                }
+            ],
+        },
+    )
+
+    board_res = client.get("/api/leads/board?limit=20&stale_after_hours=48&sync_live=1")
+    assert board_res.status_code == 200
+    body = board_res.get_json()
+    assert body["live_sync"]["success"] is True
+    assert body["live_sync"]["upstream_count"] == 1
+    assert body["reconciliation"]["upstream_count"] == 1
+
+
+def test_reconcile_endpoint_detects_missing_and_newer_upstream_activity(client):
+    payload = {
+        "event_id": "gd-evt-002",
+        "conversation": {"id": "conv-2", "contact_id": "contact-2", "updated_at": "2026-03-18T10:00:00Z"},
+        "contact": {"id": "contact-2", "name": "Taylor", "email": "taylor@example.com"},
+        "message": {"id": "msg-2", "text": "Interested in boot camp", "created_at": "2026-03-18T10:00:00Z"},
+    }
+    created = client.post("/api/webhooks/godaddy", json=payload, headers={"X-GoDaddy-Token": "godaddy-test-token"})
+    assert created.status_code == 200
+
+    reconcile_res = client.post(
+        "/api/leads/reconcile",
+        json={
+            "source": app_module.LEAD_SOURCE["GODADDY_CHAT"],
+            "upstream_conversations": [
+                {
+                    "conversation": {"id": "conv-2", "contact_id": "contact-2", "updated_at": "2026-03-19T12:00:00Z"},
+                    "contact": {"id": "contact-2", "name": "Taylor", "email": "taylor@example.com"},
+                    "message": {"id": "msg-3", "text": "Following up", "created_at": "2026-03-19T12:00:00Z"},
+                },
+                {
+                    "conversation": {"id": "conv-missing", "contact_id": "contact-missing", "updated_at": "2026-03-19T08:00:00Z"},
+                    "contact": {"id": "contact-missing", "name": "Missing Lead"},
+                    "message": {"id": "msg-missing", "text": "Need help now", "created_at": "2026-03-19T08:00:00Z"},
+                },
+            ],
+        },
+    )
+    assert reconcile_res.status_code == 200
+    reconciliation = reconcile_res.get_json()["reconciliation"]
+    assert reconciliation["missing_count"] == 1
+    assert reconciliation["mismatch_count"] == 1
+    assert reconciliation["missing_leads"][0]["is_missing_from_pipeline"] is True

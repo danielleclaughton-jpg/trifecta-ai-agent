@@ -9,7 +9,17 @@
       "Bash(python:*)",
       "Bash(pip install:*)",
       "Bash(git restore:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(find /c/Users/TrifectaAgent/trifecta-ai-agent -type f \\\\\\(-name .env* -o -name web.config -o -name .deployment -o -name startup.sh -o -name azure-pipelines.yml \\\\\\))",
+      "Bash(xargs ls:*)",
+      "Bash(find /c/Users/TrifectaAgent/trifecta-ai-agent -type f -name *.py)",
+      "Bash(ls -la /c/Users/TrifectaAgent/trifecta-ai-agent/*.html)",
+      "Bash(gh run:*)",
+      "Bash(ls -lah /c/Users/TrifectaAgent/trifecta-ai-agent/*.py)",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, ''/c/Users/TrifectaAgent/trifecta-ai-agent''\\); from xhtml2pdf import pisa; print\\(''xhtml2pdf OK''\\)\")",
+      "Bash(sqlite3 /c/Users/TrifectaAgent/trifecta-ai-agent/lead_pipeline.db \".tables\")",
+      "Bash(gh secret:*)",
+      "Bash(gh auth:*)"
     ]
   }
 }
