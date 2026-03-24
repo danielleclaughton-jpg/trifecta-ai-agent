@@ -33,6 +33,33 @@ except ImportError:
 from collections import defaultdict
 from io import BytesIO
 
+# --- Real-time Dashboard Integration ---
+# Emit events to Lamby Command Center Socket.IO server
+# so the dashboard updates in < 1 second, not 30s
+DASHBOARD_URL = os.environ.get('DASHBOARD_URL', 'http://localhost:3000').rstrip('/')
+
+def emit_to_dashboard(event_type, message, data=None):
+    """
+    POST to dashboard's /api/realtime/emit endpoint.
+    Runs in background thread so it never blocks Flask.
+    """
+    def _emit():
+        try:
+            resp = requests.post(
+                f"{DASHBOARD_URL}/api/realtime/emit",
+                json={"event_type": event_type, "message": message, "data": data or {}},
+                timeout=3,
+            )
+            if resp.status_code == 200:
+                logger.debug(f"[Realtime Emit] {event_type}: {message}")
+            else:
+                logger.warning(f"[Realtime Emit] Failed ({resp.status_code}): {event_type}")
+        except RequestException as e:
+            # Non-blocking: dashboard might not be running locally
+            logger.debug(f"[Realtime Emit] Dashboard unreachable: {e}")
+
+    threading.Thread(target=_emit, daemon=True).start()
+
 # --- API Key Authentication Middleware ---
 INTERNAL_API_KEY = os.environ.get('INTERNAL_API_KEY', '')
 
@@ -3004,6 +3031,15 @@ def log_outbound_sent():
             phone=phone
         )
 
+        # Emit real-time event to dashboard
+        msg_type = entry['type']
+        channel = entry['channel']
+        emit_to_dashboard(
+            "outbound:sent",
+            f"{msg_type.capitalize()} sent via {channel}: {entry.get('to', '')}",
+            {"leadId": entry['lead_id'], "type": msg_type, "channel": channel, "to": entry.get('to')}
+        )
+
         return jsonify({
             'ok': True,
             'entry': entry,
@@ -3135,6 +3171,13 @@ def update_kpi_from_sent_log():
         os.makedirs(os.path.dirname(kpi_path), exist_ok=True)
         with open(kpi_path, 'w', encoding='utf-8') as f:
             json.dump(kpi_data, f, indent=2)
+
+        # Emit real-time event to dashboard
+        emit_to_dashboard(
+            "metrics:updated",
+            f"KPI updated: {today_count} emails sent today",
+            {"emails_sent_today": today_count, "emails_sent_week": week_count, "kpi": kpi_data}
+        )
 
         # Sync Sheet rows for all leads that appear in sent-log
         sheet_updated = 0
@@ -3832,6 +3875,7 @@ def lead_update_status():
     success = update_lead_status(email=email, phone=phone, new_status=new_status, notes=notes)
 
     if success:
+        emit_to_dashboard("lead:updated", f"Lead status updated to {new_status}", {"email": email, "status": new_status})
         return jsonify({'ok': True, 'status': new_status}), 200
     else:
         return jsonify({'error': 'Lead not found'}), 404
@@ -3860,6 +3904,13 @@ def create_lead():
             )
         }
         result = process_inbound_lead_event(normalized, data)
+        lead = result['lead']
+        if not result['duplicate']:
+            emit_to_dashboard(
+                "lead:new",
+                f"New lead captured: {lead.get('name') or lead.get('email') or 'Unknown'} from {lead.get('source', 'Unknown')}",
+                {"leadId": lead['id'], "name": lead.get('name'), "source": lead.get('source'), "email": lead.get('email')}
+            )
         return jsonify({
             'success': True,
             'lead': _serialize_lead(result['lead']),
@@ -4077,6 +4128,13 @@ def approve_and_send_lead_email(lead_id):
             'channel': 'outlook',
             'status': 'sent'
         })
+
+        # Emit real-time event to dashboard
+        emit_to_dashboard(
+            "outbound:sent",
+            f"Email approved and sent to {lead.get('email', '')}",
+            {"leadId": lead_id, "type": "email", "channel": "outlook", "to": lead.get('email')}
+        )
 
         return jsonify({
             'status': 'sent',
