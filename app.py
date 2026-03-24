@@ -2055,6 +2055,16 @@ def send_sms_endpoint():
                 status='sent',
                 provider_response=result
             )
+            # Also append to sent-log for real-time Sheet sync
+            _append_sent_log({
+                'ts': utcnow_iso(),
+                'type': 'sms',
+                'to': to_number,
+                'lead_id': lead_id,
+                'subject': (message or '')[:80],
+                'channel': 'dialpad',
+                'status': 'sent'
+            })
 
         return jsonify({
             'success': True,
@@ -2402,6 +2412,8 @@ def log_lead_to_sheets(lead_data: dict) -> bool:
             lead_data.get('status', 'INQUIRY_RECEIVED'),     # H: Status
             'No',                                            # I: Follow-up Sent
             lead_data.get('program_interest', ''),           # J: Notes
+            '',                                               # K: Last Outreach (blank, filled by sent-log)
+            0,                                                # L: Outreach Count (blank, filled by sent-log)
         ]
 
         sheet.append_row(row)
@@ -2491,6 +2503,8 @@ def update_lead_status(email: str = None, phone: str = None, new_status: str = N
                 if cell:
                     sheet.update_cell(cell.row, 7, now[:10])   # G: Date Responded
                     sheet.update_cell(cell.row, 8, new_status)  # H: Status
+                    # Also refresh I/K/L from sent-log
+                    _update_lead_sheets_row(lead['id'], email=email, phone=phone)
         except Exception as e:
             logger.warning(f"Sheets status update failed (non-fatal): {e}")
 
@@ -2805,6 +2819,294 @@ def outlook_form_webhook():
     except Exception as e:
         logger.error("Outlook Forms webhook error: %s", e)
         return jsonify({'error': str(e)}), 500
+
+
+# =============================================================================
+# API ENDPOINTS - Outbound Sent-Log (Real-Time Sheet Sync)
+# =============================================================================
+
+OUTBOUND_SENT_LOG = os.path.join(_base_dir, 'trifecta', 'outbound', 'sent-log.jsonl')
+OUTBOUND_KPI_FILE = os.path.join(_base_dir, 'trifecta', 'kpi', 'live-kpis.json')
+
+
+def _append_sent_log(entry: dict) -> bool:
+    """Append a sent entry to the sent-log.jsonl file. Returns True on success."""
+    try:
+        os.makedirs(os.path.dirname(OUTBOUND_SENT_LOG), exist_ok=True)
+        with open(OUTBOUND_SENT_LOG, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(entry, separators=(',', ':')) + '\n')
+        return True
+    except Exception as e:
+        logger.warning("Failed to append sent-log: %s", e)
+        return False
+
+
+def _read_sent_log() -> list:
+    """Read all entries from sent-log.jsonl."""
+    if not os.path.exists(OUTBOUND_SENT_LOG):
+        return []
+    try:
+        with open(OUTBOUND_SENT_LOG, 'r', encoding='utf-8') as f:
+            lines = [l.strip() for l in f if l.strip()]
+        return [json.loads(line) for line in lines]
+    except Exception as e:
+        logger.warning("Failed to read sent-log: %s", e)
+        return []
+
+
+def _update_lead_sheets_row(lead_id: str, email: str = None, phone: str = None) -> bool:
+    """Update a lead row in Google Sheets with outreach data from sent-log. Returns True on success."""
+    try:
+        creds_path = os.path.join(_base_dir, 'google-credentials.json')
+        if not os.path.exists(creds_path):
+            logger.warning("Google Sheets: google-credentials.json not found, skipping row update")
+            return False
+
+        import gspread
+        from google.oauth2.service_account import Credentials
+        scopes = ['https://www.googleapis.com/auth/spreadsheets']
+        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        client = gspread.authorize(creds)
+        sheet_id = os.environ.get('GOOGLE_SHEETS_ID', '1aV55LlDzyfqVu4maXLxfN55cb_NPBnU21BjeqVbqnL0')
+        sheet = client.open_by_key(sheet_id).sheet1
+
+        # Find row matching lead email or phone
+        norm_email = normalize_email(email) if email else None
+        norm_phone = normalize_phone(phone) if phone else None
+        search_value = norm_email or norm_phone
+        if not search_value:
+            return False
+
+        try:
+            cell = sheet.find(search_value)
+        except Exception:
+            return False
+
+        row_num = cell.row
+
+        # Get all sent entries for this lead
+        sent_entries = [e for e in _read_sent_log() if e.get('lead_id') == lead_id]
+
+        # Column I: Follow-up Sent (YES/NO)
+        followup_sent = 'YES' if sent_entries else 'NO'
+
+        # Column K: Last Outreach (date of most recent sent)
+        last_outreach = ''
+        if sent_entries:
+            latest = max(sent_entries, key=lambda e: e.get('ts', ''))
+            last_outreach = latest.get('ts', '')[:10]
+
+        # Column L: Outreach Count
+        outreach_count = len(sent_entries)
+
+        # Update the row (I=9, K=11, L=12)
+        sheet.update_cell(row_num, 9, followup_sent)
+        sheet.update_cell(row_num, 11, last_outreach)
+        sheet.update_cell(row_num, 12, outreach_count)
+
+        logger.info("Sheet row updated for lead_id=%s: Follow-up=%s, Last=%s, Count=%d",
+                    lead_id, followup_sent, last_outreach, outreach_count)
+        return True
+
+    except Exception as e:
+        logger.warning("Sheets row update failed (non-fatal): %s", e)
+        return False
+
+
+@app.route('/api/outbound/log', methods=['POST'])
+def log_outbound_sent():
+    """
+    Log an outbound message (email/SMS/call) to sent-log.jsonl and sync Sheet row.
+    Body: {type, to, lead_id, subject, channel, status}
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        required = ['type', 'to', 'lead_id', 'channel']
+        missing = [f for f in required if not data.get(f)]
+        if missing:
+            return jsonify({'error': f'Missing required fields: {missing}'}), 400
+
+        entry = {
+            'ts': utcnow_iso(),
+            'type': data.get('type', 'email'),
+            'to': data.get('to', ''),
+            'lead_id': data.get('lead_id', ''),
+            'subject': data.get('subject', ''),
+            'channel': data.get('channel', 'unknown'),
+            'status': data.get('status', 'sent'),
+        }
+
+        logged = _append_sent_log(entry)
+        if not logged:
+            return jsonify({'error': 'Failed to write sent-log'}), 500
+
+        # Sync Sheet row for this lead
+        email = data.get('to') if data.get('type') == 'email' else None
+        phone = data.get('to') if data.get('type') in ('sms', 'call') else None
+        sheet_updated = _update_lead_sheets_row(
+            lead_id=entry['lead_id'],
+            email=email,
+            phone=phone
+        )
+
+        return jsonify({
+            'ok': True,
+            'entry': entry,
+            'sheet_updated': sheet_updated,
+            'timestamp': utcnow_iso()
+        }), 201
+
+    except Exception as e:
+        logger.error("Outbound log error: %s", e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/outbound/log', methods=['GET'])
+def get_outbound_log():
+    """Return all sent-log entries. Optional: ?lead_id=<id> to filter."""
+    try:
+        lead_id_filter = request.args.get('lead_id')
+        entries = _read_sent_log()
+        if lead_id_filter:
+            entries = [e for e in entries if e.get('lead_id') == lead_id_filter]
+        return jsonify({
+            'count': len(entries),
+            'entries': entries,
+            'timestamp': utcnow_iso()
+        }), 200
+    except Exception as e:
+        logger.error("Outbound log GET error: %s", e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/outbound/summary', methods=['GET'])
+def get_outbound_summary():
+    """
+    Return sent-log counts grouped by day, week, and month.
+    Used for KPI dashboard.
+    """
+    try:
+        entries = _read_sent_log()
+        now = datetime.now(timezone.utc)
+
+        today_date = now.date()
+        week_start = (now - timedelta(days=now.weekday())).date()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
+
+        daily = {}
+        for entry in entries:
+            try:
+                ts = datetime.fromisoformat(entry.get('ts', '').replace('Z', '+00:00'))
+                d = ts.date()
+                daily[d] = daily.get(d, 0) + 1
+            except Exception:
+                pass
+
+        today_count = sum(v for k, v in daily.items() if k == today_date)
+        week_count = sum(v for k, v in daily.items() if k >= week_start)
+        month_count = sum(v for k, v in daily.items() if k >= month_start)
+        total_count = len(entries)
+
+        # Top channels
+        channel_counts = {}
+        for entry in entries:
+            ch = entry.get('channel', 'unknown')
+            channel_counts[ch] = channel_counts.get(ch, 0) + 1
+
+        # Recent days (last 14)
+        recent_days = []
+        for i in range(13, -1, -1):
+            d = (now - timedelta(days=i)).date()
+            recent_days.append({'date': d.isoformat(), 'count': daily.get(d, 0)})
+
+        return jsonify({
+            'total': total_count,
+            'today': today_count,
+            'this_week': week_count,
+            'this_month': month_count,
+            'by_channel': channel_counts,
+            'recent_days': recent_days,
+            'timestamp': utcnow_iso()
+        }), 200
+
+    except Exception as e:
+        logger.error("Outbound summary error: %s", e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/kpi/update-from-sent-log', methods=['POST'])
+def update_kpi_from_sent_log():
+    """
+    Read sent-log.jsonl, update live-kpis.json with emails_sent_today / emails_sent_week,
+    and sync Sheet rows for all logged leads.
+    """
+    try:
+        entries = _read_sent_log()
+        now = datetime.now(timezone.utc)
+        today_date = now.date()
+        week_start = (now - timedelta(days=now.weekday())).date()
+
+        today_count = 0
+        week_count = 0
+        seen_lead_ids = set()
+
+        for entry in entries:
+            try:
+                ts = datetime.fromisoformat(entry.get('ts', '').replace('Z', '+00:00'))
+                d = ts.date()
+                if entry.get('type') == 'email':
+                    if d == today_date:
+                        today_count += 1
+                    if d >= week_start:
+                        week_count += 1
+                seen_lead_ids.add(entry.get('lead_id'))
+            except Exception:
+                pass
+
+        # Update live-kpis.json
+        kpi_path = OUTBOUND_KPI_FILE
+        kpi_data = {}
+        if os.path.exists(kpi_path):
+            try:
+                with open(kpi_path, 'r', encoding='utf-8') as f:
+                    kpi_data = json.load(f)
+            except Exception:
+                kpi_data = {}
+
+        kpi_data['updated'] = utcnow_iso()
+        kpi_data['emails_sent_today'] = today_count
+        kpi_data['emails_sent_week'] = week_count
+
+        os.makedirs(os.path.dirname(kpi_path), exist_ok=True)
+        with open(kpi_path, 'w', encoding='utf-8') as f:
+            json.dump(kpi_data, f, indent=2)
+
+        # Sync Sheet rows for all leads that appear in sent-log
+        sheet_updated = 0
+        for lead_id in seen_lead_ids:
+            # Look up the lead to get email
+            lead = lead_store.get_lead_by_id(lead_id)
+            if lead:
+                updated = _update_lead_sheets_row(
+                    lead_id=lead_id,
+                    email=lead.get('email'),
+                    phone=lead.get('phone')
+                )
+                if updated:
+                    sheet_updated += 1
+
+        return jsonify({
+            'ok': True,
+            'kpi_updated': kpi_data,
+            'sheet_rows_synced': sheet_updated,
+            'leads_in_log': len(seen_lead_ids),
+            'timestamp': utcnow_iso()
+        }), 200
+
+    except Exception as e:
+        logger.error("KPI update from sent-log error: %s", e)
+        return jsonify({'error': str(e)}), 500
+
 
 # =============================================================================
 # API ENDPOINTS - Portal Sync (Task 4)
@@ -3709,6 +4011,18 @@ def approve_and_send_lead_email(lead_id):
         if err:
             logger.warning("Status update warning on send: %s", err)
         lead_store.add_audit(actor, 'draft_sent', 'email_draft', draft['id'], d_before, d_after)
+
+        # Also append to sent-log for real-time Sheet sync
+        _append_sent_log({
+            'ts': utcnow_iso(),
+            'type': 'email',
+            'to': lead.get('email', ''),
+            'lead_id': lead_id,
+            'subject': draft.get('subject', ''),
+            'channel': 'outlook',
+            'status': 'sent'
+        })
+
         return jsonify({
             'status': 'sent',
             'lead_id': lead_id,
