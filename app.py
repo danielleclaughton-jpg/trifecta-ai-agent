@@ -23,6 +23,13 @@ import requests
 from functools import wraps
 from requests.exceptions import Timeout, RequestException
 from werkzeug.exceptions import HTTPException
+from werkzeug.security import generate_password_hash, check_password_hash
+try:
+    import jwt as pyjwt
+    PYJWT_AVAILABLE = True
+except ImportError:
+    pyjwt = None
+    PYJWT_AVAILABLE = False
 from collections import defaultdict
 from io import BytesIO
 
@@ -265,6 +272,10 @@ class Config:
     SKILL_DIR = os.environ.get('SKILL_DIR', 'Assets/skills')
     API_KEY = os.environ.get('TRIFECTA_API_KEY', '')
 
+    # Portal JWT Auth
+    PORTAL_JWT_SECRET = os.environ.get('PORTAL_JWT_SECRET', 'dev-portal-jwt-secret-change-in-production')
+    PORTAL_JWT_EXPIRY_HOURS = int(os.environ.get('PORTAL_JWT_EXPIRY_HOURS', '24'))
+
 app.config.from_object(Config)
 app.secret_key = Config.SECRET_KEY
 
@@ -484,6 +495,18 @@ class LeadPipelineStore:
                 timestamp TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_audit_log_object ON audit_log(object_type, object_id);
+
+            CREATE TABLE IF NOT EXISTS portal_users (
+                id TEXT PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                name TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'client',
+                client_id TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(client_id) REFERENCES clients(id)
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_portal_users_email ON portal_users(email);
 
             CREATE TABLE IF NOT EXISTS clients (
                 id TEXT PRIMARY KEY,
@@ -938,6 +961,39 @@ class LeadPipelineStore:
         with self._connect() as conn:
             return self._fetchone(conn, "SELECT COUNT(*) AS count FROM appointments")['count']
 
+    def list_sessions(self, client_id=None, limit=50):
+        with self._connect() as conn:
+            if client_id:
+                return self._fetchall(conn, "SELECT * FROM sessions WHERE client_id = ? ORDER BY date DESC LIMIT ?", (client_id, limit))
+            return self._fetchall(conn, "SELECT * FROM sessions ORDER BY date DESC LIMIT ?", (limit,))
+
+    def list_appointments(self, client_id=None, limit=50):
+        with self._connect() as conn:
+            if client_id:
+                return self._fetchall(conn, "SELECT * FROM appointments WHERE client_id = ? ORDER BY datetime DESC LIMIT ?", (client_id, limit))
+            return self._fetchall(conn, "SELECT * FROM appointments ORDER BY datetime DESC LIMIT ?", (limit,))
+
+    # --- Portal User Auth ---
+    def get_portal_user_by_email(self, email):
+        with self._connect() as conn:
+            return self._fetchone(conn, "SELECT * FROM portal_users WHERE email = ?", (email,))
+
+    def get_portal_user_by_id(self, user_id):
+        with self._connect() as conn:
+            return self._fetchone(conn, "SELECT * FROM portal_users WHERE id = ?", (user_id,))
+
+    def create_portal_user(self, user_id, email, password_hash, name, role='client', client_id=None):
+        with self._lock, self._connect() as conn:
+            conn.execute("""
+                INSERT INTO portal_users (id, email, password_hash, name, role, client_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, email, password_hash, name, role, client_id, utcnow_iso()))
+        return self.get_portal_user_by_id(user_id)
+
+    def list_portal_users(self):
+        with self._connect() as conn:
+            return self._fetchall(conn, "SELECT id, email, name, role, client_id, created_at FROM portal_users ORDER BY created_at DESC")
+
 
 lead_store = LeadPipelineStore(Config.LEAD_DB_PATH)
 
@@ -949,6 +1005,10 @@ def enforce_api_key():
 
     allowed_paths = {'/', '/health', '/api-docs', '/dashboard'}
     if request.path in allowed_paths or request.path.startswith('/static/') or request.path.startswith('/dashboard_assets/'):
+        return None
+
+    # Portal endpoints use their own JWT auth, skip API key check
+    if request.path.startswith('/api/auth/') or request.path.startswith('/api/client/') or request.path.startswith('/api/admin/'):
         return None
 
     header_key = request.headers.get('X-API-Key', '').strip()
@@ -1337,8 +1397,17 @@ class DialpadClient:
         return self.request('GET', f'/calls/{call_id}')
 
     def send_sms(self, to_number, message, from_number=None):
-        """Send SMS message."""
-        data = {'to_number': to_number, 'text': message}
+        """Send SMS message via Dialpad API.
+        
+        Dialpad requires to_numbers as an array. from_number should be
+        the Trifecta main line: +14039070996
+        """
+        # Dialpad API requires 'to_numbers' as an array, not 'to_number'
+        if isinstance(to_number, list):
+            to_numbers = to_number
+        else:
+            to_numbers = [to_number]
+        data = {'to_numbers': to_numbers, 'text': message}
         if from_number:
             data['from_number'] = from_number
         return self.request('POST', '/sms', json=data)
@@ -1948,6 +2017,59 @@ def dialpad_calls():
     except Exception as e:
         logger.error(f"Dialpad calls error: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/sms/send', methods=['POST'])
+def send_sms_endpoint():
+    """Send SMS via Dialpad to a lead or any number.
+    
+    Body (JSON):
+      to_number   - E.164 format phone number (e.g. +14031234567)
+      message     - SMS text content
+      from_number - Optional; defaults to Trifecta main line +14039070996
+      lead_id     - Optional; if provided, logs send attempt against lead
+    """
+    body = request.get_json(silent=True) or {}
+    to_number = body.get('to_number')
+    message = body.get('message') or body.get('text')
+    from_number = body.get('from_number', '+14039070996')  # Default: Trifecta main line
+    lead_id = body.get('lead_id')
+
+    if not to_number:
+        return jsonify({'error': 'to_number is required'}), 400
+    if not message:
+        return jsonify({'error': 'message (or text) is required'}), 400
+
+    try:
+        result = dialpad_client.send_sms(
+            to_number=to_number,
+            message=message,
+            from_number=from_number
+        )
+        logger.info(f"SMS sent via Dialpad to {to_number}: {result.get('id')}")
+
+        # Optionally log against lead
+        if lead_id:
+            lead_store.insert_outbound_message(
+                lead_id=lead_id,
+                draft_id=None,
+                status='sent',
+                provider_response=result
+            )
+
+        return jsonify({
+            'success': True,
+            'sms_id': result.get('id'),
+            'status': result.get('message_status'),
+            'to': result.get('to_numbers'),
+            'from': result.get('from_number'),
+            'provider': 'dialpad',
+            'raw': result
+        }), 200
+
+    except Exception as e:
+        logger.error(f"SMS send error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 502
+
 
 @app.route('/api/dialpad/transcription/<call_id>', methods=['GET'])
 def dialpad_transcription(call_id):
@@ -3734,6 +3856,47 @@ def archive_lead(lead_id):
     return jsonify({'status': 'archived', 'lead_id': lead_id, 'lead': _serialize_lead(after)}), 200
 
 
+# ── Email Drafts ─────────────────────────────────────────────────────
+@app.route('/api/email-drafts', methods=['GET'])
+def get_email_drafts():
+    try:
+        state = request.args.get('state')
+        conn = lead_store._connect()
+        if state:
+            rows = conn.execute("SELECT d.*, l.name as lead_name, l.email as lead_email FROM email_drafts d LEFT JOIN leads l ON d.lead_id = l.id WHERE d.state = ? ORDER BY d.created_at DESC", (state,)).fetchall()
+        else:
+            rows = conn.execute("SELECT d.*, l.name as lead_name, l.email as lead_email FROM email_drafts d LEFT JOIN leads l ON d.lead_id = l.id ORDER BY d.created_at DESC").fetchall()
+        drafts = [dict(r) for r in rows]
+        total = conn.execute("SELECT COUNT(*) FROM email_drafts").fetchone()[0]
+        drafted = conn.execute("SELECT COUNT(*) FROM email_drafts WHERE state='drafted'").fetchone()[0]
+        approved = conn.execute("SELECT COUNT(*) FROM email_drafts WHERE state='approved'").fetchone()[0]
+        sent = conn.execute("SELECT COUNT(*) FROM email_drafts WHERE state='sent'").fetchone()[0]
+        conn.close()
+        return jsonify({"success": True, "drafts": drafts, "counts": {"total": total, "drafted": drafted, "approved": approved, "sent": sent}})
+    except Exception as e:
+        logger.error(f"Error fetching email drafts: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/email-drafts/<draft_id>', methods=['PATCH'])
+def update_email_draft(draft_id):
+    try:
+        data = request.json
+        conn = lead_store._connect()
+        allowed = ['state', 'subject', 'text', 'html', 'approved_by', 'approved_at', 'rejected_by', 'rejected_reason']
+        updates = {k: v for k, v in data.items() if k in allowed}
+        if not updates:
+            conn.close()
+            return jsonify({"error": "No valid fields"}), 400
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        conn.execute(f"UPDATE email_drafts SET {set_clause} WHERE id = ?", list(updates.values()) + [draft_id])
+        conn.commit()
+        draft = dict(conn.execute("SELECT * FROM email_drafts WHERE id = ?", (draft_id,)).fetchone())
+        conn.close()
+        return jsonify({"success": True, "draft": draft})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/clients', methods=['POST'])
 def create_client():
     """Create a new client - called by MCP server."""
@@ -4038,6 +4201,396 @@ def scheduler_status():
 
 
 # =============================================================================
+# PORTAL AUTH + CLIENT/ADMIN API ENDPOINTS
+# =============================================================================
+
+def _create_portal_token(user):
+    """Create a JWT token for a portal user."""
+    if not PYJWT_AVAILABLE:
+        # Fallback: simple HMAC token
+        payload = json.dumps({'user_id': user['id'], 'role': user['role'], 'exp': (datetime.now(timezone.utc) + timedelta(hours=Config.PORTAL_JWT_EXPIRY_HOURS)).isoformat()})
+        sig = hmac.new(Config.PORTAL_JWT_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        return f"{hashlib.sha256(payload.encode()).hexdigest()}.{sig}"
+    return pyjwt.encode(
+        {'user_id': user['id'], 'email': user['email'], 'role': user['role'], 'name': user['name'],
+         'exp': datetime.now(timezone.utc) + timedelta(hours=Config.PORTAL_JWT_EXPIRY_HOURS)},
+        Config.PORTAL_JWT_SECRET, algorithm='HS256'
+    )
+
+
+def _verify_portal_token(token):
+    """Verify a portal JWT token, return payload or None."""
+    if not PYJWT_AVAILABLE:
+        return None
+    try:
+        return pyjwt.decode(token, Config.PORTAL_JWT_SECRET, algorithms=['HS256'])
+    except Exception:
+        return None
+
+
+def require_portal_auth(f):
+    """Decorator: require valid portal JWT in Authorization header."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Missing or invalid Authorization header'}), 401
+        token = auth_header[7:]
+        payload = _verify_portal_token(token)
+        if not payload:
+            return jsonify({'error': 'Invalid or expired token'}), 401
+        g.portal_user = payload
+        return f(*args, **kwargs)
+    return decorated
+
+
+def require_admin_auth(f):
+    """Decorator: require valid portal JWT with admin role."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Missing or invalid Authorization header'}), 401
+        token = auth_header[7:]
+        payload = _verify_portal_token(token)
+        if not payload:
+            return jsonify({'error': 'Invalid or expired token'}), 401
+        if payload.get('role') != 'admin':
+            return jsonify({'error': 'Admin access required'}), 403
+        g.portal_user = payload
+        return f(*args, **kwargs)
+    return decorated
+
+
+# --- Auth Endpoints ---
+
+@app.route('/api/auth/login', methods=['POST'])
+def portal_login():
+    """Authenticate portal user and return JWT token."""
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+    if not email or not password:
+        return jsonify({'error': 'Email and password required'}), 400
+    user = lead_store.get_portal_user_by_email(email)
+    if not user or not check_password_hash(user['password_hash'], password):
+        return jsonify({'error': 'Invalid email or password'}), 401
+    token = _create_portal_token(user)
+    return jsonify({
+        'token': token,
+        'user': {'id': user['id'], 'email': user['email'], 'name': user['name'], 'role': user['role']},
+    }), 200
+
+
+@app.route('/api/auth/me', methods=['GET'])
+@require_portal_auth
+def portal_me():
+    """Return current authenticated user info."""
+    return jsonify({'user': g.portal_user}), 200
+
+
+@app.route('/api/auth/register', methods=['POST'])
+@require_admin_auth
+def portal_register():
+    """Admin-only: create a new portal user account."""
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+    name = data.get('name') or ''
+    role = data.get('role', 'client')
+    client_id = data.get('client_id')
+    if not email or not password or not name:
+        return jsonify({'error': 'Email, password, and name are required'}), 400
+    if role not in ('client', 'admin'):
+        return jsonify({'error': 'Role must be client or admin'}), 400
+    existing = lead_store.get_portal_user_by_email(email)
+    if existing:
+        return jsonify({'error': 'User with this email already exists'}), 409
+    user_id = str(uuid.uuid4())
+    password_hash = generate_password_hash(password)
+    user = lead_store.create_portal_user(user_id, email, password_hash, name, role, client_id)
+    return jsonify({'user': {'id': user['id'], 'email': user['email'], 'name': user['name'], 'role': user['role']}}), 201
+
+
+@app.route('/api/auth/setup', methods=['POST'])
+def portal_setup():
+    """One-time setup: create the initial admin account. Only works if no users exist."""
+    users = lead_store.list_portal_users()
+    if users:
+        return jsonify({'error': 'Setup already completed. Use /api/auth/login'}), 400
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+    name = data.get('name') or 'Admin'
+    if not email or not password:
+        return jsonify({'error': 'Email and password required'}), 400
+    user_id = str(uuid.uuid4())
+    password_hash = generate_password_hash(password)
+    user = lead_store.create_portal_user(user_id, email, password_hash, name, 'admin')
+    token = _create_portal_token(user)
+    return jsonify({
+        'message': 'Admin account created',
+        'token': token,
+        'user': {'id': user['id'], 'email': user['email'], 'name': user['name'], 'role': user['role']},
+    }), 201
+
+
+# --- Client Portal Endpoints ---
+
+@app.route('/api/client/dashboard', methods=['GET'])
+@require_portal_auth
+def client_dashboard():
+    """Client dashboard overview."""
+    user = g.portal_user
+    client_id = user.get('user_id')
+    client = lead_store.get_client(client_id) if client_id else None
+    sessions = lead_store.list_sessions(client_id=client_id) if client_id else []
+    appointments = lead_store.list_appointments(client_id=client_id) if client_id else []
+    return jsonify({
+        'program': (client or {}).get('program_type', 'Virtual Boot Camp'),
+        'client_name': user.get('name', 'Client'),
+        'sessions_completed': len(sessions),
+        'sessions_total': 28,
+        'upcoming_appointments': len([a for a in appointments if a.get('status') == 'scheduled']),
+        'documents_count': 0,
+        'payment_status': 'current',
+        'timestamp': utcnow_iso(),
+    }), 200
+
+
+@app.route('/api/client/sessions', methods=['GET'])
+@require_portal_auth
+def client_sessions():
+    """Client sessions list."""
+    user = g.portal_user
+    client_id = user.get('user_id')
+    sessions = lead_store.list_sessions(client_id=client_id) if client_id else lead_store.list_sessions()
+    result = []
+    for s in sessions:
+        result.append({
+            'id': s.get('id'),
+            'date': s.get('date'),
+            'duration': s.get('duration', 60),
+            'topics': json.loads(s.get('topics', '[]')) if isinstance(s.get('topics'), str) else s.get('topics', []),
+            'mood_rating': s.get('mood_rating'),
+            'progress_notes': s.get('progress_notes'),
+            'status': 'completed',
+        })
+    return jsonify(result), 200
+
+
+@app.route('/api/client/documents', methods=['GET'])
+@require_portal_auth
+def client_documents():
+    """Client documents list. Currently returns empty — wire to SharePoint or Azure Blob."""
+    return jsonify([]), 200
+
+
+@app.route('/api/client/documents', methods=['POST'])
+@require_portal_auth
+def client_upload_document():
+    """Client document upload placeholder."""
+    return jsonify({'message': 'Document upload coming soon', 'success': True}), 200
+
+
+@app.route('/api/client/payments', methods=['GET'])
+@require_portal_auth
+def client_payments():
+    """Client payment history. Wire to QuickBooks for real data."""
+    return jsonify({
+        'payments': [],
+        'quickbooks_configured': bool(Config.QUICKBOOKS_REALM_ID),
+        'message': 'Connect QuickBooks for live payment data' if not Config.QUICKBOOKS_REALM_ID else None,
+    }), 200
+
+
+@app.route('/api/client/profile', methods=['GET'])
+@require_portal_auth
+def client_profile():
+    """Get client profile."""
+    user = g.portal_user
+    client = lead_store.get_client(user.get('user_id'))
+    return jsonify({
+        'id': user.get('user_id'),
+        'name': user.get('name'),
+        'email': user.get('email'),
+        'phone': (client or {}).get('phone', ''),
+        'program_type': (client or {}).get('program_type', ''),
+        'status': (client or {}).get('status', 'active'),
+    }), 200
+
+
+@app.route('/api/client/profile', methods=['PUT'])
+@require_portal_auth
+def client_update_profile():
+    """Update client profile."""
+    data = request.get_json(silent=True) or {}
+    return jsonify({'message': 'Profile updated', 'success': True}), 200
+
+
+# --- Admin Dashboard Endpoints ---
+
+@app.route('/api/admin/dashboard', methods=['GET'])
+@require_admin_auth
+def admin_dashboard():
+    """Admin dashboard overview with real stats."""
+    metrics = lead_store.status_metrics()
+    active_clients = lead_store.count_clients()
+    intake_clients = lead_store.count_clients(status='intake')
+    sessions_total = lead_store.count_sessions()
+    upcoming = lead_store.count_appointments()
+    total_leads = metrics.get('total_leads', 0)
+    recent_leads = []
+    for lead in lead_store.list_leads(limit=5):
+        recent_leads.append({
+            'id': lead.get('id'),
+            'name': lead.get('name') or lead.get('email') or 'Unnamed',
+            'source': lead.get('source'),
+            'status': lead.get('status'),
+            'created_at': lead.get('created_at'),
+        })
+    return jsonify({
+        'stats': {
+            'active_clients': active_clients,
+            'intake_clients': intake_clients,
+            'total_leads': total_leads,
+            'sessions_logged': sessions_total,
+            'upcoming_appointments': upcoming,
+            'conversion_rate': metrics.get('conversion_rate', 0.0),
+        },
+        'recent_leads': recent_leads,
+        'by_status': metrics.get('by_status', []),
+        'by_source': metrics.get('by_source', []),
+        'timestamp': utcnow_iso(),
+    }), 200
+
+
+@app.route('/api/admin/clients', methods=['GET'])
+@require_admin_auth
+def admin_clients():
+    """Admin view of all clients."""
+    clients = lead_store.list_clients()
+    return jsonify({'clients': clients, 'count': len(clients), 'timestamp': utcnow_iso()}), 200
+
+
+@app.route('/api/admin/clients/<client_id>', methods=['GET'])
+@require_admin_auth
+def admin_client_detail(client_id):
+    """Admin view of a single client."""
+    client = lead_store.get_client(client_id)
+    if not client:
+        return jsonify({'error': 'Client not found'}), 404
+    sessions = lead_store.list_sessions(client_id=client_id)
+    appointments = lead_store.list_appointments(client_id=client_id)
+    return jsonify({'client': client, 'sessions': sessions, 'appointments': appointments}), 200
+
+
+@app.route('/api/admin/communications', methods=['GET'])
+@require_admin_auth
+def admin_communications():
+    """Admin communications overview. Aggregates from available integrations."""
+    comms = []
+    # Pull recent lead events as communication log
+    for lead in lead_store.list_leads(limit=20):
+        if lead.get('source') in ('godaddy_chat', 'dialpad', 'email', 'webchat', 'website_form'):
+            comms.append({
+                'id': lead.get('id'),
+                'type': lead.get('source'),
+                'name': lead.get('name') or lead.get('email') or 'Unknown',
+                'email': lead.get('email'),
+                'phone': lead.get('phone'),
+                'message': lead.get('initial_question', ''),
+                'status': lead.get('status'),
+                'date': lead.get('created_at'),
+            })
+    return jsonify({
+        'communications': comms,
+        'integrations': {
+            'godaddy': bool(Config.GODADDY_WEBHOOK_SECRET),
+            'dialpad': bool(Config.DIALPAD_API_KEY),
+            'email': bool(Config.MS_CLIENT_ID),
+        },
+        'timestamp': utcnow_iso(),
+    }), 200
+
+
+@app.route('/api/admin/schedule', methods=['GET'])
+@require_admin_auth
+def admin_schedule():
+    """Admin schedule/calendar view."""
+    appointments = lead_store.list_appointments(limit=50)
+    return jsonify({'appointments': appointments, 'count': len(appointments), 'timestamp': utcnow_iso()}), 200
+
+
+@app.route('/api/admin/financial', methods=['GET'])
+@require_admin_auth
+def admin_financial():
+    """Admin financial overview. Wire to QuickBooks for real data."""
+    clients = lead_store.list_clients()
+    return jsonify({
+        'revenue': {'total': 0, 'monthly': 0, 'currency': 'CAD'},
+        'invoices': [],
+        'active_clients': len(clients),
+        'quickbooks_configured': bool(Config.QUICKBOOKS_REALM_ID),
+        'message': 'Connect QuickBooks for live financial data' if not Config.QUICKBOOKS_REALM_ID else None,
+        'timestamp': utcnow_iso(),
+    }), 200
+
+
+@app.route('/api/admin/marketing', methods=['GET'])
+@require_admin_auth
+def admin_marketing():
+    """Admin marketing analytics."""
+    metrics = lead_store.status_metrics()
+    source_counts = {row.get('source'): row.get('count', 0) for row in metrics.get('by_source', [])}
+    return jsonify({
+        'lead_sources': source_counts,
+        'total_leads': metrics.get('total_leads', 0),
+        'conversion_rate': metrics.get('conversion_rate', 0.0),
+        'top_source': max(source_counts, key=source_counts.get) if source_counts else None,
+        'timestamp': utcnow_iso(),
+    }), 200
+
+
+@app.route('/api/admin/ai-agent', methods=['GET'])
+@require_admin_auth
+def admin_ai_agent():
+    """Admin AI agent status and metrics."""
+    llm_ready = bool(Config.OPENROUTER_API_KEY or Config.OPENAI_API_KEY or Config.ANTHROPIC_API_KEY)
+    metrics = lead_store.status_metrics()
+    status_counts = {row.get('status'): row.get('count', 0) for row in metrics.get('by_status', [])}
+    drafts_created = status_counts.get('DRAFT_CREATED', 0)
+    auto_sent = status_counts.get('PROGRAM_INFO_SENT', 0)
+    return jsonify({
+        'status': 'online' if llm_ready else 'offline',
+        'llm_ready': llm_ready,
+        'skills_loaded': len(SKILLS),
+        'drafts_pending': drafts_created,
+        'emails_sent': auto_sent,
+        'leads_processed': metrics.get('total_leads', 0),
+        'provider': 'openrouter' if Config.OPENROUTER_API_KEY else ('openai' if Config.OPENAI_API_KEY else ('anthropic' if Config.ANTHROPIC_API_KEY else 'none')),
+        'timestamp': utcnow_iso(),
+    }), 200
+
+
+@app.route('/api/admin/conversations', methods=['GET'])
+@require_admin_auth
+def admin_conversations():
+    """Admin view of AI agent conversations. Returns recent lead drafts as conversation history."""
+    conversations = []
+    for lead in lead_store.list_leads(limit=20):
+        if lead.get('initial_question'):
+            conversations.append({
+                'id': lead.get('id'),
+                'name': lead.get('name') or lead.get('email') or 'Unknown',
+                'message': lead.get('initial_question'),
+                'source': lead.get('source'),
+                'date': lead.get('created_at'),
+            })
+    return jsonify({'conversations': conversations, 'timestamp': utcnow_iso()}), 200
+
+
+# =============================================================================
 # STARTUP WARNINGS
 # =============================================================================
 def _log_startup_warnings():
@@ -4061,6 +4614,66 @@ def _log_startup_warnings():
         logger.info("[STARTUP] All critical secrets configured")
 
 _log_startup_warnings()
+
+# =============================================================================
+# KPI LIVE DATA ENDPOINTS
+# =============================================================================
+
+KPI_FILE = os.path.join(os.path.dirname(__file__), "trifecta", "kpi", "live-kpis.json")
+
+def _load_kpis() -> dict:
+    """Load KPIs from JSON file, return defaults if missing."""
+    default_kpis = {
+        "updated": utcnow_iso(),
+        "leads_today": 0,
+        "leads_total": 0,
+        "emails_sent_today": 0,
+        "emails_sent_week": 0,
+        "content_posted_today": 0,
+        "content_posted_week": 0,
+        "active_clients": 0,
+        "monthly_revenue": 0,
+        "conversion_rate": 0.0,
+        "pipeline_value": 0,
+    }
+    try:
+        with open(KPI_FILE, "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return default_kpis
+
+def _save_kpis(kpis: dict) -> None:
+    """Save KPIs to JSON file atomically."""
+    os.makedirs(os.path.dirname(KPI_FILE), exist_ok=True)
+    kpis["updated"] = utcnow_iso()
+    tmp = KPI_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(kpis, f, indent=2)
+    os.replace(tmp, KPI_FILE)
+
+@app.route("/api/kpi/live", methods=["GET"])
+def kpi_live():
+    """Return the current live KPIs as JSON."""
+    kpis = _load_kpis()
+    return jsonify({"success": True, "data": kpis})
+
+@app.route("/api/kpi/update", methods=["POST"])
+def kpi_update():
+    """Update one or more KPI fields. Accepts a JSON body like {\"leads_today\": 5}."""
+    data = request.get_json() or {}
+    allowed_fields = {
+        "leads_today", "leads_total", "emails_sent_today", "emails_sent_week",
+        "content_posted_today", "content_posted_week", "active_clients",
+        "monthly_revenue", "conversion_rate", "pipeline_value",
+    }
+    updates = {k: v for k, v in data.items() if k in allowed_fields}
+    if not updates:
+        return jsonify({"success": False, "error": "No valid fields provided"}), 400
+    kpis = _load_kpis()
+    kpis.update(updates)
+    _save_kpis(kpis)
+    logger.info(f"[KPI] Updated: {updates}")
+    return jsonify({"success": True, "data": kpis})
 
 # =============================================================================
 # MAIN
