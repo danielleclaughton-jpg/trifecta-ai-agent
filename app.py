@@ -2204,7 +2204,8 @@ def normalize_dialpad_event(event):
     sms = event.get('sms', {}) or {}
     event_type = event.get('type', 'unknown')
     source_event_id = str(event.get('id') or call.get('id') or sms.get('id') or str(uuid.uuid4()))
-    number = sms.get('from_number') or call.get('customer_number') or contact.get('phone')
+    # Support both Dialpad real API field (customer_number) and test payload field (phone_number)
+    number = sms.get('from_number') or call.get('customer_number') or call.get('phone_number') or contact.get('phone')
     lead_source = LEAD_SOURCE['DIALPAD_CALL'] if 'call' in event_type else LEAD_SOURCE['DIALPAD_SMS']
     message_text = sms.get('text') or call.get('transcript') or event.get('message') or ''
     contact_key = contact.get('id') or call.get('contact_id') or call.get('id')
@@ -2220,7 +2221,9 @@ def normalize_dialpad_event(event):
         'initial_question': message_text,
         'program_interest': event.get('program_interest', ''),
         'external_contact_key': f"dialpad:{contact_key}" if contact_key else '',
-        'has_contact': bool(normalize_phone(number) or normalize_email(contact.get('email')))
+        'has_contact': bool(normalize_phone(number) or normalize_email(contact.get('email'))),
+        # Include full call object for webhook handler to inspect missed flag
+        '_call': call,
     }
 
 
@@ -2781,8 +2784,11 @@ def godaddy_webhook():
 
 @app.route('/api/webhooks/dialpad', methods=['POST'])
 @app.route('/api/dialpad/webhook', methods=['POST'])
+@app.route('/api/webhooks/dialpad', methods=['POST'])
 def dialpad_webhook():
-    """Receive Dialpad events, normalize to lead events, and dedupe by source_event_id."""
+    """Receive Dialpad events, normalize to lead events, dedupe, and auto-reply missed calls with SMS."""
+    sms_sent = False
+    sms_error = None
     try:
         raw_body = request.get_data()
         if not verify_dialpad_signature(raw_body):
@@ -2791,7 +2797,56 @@ def dialpad_webhook():
         event = request.get_json(force=True) or {}
         normalized = normalize_dialpad_event(event)
         result = process_inbound_lead_event(normalized, event)
-        return jsonify({'status': 'received', 'source': normalized['source'], 'source_event_id': normalized['source_event_id'], 'event_type': normalized['event_type'], 'duplicate': result['duplicate'], 'lead_id': result['lead']['id'] if result['lead'] else None, 'draft_generated': result['draft_generated']}), 200
+
+        # --- Missed Call SMS Auto-Reply ---
+        call_obj = normalized.get('_call', {})
+        is_missed = call_obj.get('missed') is True or call_obj.get('missed') == 'true'
+        event_type = normalized.get('event_type', '')
+        if is_missed and event_type == 'call.created' and not result.get('duplicate'):
+            caller_phone = normalized.get('phone')
+            if caller_phone and Config.DIALPAD_API_KEY:
+                sms_message = (
+                    "Hi, this is Trifecta Recovery Services. "
+                    "We noticed your call and will follow up shortly. "
+                    "You can reach us at (403) 907-0996."
+                )
+                try:
+                    dialpad_client.send_sms(
+                        to_number=caller_phone,
+                        message=sms_message,
+                        from_number='+14039070996'
+                    )
+                    sms_sent = True
+                    logger.info(f"Missed call SMS sent to {caller_phone}")
+
+                    # Log to sent-log.jsonl
+                    if result.get('lead'):
+                        _append_sent_log({
+                            'ts': utcnow_iso(),
+                            'type': 'sms',
+                            'to': caller_phone,
+                            'lead_id': result['lead']['id'],
+                            'subject': 'Missed call auto-reply',
+                            'channel': 'dialpad',
+                            'status': 'sent',
+                            'direction': 'outbound',
+                            'trigger': 'missed_call_auto_reply',
+                        })
+                except Exception as sms_exc:
+                    sms_error = str(sms_exc)
+                    logger.warning(f"Missed call SMS failed for {caller_phone}: {sms_exc}")
+
+        return jsonify({
+            'status': 'received',
+            'source': normalized['source'],
+            'source_event_id': normalized['source_event_id'],
+            'event_type': normalized['event_type'],
+            'duplicate': result['duplicate'],
+            'lead_id': result['lead']['id'] if result['lead'] else None,
+            'draft_generated': result['draft_generated'],
+            'sms_sent': sms_sent,
+            'sms_error': sms_error,
+        }), 200
     except Exception as e:
         logger.error(f"Dialpad webhook error: {e}")
         return jsonify({'error': str(e)}), 500
