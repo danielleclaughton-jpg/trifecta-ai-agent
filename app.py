@@ -1535,6 +1535,28 @@ def home():
         ]
     }), 200
 
+@app.route('/api/agents/status', methods=['GET'])
+def agents_status():
+    """Return live status of all AI agents from JSON status files."""
+    import glob
+    status_dir = os.path.join(os.path.dirname(__file__), '..', 'trifecta', 'agent-status')
+    status_dir = os.path.abspath(status_dir)
+    agents = []
+    if os.path.isdir(status_dir):
+        for path in glob.glob(os.path.join(status_dir, '*.json')):
+            try:
+                with open(path, 'r') as f:
+                    agents.append(json.load(f))
+            except Exception:
+                pass
+    if not agents:
+        agents = [
+            {"agent": "Scout", "status": "idle", "last_run": None, "leads_processed": 0, "last_sync": None, "errors": []},
+            {"agent": "Lamby", "status": "idle", "last_run": None, "leads_processed": 0, "last_sync": None, "errors": []},
+        ]
+    return jsonify({"success": True, "data": agents, "timestamp": datetime.now(timezone.utc).isoformat()})
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check for Azure monitoring."""
