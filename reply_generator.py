@@ -5,14 +5,13 @@ Draft personalized responses for new leads using Claude API.
 import os
 import sqlite3
 from datetime import datetime
-from anthropic import Anthropic
+import requests as http_requests
 
 # Configuration
 DB_PATH = "lead_pipeline.db"
 LOG_DIR = ".logs"
 
-# Initialize Anthropic client
-client = Anthropic()
+FLASK_API_URL = os.environ.get("FLASK_API_URL", "http://localhost:5000")
 
 def log_action(message):
     """Log action to file and console."""
@@ -64,16 +63,16 @@ Draft a brief, 2-sentence response that:
 Keep it professional, warm, and human. No marketing jargon.
 Do NOT use em dashes (--). Use commas, periods, or colons instead."""
 
-        message = client.messages.create(
-            model="claude-opus-4.1",
-            max_tokens=200,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
+        # Use Flask API layer (avoids Python 3.14 Anthropic SDK incompatibility)
+        resp = http_requests.post(
+            f"{FLASK_API_URL}/api/chat",
+            json={"message": prompt, "skill": "trifecta-lead-intake-workflow"},
+            timeout=60
         )
-        
-        response_text = message.content[0].text
-        log_action(f"Claude drafted response ({len(response_text)} chars)")
+        resp.raise_for_status()
+        data = resp.json()
+        response_text = data.get("response") or data.get("message") or str(data)
+        log_action(f"Flask/Claude drafted response ({len(response_text)} chars)")
         return response_text
         
     except Exception as e:

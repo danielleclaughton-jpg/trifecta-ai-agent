@@ -8,7 +8,7 @@ import sqlite3
 import json
 import requests
 from datetime import datetime
-from anthropic import Anthropic
+# anthropic import removed - use Flask API layer for LLM calls instead
 
 # Configuration
 REAMAZE_ENDPOINT = "https://296192a1-995f-4939-9ee8-40270af7aaa5.reamaze.godaddy.com/api/v2"
