@@ -5713,6 +5713,115 @@ def oil_gas_leads_metrics():
 
 
 # =============================================================================
+# RECOVERY BUDDY
+# =============================================================================
+
+RECOVERY_BUDDY_SYSTEM_PROMPT = (
+    "You are the Trifecta Recovery Buddy, a warm and compassionate AI assistant for "
+    "Trifecta Addiction and Mental Health Services. You are trained in DBT and CBT approaches. "
+    "You provide emotional support, answer questions about programs, and help people take the "
+    "first step toward recovery. You never give medical advice. You always encourage professional "
+    "support. Programs available: 14-Day Executive Reset ($13,777, next intake April 5), "
+    "21-Day Intensive Inpatient ($17,777), 28-Day Inpatient Residential ($23,777), "
+    "28-Day Virtual Boot Camp ($3,777). "
+    "Booking link: https://trifectaaddictionservices.com/m/login?r=%2Fm%2Fbookings "
+    "Phone: (403) 907-0996. "
+    "If someone is in crisis, direct them to 988 (Suicide and Crisis Lifeline) immediately. "
+    "Always be warm and gentle. Use no em dashes. Use no emojis. Evidence-based language only. "
+    "Keep responses concise (2-4 sentences). Never use the word 'boundaries' as a cliche."
+)
+
+
+@app.route('/api/recovery-buddy/chat', methods=['POST'])
+def recovery_buddy_chat():
+    """Recovery Buddy chat endpoint - 24/7 lead capture and support chatbot."""
+    import re as _re
+    if not request.is_json:
+        return jsonify({'error': 'JSON required'}), 400
+
+    data = request.get_json()
+    message = data.get('message', '').strip()
+    history = data.get('history', [])
+
+    if not message:
+        return jsonify({'error': 'message required'}), 400
+
+    if not isinstance(history, list):
+        return jsonify({'error': 'history must be a list'}), 400
+
+    # Build messages for Claude
+    messages = []
+    for h in history[-10:]:  # Keep last 10 turns
+        if isinstance(h, dict) and h.get('role') in ('user', 'assistant') and h.get('content'):
+            messages.append({'role': h['role'], 'content': h['content']})
+    messages.append({'role': 'user', 'content': message})
+
+    # Check for email capture
+    email_match = _re.search(r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}', message)
+    if email_match:
+        try:
+            captured_email = email_match.group(0)
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute("SELECT id FROM leads WHERE email=?", (captured_email,))
+            if not c.fetchone():
+                import uuid as _uuid
+                from datetime import datetime as _dt
+                c.execute(
+                    "INSERT INTO leads (id, email, source, status, initial_question, created_at, updated_at) "
+                    "VALUES (?,?,?,?,?,?,?)",
+                    (str(_uuid.uuid4()), captured_email, 'RECOVERY_BUDDY', 'INQUIRY_RECEIVED',
+                     message[:200], _dt.utcnow().isoformat(), _dt.utcnow().isoformat())
+                )
+                conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Recovery Buddy lead capture failed: {e}")
+
+    # Call Anthropic API
+    anthropic_key = app.config.get('ANTHROPIC_API_KEY') or os.environ.get('ANTHROPIC_API_KEY')
+    if not anthropic_key:
+        return jsonify({'reply': 'I am having trouble connecting right now. Please call us at (403) 907-0996.', 'history': history}), 200
+
+    try:
+        import requests as _req
+        resp = _req.post(
+            'https://api.anthropic.com/v1/messages',
+            headers={
+                'x-api-key': anthropic_key,
+                'anthropic-version': '2023-06-01',
+                'content-type': 'application/json'
+            },
+            json={
+                'model': 'claude-3-haiku-20240307',
+                'max_tokens': 300,
+                'system': RECOVERY_BUDDY_SYSTEM_PROMPT,
+                'messages': messages
+            },
+            timeout=15
+        )
+        resp.raise_for_status()
+        reply = resp.json()['content'][0]['text']
+    except Exception as e:
+        logger.warning(f"Recovery Buddy API call failed: {e}")
+        reply = 'I am here with you. If you need immediate support, please call us at (403) 907-0996 or reach the crisis line at 988.'
+
+    updated_history = list(history) + [
+        {'role': 'user', 'content': message},
+        {'role': 'assistant', 'content': reply}
+    ]
+
+    return jsonify({'reply': reply, 'history': updated_history})
+
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Serve static files."""
+    static_dir = os.path.join(os.path.dirname(__file__), 'static')
+    return send_from_directory(static_dir, filename)
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 if __name__ == '__main__':

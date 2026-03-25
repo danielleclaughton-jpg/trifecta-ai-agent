@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trifecta Recovery Buddy</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  #recovery-buddy-bubble {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #2C5F8A;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(44,95,138,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: transform 0.2s;
+  }
+  #recovery-buddy-bubble:hover { transform: scale(1.08); }
+  #recovery-buddy-bubble svg { width: 30px; height: 30px; fill: white; }
+
+  #recovery-buddy-panel {
+    position: fixed;
+    bottom: 96px;
+    right: 24px;
+    width: 350px;
+    height: 500px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    display: none;
+    flex-direction: column;
+    z-index: 9998;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow: hidden;
+  }
+  #recovery-buddy-panel.open { display: flex; }
+
+  #rb-header {
+    background: #2C5F8A;
+    color: white;
+    padding: 16px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 16px 16px 0 0;
+  }
+  #rb-header .rb-dot { width: 10px; height: 10px; background: #5de87a; border-radius: 50%; flex-shrink: 0; }
+
+  #rb-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f7f9fc;
+  }
+
+  .rb-msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+  }
+  .rb-msg.bot {
+    background: #e8f0f8;
+    color: #1a2e45;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+  .rb-msg.user {
+    background: #2C5F8A;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+
+  #rb-typing {
+    display: none;
+    align-self: flex-start;
+    background: #e8f0f8;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border-bottom-left-radius: 4px;
+  }
+  #rb-typing span {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background: #2C5F8A;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: rb-bounce 1.2s infinite;
+  }
+  #rb-typing span:nth-child(2) { animation-delay: 0.2s; }
+  #rb-typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes rb-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  #rb-input-area {
+    padding: 12px;
+    border-top: 1px solid #e0e8f0;
+    display: flex;
+    gap: 8px;
+    background: #fff;
+    border-radius: 0 0 16px 16px;
+  }
+  #rb-input {
+    flex: 1;
+    border: 1px solid #c8d8e8;
+    border-radius: 20px;
+    padding: 9px 14px;
+    font-size: 14px;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    color: #1a2e45;
+  }
+  #rb-input:focus { border-color: #2C5F8A; }
+  #rb-send {
+    background: #2C5F8A;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  #rb-send:hover { background: #1e4a70; }
+  #rb-send svg { width: 16px; height: 16px; fill: white; }
+
+  @media (max-width: 400px) {
+    #recovery-buddy-panel { width: calc(100vw - 16px); right: 8px; bottom: 88px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Chat bubble -->
+<div id="recovery-buddy-bubble" onclick="rbToggle()" title="Trifecta Recovery Buddy">
+  <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+</div>
+
+<!-- Chat panel -->
+<div id="recovery-buddy-panel">
+  <div id="rb-header">
+    <div class="rb-dot"></div>
+    Trifecta Recovery Buddy
+  </div>
+  <div id="rb-messages">
+    <div class="rb-msg bot">Hi, I am the Trifecta Recovery Buddy. I am here to help, any time of day or night. What is on your mind?</div>
+  </div>
+  <div id="rb-typing"><span></span><span></span><span></span></div>
+  <div id="rb-input-area">
+    <textarea id="rb-input" placeholder="Type a message..." rows="1" onkeydown="rbKeyDown(event)"></textarea>
+    <button id="rb-send" onclick="rbSend()">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  var rbHistory = [];
+  var rbOpen = false;
+
+  function rbToggle() {
+    rbOpen = !rbOpen;
+    var panel = document.getElementById('recovery-buddy-panel');
+    if (rbOpen) { panel.classList.add('open'); document.getElementById('rb-input').focus(); }
+    else { panel.classList.remove('open'); }
+  }
+
+  function rbKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); rbSend(); }
+  }
+
+  function rbAddMsg(text, role) {
+    var msgs = document.getElementById('rb-messages');
+    var typing = document.getElementById('rb-typing');
+    var div = document.createElement('div');
+    div.className = 'rb-msg ' + (role === 'user' ? 'user' : 'bot');
+    div.textContent = text;
+    msgs.insertBefore(div, typing);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function rbSend() {
+    var input = document.getElementById('rb-input');
+    var msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    input.style.height = 'auto';
+
+    rbAddMsg(msg, 'user');
+    rbHistory.push({ role: 'user', content: msg });
+
+    var typing = document.getElementById('rb-typing');
+    typing.style.display = 'block';
+    document.getElementById('rb-messages').scrollTop = document.getElementById('rb-messages').scrollHeight;
+
+    var apiBase = window.RB_API_BASE || '';
+    fetch(apiBase + '/api/recovery-buddy/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, history: rbHistory.slice(-10) })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      typing.style.display = 'none';
+      var reply = data.reply || 'I am here. Please try again.';
+      rbHistory.push({ role: 'assistant', content: reply });
+      rbAddMsg(reply, 'bot');
+    })
+    .catch(function() {
+      typing.style.display = 'none';
+      rbAddMsg('I am having trouble connecting right now. Please call us at (403) 907-0996 or visit trifectaaddictionservices.com.', 'bot');
+    });
+  }
+</script>
+</body>
+</html>

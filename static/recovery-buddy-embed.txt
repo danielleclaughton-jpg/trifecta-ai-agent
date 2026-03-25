@@ -1,0 +1,23 @@
+<!-- Trifecta Recovery Buddy Widget -->
+<!-- Paste this before </body> in your website HTML -->
+
+<script>
+  // Optional: set API base URL if widget is loaded from a different domain
+  // window.RB_API_BASE = 'https://trifecta-agent.azurewebsites.net';
+</script>
+<script src="https://trifecta-agent.azurewebsites.net/static/recovery-buddy-widget.html" 
+  id="trifecta-rb" 
+  defer>
+</script>
+
+<!-- OR: embed inline by pasting the full recovery-buddy-widget.html content above </body> -->
+<!-- Recommended: use iframe embed below for cleanest integration -->
+
+<iframe 
+  src="https://trifecta-agent.azurewebsites.net/static/recovery-buddy-widget.html" 
+  style="position:fixed;bottom:0;right:0;width:420px;height:600px;border:none;z-index:9999;background:transparent;"
+  title="Trifecta Recovery Buddy"
+  allow="clipboard-write">
+</iframe>
+
+<!-- For GoDaddy website builder: add an HTML embed block and paste the iframe line above -->
