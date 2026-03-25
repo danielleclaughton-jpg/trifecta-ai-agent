@@ -3,2363 +3,439 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Trifecta Command Center</title>
+  <title>Trifecta AI Agention Center</title>
   <style>
-    :root{
+    :root {
       --bg: #0a0e1a;
+      --sidebar-bg: #0d1117;
       --surface: #131722;
       --surface-elevated: #1a1f2e;
       --border: rgba(255,255,255,.08);
-      --border-hover: rgba(255,255,255,.15);
       --text: rgba(255,255,255,.95);
       --text-muted: rgba(255,255,255,.65);
-      --text-subtle: rgba(255,255,255,.45);
+      --text-subtle: rgba(255,255,255,.40);
       --teal: #2dced3;
-      --teal-dark: #26c8cb;
-      --teal-glow: rgba(32, 156, 160, 0.47) 0.2);
+      --teal-dark: #1a8f93;
       --success: #39d98a;
       --warning: #ffcc66;
       --danger: #ff5c77;
       --radius: 12px;
-      --radius-lg: 16px;
-      --shadow: 0 4px 20px rgba(0,0,0,.3);
-      --shadow-lg: 0 8px 32px rgba(0,0,0,.4);
     }
-
-    *{ box-sizing:border-box; margin:0; padding:0; }
-    html, body{ height:100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
-    body{
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    .container{
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    /* Header */
-    .header{
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-      flex-wrap: wrap;
-      box-shadow: var(--shadow);
-    }
-
-    .brand{
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .logo-container{
-      display: flex;
-      gap: 8px;
-    }
-
-    .logo{
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: var(--surface-elevated);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .logo img{ width:100%; height:100%; object-fit:contain; }
-
-    .brand-text h1{
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 4px;
-      letter-spacing: -0.3px;
-      color: var(--teal);
-    }
-
-    .brand-text .subtitle{
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .header-controls{
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .status-badge{
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 14px;
-      background: var(--surface-elevated);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .status-dot{
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--text-subtle);
-    }
-    .status-dot.ok{ background: var(--success); box-shadow: 0 0 8px var(--success); }
-    .status-dot.warn{ background: var(--warning); box-shadow: 0 0 8px var(--warning); }
-    .status-dot.danger{ background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-
-    .api-input-group{
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .api-input{
-      padding: 8px 12px;
-      background: var(--surface-elevated);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-size: 13px;
-      font-family: 'Monaco', 'Courier New', monospace;
-      min-width: 280px;
-      outline: none;
-      transition: all .2s;
-    }
-
-    .api-input.short{ min-width: 150px; width: 150px; }
-    .api-input:focus{
-      border-color: var(--teal);
-      box-shadow: 0 0 0 3px var(--teal-glow);
-    }
-
-    .btn{
-      padding: 8px 16px;
-      background: var(--surface-elevated);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all .2s;
-      outline: none;
-    }
-
-    .btn:hover{
-      background: var(--surface);
-      border-color: var(--border-hover);
-      transform: translateY(-1px);
-    }
-
-    .btn-primary{
-      background: linear-gradient(135deg, var(--teal), var(--teal-dark));
-      border-color: var(--teal);
-      color: #0a0e1a;
-      font-weight: 600;
-    }
-
-    .btn-primary:hover{
-      filter: brightness(1.1);
-      box-shadow: 0 4px 12px var(--teal-glow);
-    }
-
-    /* Service Status Grid */
-    .services-grid{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .service-card{
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      transition: all .2s;
-    }
-
-    .service-card:hover{
-      border-color: var(--border-hover);
-      transform: translateY(-2px);
-    }
-
-    .service-info{
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .service-name{
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .mission-shell{
-      background:
-        radial-gradient(circle at top right, rgba(45, 206, 211, .18), transparent 35%),
-        linear-gradient(180deg, rgba(20, 25, 39, .96), rgba(10, 14, 26, .96));
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .mission-top{
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
-    .mission-hero{
-      padding: 4px 0;
-    }
-
-    .eyebrow{
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(45, 206, 211, .09);
-      border: 1px solid rgba(45, 206, 211, .18);
-      color: var(--teal);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    .mission-headline{
-      font-size: clamp(28px, 5vw, 42px);
-      line-height: 1.05;
-      letter-spacing: -1.4px;
-      margin-bottom: 10px;
-    }
-
-    .mission-copy{
-      max-width: 760px;
-      color: var(--text-muted);
-      font-size: 14px;
-      line-height: 1.7;
-    }
-
-    .mission-focus{
-      display: grid;
-      gap: 10px;
-    }
-
-    .focus-card{
-      background: rgba(255,255,255,.03);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px 16px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .focus-card strong{
-      display: block;
-      color: var(--text);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
-    }
-
-    .pulse-grid{
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-
-    .pulse-card{
-      background: rgba(255,255,255,.03);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 16px;
-      min-height: 124px;
-    }
-
-    .pulse-card[data-tone="hot"]{
-      border-color: rgba(255, 92, 119, .35);
-      box-shadow: inset 0 0 0 1px rgba(255, 92, 119, .12);
-    }
-
-    .pulse-card[data-tone="watch"]{
-      border-color: rgba(255, 204, 102, .35);
-      box-shadow: inset 0 0 0 1px rgba(255, 204, 102, .10);
-    }
-
-    .pulse-label{
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-subtle);
-      margin-bottom: 8px;
-    }
-
-    .pulse-value{
-      font-size: 30px;
-      font-weight: 700;
-      letter-spacing: -.8px;
-      margin-bottom: 8px;
-    }
-
-    .pulse-detail{
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-
-    .agent-grid{
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-
-    .agent-card{
-      background: linear-gradient(180deg, rgba(24, 30, 48, .98), rgba(14, 18, 30, .98));
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 16px;
-    }
-
-    .agent-card[data-status="hot"]{
-      border-color: rgba(255, 92, 119, .36);
-    }
-
-    .agent-card[data-status="watch"]{
-      border-color: rgba(255, 204, 102, .36);
-    }
-
-    .agent-top{
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-      align-items: flex-start;
-    }
-
-    .agent-lane{
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--teal);
-      margin-bottom: 4px;
-    }
-
-    .agent-name{
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    .agent-badge{
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-
-    .agent-copy{
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 14px;
-    }
-
-    .agent-meta{
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .agent-meta-item{
-      padding: 10px;
-      background: rgba(255,255,255,.03);
-      border: 1px solid rgba(255,255,255,.05);
-      border-radius: 12px;
-    }
-
-    .agent-meta-item strong{
-      display: block;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-subtle);
-      margin-bottom: 5px;
-    }
-
-    .agent-meta-item span{
-      font-size: 13px;
-      color: var(--text);
-    }
-
-    .recent-grid{
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .recent-card{
-      background: rgba(255,255,255,.02);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px;
-    }
-
-    .recent-top{
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 8px;
-      font-size: 12px;
-    }
-
-    .recent-status{
-      color: var(--teal);
-      font-weight: 600;
-    }
-
-    .recent-summary{
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-
-    /* Main Grid */
-    .main-grid{
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-      gap: 20px;
-    }
-
-    @media (max-width: 1200px){
-      .main-grid{ grid-template-columns: 1fr; }
-    }
-
-    /* Card */
-    .card{
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      box-shadow: var(--shadow);
-      transition: all .2s;
-    }
-
-    .card:hover{
-      border-color: var(--border-hover);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .card-header{
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .card-title{
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 6px;
-      color: var(--teal);
-    }
-
-    .card-desc{
-      font-size: 12px;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-
-    .card-body{
-      padding: 20px;
-    }
-
-    .form-group{
-      margin-bottom: 16px;
-    }
-
-    .form-group:last-child{ margin-bottom: 0; }
-
-    label{
-      display: block;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    input, textarea, select{
-      width: 100%;
-      padding: 10px 12px;
-      background: var(--surface-elevated);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-size: 13px;
-      font-family: inherit;
-      outline: none;
-      transition: all .2s;
-    }
-
-    input:focus, textarea:focus, select:focus{
-      border-color: var(--teal);
-      box-shadow: 0 0 0 3px var(--teal-glow);
-    }
-
-    textarea{
-      min-height: 100px;
-      resize: vertical;
-      font-family: inherit;
-    }
-
-    .form-row{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-    }
-
-    .output-box{
-      margin-top: 16px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    .output-header{
-      padding: 8px 12px;
-      background: var(--surface-elevated);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      color: var(--text-muted);
-      font-family: 'Monaco', 'Courier New', monospace;
-    }
-
-    .output-content{
-      padding: 14px;
-      max-height: 400px;
-      overflow: auto;
-    }
-
-    pre{
-      margin: 0;
-      font-family: 'Monaco', 'Courier New', monospace;
-      font-size: 12px;
-      line-height: 1.6;
-      color: var(--text);
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .code{
-      font-family: 'Monaco', 'Courier New', monospace;
-      font-size: 11px;
-      padding: 2px 6px;
-      background: var(--surface-elevated);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--teal);
-    }
-
-    .notice{
-      background: rgba(255, 204, 102, .1);
-      border: 1px solid rgba(255, 204, 102, .3);
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      margin-bottom: 24px;
-      font-size: 13px;
-      display: none;
-    }
-
-    .notice strong{ color: var(--warning); }
-    .notice code{ font-family: 'Monaco', 'Courier New', monospace; font-size: 11px; }
-
-    .mr-sm{ margin-right: 8px; }
-    .mt-xs{ margin-top: 4px; }
-
-    /* Sticky Header */
-    .header{
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-
-    /* Toast Notifications */
-    .toast-container{
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      pointer-events: none;
-    }
-
-    .toast{
-      padding: 12px 20px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 500;
-      box-shadow: 0 8px 24px rgba(0,0,0,.5);
-      pointer-events: auto;
-      animation: toastIn .3s ease-out;
-      cursor: pointer;
-      max-width: 400px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .toast.success{
-      background: rgba(57, 217, 138, .15);
-      border: 1px solid rgba(57, 217, 138, .4);
-      color: var(--success);
-    }
-
-    .toast.error{
-      background: rgba(255, 92, 119, .15);
-      border: 1px solid rgba(255, 92, 119, .4);
-      color: var(--danger);
-    }
-
-    .toast.info{
-      background: rgba(45, 206, 211, .15);
-      border: 1px solid rgba(45, 206, 211, .4);
-      color: var(--teal);
-    }
-
-    .toast-icon{ font-size: 16px; flex-shrink: 0; }
-
-    @keyframes toastIn{
-      from{ opacity: 0; transform: translateX(40px); }
-      to{ opacity: 1; transform: translateX(0); }
-    }
-
-    @keyframes toastOut{
-      from{ opacity: 1; transform: translateX(0); }
-      to{ opacity: 0; transform: translateX(40px); }
-    }
-
-    /* Collapsible Cards */
-    .card-toggle{
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 18px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      transition: all .15s;
-      line-height: 1;
-    }
-
-    .card-toggle:hover{
-      background: rgba(255,255,255,.05);
-      color: var(--text);
-    }
-
-    .card-body.collapsed{
-      display: none;
-    }
-
-    .card-toggle.collapsed{
-      transform: rotate(-90deg);
-    }
-
-    /* Copy Button */
-    .copy-btn{
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      transition: all .15s;
-    }
-
-    .copy-btn:hover{
-      background: rgba(255,255,255,.05);
-      color: var(--text);
-      border-color: var(--border-hover);
-    }
-
-    /* Loading Spinner */
-    .spinner{
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid transparent;
-      border-top-color: var(--teal);
-      border-radius: 50%;
-      animation: spin .6s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
-    }
-
-    @keyframes spin{ to{ transform: rotate(360deg); } }
-
-    /* Lead Status Badges */
-    .lead-status-badge{
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-    }
-
-    .lead-status-badge.inquiry{ background: rgba(45, 206, 211, .15); color: var(--teal); }
-    .lead-status-badge.draft{ background: rgba(255, 204, 102, .15); color: var(--warning); }
-    .lead-status-badge.review{ background: rgba(255, 92, 119, .15); color: var(--danger); }
-    .lead-status-badge.sent{ background: rgba(57, 217, 138, .15); color: var(--success); }
-    .lead-status-badge.error{ background: rgba(255, 92, 119, .25); color: var(--danger); }
-    .lead-status-badge.archived{ background: rgba(255,255,255,.08); color: var(--text-muted); }
-
-    /* Lead Approval Queue Stats */
-    .lead-stats{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-
-    .lead-stat{
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 12px;
-      text-align: center;
-      cursor: pointer;
-      transition: all .15s;
-    }
-
-    .lead-stat:hover{
-      border-color: var(--teal);
-      background: rgba(45, 206, 211, .05);
-    }
-
-    .lead-stat.active{
-      border-color: var(--teal);
-      background: rgba(45, 206, 211, .08);
-    }
-
-    .lead-stat-count{
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -.5px;
-    }
-
-    .lead-stat-label{
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: .8px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    /* Card accent colors */
-    .card[data-accent="leads"] .card-title{ color: #4ecdc4; }
-    .card[data-accent="leads"] { border-top: 2px solid rgba(78, 205, 196, .4); }
-    .card[data-accent="chat"] .card-title{ color: #a78bfa; }
-    .card[data-accent="chat"] { border-top: 2px solid rgba(167, 139, 250, .4); }
-    .card[data-accent="docs"] .card-title{ color: #fbbf24; }
-    .card[data-accent="docs"] { border-top: 2px solid rgba(251, 191, 36, .4); }
-    .card[data-accent="comms"] .card-title{ color: #34d399; }
-    .card[data-accent="comms"] { border-top: 2px solid rgba(52, 211, 153, .4); }
-
-    /* Improved subtle text contrast */
-    .text-subtle-improved{ color: rgba(255,255,255,.55); }
-
-    /* Button disabled state */
-    .btn:disabled{
-      opacity: .4;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
-    .footer{
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border);
-      text-align: center;
-      font-size: 12px;
-      color: var(--text-subtle);
-    }
-
-    .leads-layout{
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-
-    @media (max-width: 900px){
-      .leads-layout{
-        grid-template-columns: 1fr;
-      }
-
-      .mission-top,
-      .pulse-grid,
-      .agent-grid,
-      .recent-grid{
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .leads-list{
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      max-height: 260px;
-      overflow: auto;
-      background: var(--bg);
-    }
-
-    .lead-row{
-      width: 100%;
-      text-align: left;
-      border: 0;
-      border-bottom: 1px solid var(--border);
-      background: transparent;
-      color: var(--text);
-      cursor: pointer;
-      padding: 10px 12px;
-      transition: background .15s;
-    }
-
-    .lead-row:hover{
-      background: rgba(255,255,255,.03);
-    }
-
-    .lead-row.active{
-      background: rgba(0,194,199,.12);
-      border-left: 3px solid var(--teal);
-      padding-left: 9px;
-    }
-
-    .lead-row:last-child{
-      border-bottom: 0;
-    }
-
-    .lead-row-main{
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .lead-row-sub{
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      margin-top: 4px;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .lead-detail{
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--bg);
-      min-height: 260px;
-      padding: 10px;
-      overflow: auto;
-    }
-
-    .lead-actions{
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .lead-toolbar{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:center;
-      margin-bottom:12px;
-      flex-wrap:wrap;
-    }
-
-    .lead-sync-meta{
-      font-size:11px;
-      color:var(--text-muted);
-    }
-
-    .lead-alerts{
-      display:grid;
-      grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
-      gap:10px;
-      margin-bottom:14px;
-    }
-
-    .lead-alert{
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:12px;
-    }
-
-    .lead-alert strong{
-      display:block;
-      font-size:12px;
-      margin-bottom:4px;
-    }
-
-    .lead-alert.danger{ border-color: rgba(255, 92, 119, .35); background: rgba(255, 92, 119, .08); }
-    .lead-alert.warn{ border-color: rgba(255, 204, 102, .35); background: rgba(255, 204, 102, .08); }
-    .lead-alert.ok{ border-color: rgba(57, 217, 138, .28); background: rgba(57, 217, 138, .06); }
-
-    .lead-board{
-      display:grid;
-      grid-template-columns:repeat(3, minmax(0, 1fr));
-      gap:12px;
-      margin-bottom:14px;
-    }
-
-    .lead-column{
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      background:var(--bg);
-      min-height:260px;
-      display:flex;
-      flex-direction:column;
-    }
-
-    .lead-column-header{
-      padding:10px 12px;
-      border-bottom:1px solid var(--border);
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:center;
-    }
-
-    .lead-column-title{
-      font-size:12px;
-      font-weight:700;
-      letter-spacing:.3px;
-    }
-
-    .lead-column-count{
-      font-size:11px;
-      color:var(--text-muted);
-      border:1px solid var(--border);
-      border-radius:999px;
-      padding:2px 8px;
-    }
-
-    .lead-column-body{
-      padding:10px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-
-    .lead-board-card{
-      width:100%;
-      text-align:left;
-      border:1px solid var(--border);
-      border-radius:12px;
-      background:rgba(255,255,255,.02);
-      color:var(--text);
-      padding:10px;
-      cursor:pointer;
-      transition:all .15s;
-    }
-
-    .lead-board-card:hover{
-      border-color:var(--teal);
-      transform:translateY(-1px);
-    }
-
-    .lead-board-card.active{
-      border-color:var(--teal);
-      box-shadow:0 0 0 1px rgba(0,194,199,.25) inset;
-      background:rgba(0,194,199,.08);
-    }
-
-    .lead-board-card-top,
-    .lead-board-card-sub{
-      display:flex;
-      justify-content:space-between;
-      gap:8px;
-      align-items:flex-start;
-    }
-
-    .lead-board-card-top{
-      margin-bottom:6px;
-    }
-
-    .lead-board-name{
-      font-size:12px;
-      font-weight:700;
-    }
-
-    .lead-board-preview{
-      font-size:11px;
-      color:var(--text-muted);
-      line-height:1.45;
-      margin-bottom:8px;
-    }
-
-    .lead-board-card-sub{
-      font-size:10px;
-      color:var(--text-subtle);
-      margin-bottom:6px;
-    }
-
-    .lead-chip-row{
-      display:flex;
-      gap:6px;
-      flex-wrap:wrap;
-    }
-
-    .lead-chip{
-      display:inline-flex;
-      align-items:center;
-      gap:4px;
-      padding:2px 6px;
-      border-radius:999px;
-      font-size:10px;
-      border:1px solid var(--border);
-      color:var(--text-muted);
-      background:rgba(255,255,255,.03);
-    }
-
-    .lead-chip.urgent{
-      color:var(--danger);
-      border-color:rgba(255,92,119,.3);
-      background:rgba(255,92,119,.08);
-    }
-
-    .lead-empty{
-      font-size:11px;
-      color:var(--text-muted);
-      padding:8px 4px;
-    }
-
-    .lead-detail-grid{
-      display:grid;
-      grid-template-columns:1.15fr .85fr;
-      gap:14px;
-      align-items:start;
-      margin-bottom:12px;
-    }
-
-    .lead-detail-summary{
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      background:var(--bg);
-      padding:12px;
-      min-height:260px;
-    }
-
-    .lead-detail-summary h3{
-      font-size:16px;
-      margin-bottom:6px;
-    }
-
-    .lead-detail-meta{
-      display:grid;
-      grid-template-columns:repeat(2, minmax(0, 1fr));
-      gap:8px;
-      margin:12px 0;
-    }
-
-    .lead-detail-meta div{
-      border:1px solid var(--border);
-      border-radius:10px;
-      padding:8px;
-      background:rgba(255,255,255,.02);
-    }
-
-    .lead-detail-meta strong{
-      display:block;
-      font-size:10px;
-      color:var(--text-muted);
-      text-transform:uppercase;
-      letter-spacing:.6px;
-      margin-bottom:4px;
-    }
-
-    @media (max-width: 1100px){
-      .lead-board,
-      .lead-detail-grid{
-        grid-template-columns:1fr;
-      }
-    }
-
-    @media (max-width: 700px){
-      .lead-actions{
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+    .app { display: flex; height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: 220px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .brand-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--teal), var(--teal-dark)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #0a0e1a; }
+    .brand-name { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    .nav-items { list-style: none; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all .15s; border-left: 3px solid transparent; }
+    .nav-item:hover { background: rgba(255,255,255,.04); color: var(--text); }
+    .nav-item.active { background: rgba(45,206,211,.1); color: var(--teal); border-left-color: var(--teal); font-weight: 600; }
+    .nav-icon { width: 18px; text-align: center; font-size: 15px; opacity: .7; }
+    .nav-item.active .nav-icon { opacity: 1; }
+
+    /* MAIN */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; border-bottom: 1px solid var(--border); background: var(--sidebar-bg); }
+    .topbar-title { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .search-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; color: var(--text-muted); font-size: 13px; width: 280px; outline: none; }
+    .search-box:focus { border-color: var(--teal); }
+    .user-info { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--teal), #8affd8); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #0a0e1a; }
+    .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+    /* PAGE views - only active page is visible */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* KPI ROW */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; transition: transform .15s; }
+    .kpi-card:hover { transform: translateY(-2px); }
+    .kpi-value { font-size: 42px; font-weight: 800; letter-spacing: -2px; line-height: 1; }
+    .kpi-label { font-size: 13px; color: var(--text-muted); margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+    .kpi-badge { background: rgba(45,206,211,.15); color: var(--teal); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+
+    /* GRID LAYOUTS */
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 280px; gap: 16px; margin-bottom: 24px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+
+    /* CARDS */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .card-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+
+    /* ACTIVITY */
+    .activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--surface-elevated); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--teal); flex-shrink: 0; }
+    .activity-info { flex: 1; min-width: 0; }
+    .activity-name { font-size: 14px; font-weight: 600; }
+    .activity-desc { font-size: 12px; color: var(--text-muted); }
+    .activity-time { font-size: 11px; color: var(--text-subtle); white-space: nowrap; }
+
+    /* APPOINTMENTS */
+    .appt-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .appt-item:last-child { border-bottom: none; }
+    .appt-icon { width: 36px; height: 36px; border-radius: 8px; background: rgba(45,206,211,.1); display: flex; align-items: center; justify-content: center; color: var(--teal); font-size: 16px; flex-shrink: 0; }
+    .appt-info { flex: 1; }
+    .appt-date { font-size: 14px; font-weight: 600; }
+    .appt-who { font-size: 12px; color: var(--text-muted); }
+    .appt-time { font-size: 12px; color: var(--text-subtle); white-space: nowrap; }
+
+    /* ALERTS */
+    .alert-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); margin-top: 5px; flex-shrink: 0; }
+    .alert-text { font-size: 13px; font-weight: 600; }
+    .alert-ago { font-size: 11px; color: var(--text-subtle); }
+
+    /* CHART */
+    .chart-container { position: relative; height: 160px; margin-top: 10px; }
+    .chart-svg { width: 100%; height: 100%; }
+    .chart-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-subtle); margin-top: 8px; }
+
+    /* APPROVAL QUEUE */
+    .approval-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .approval-item:last-child { border-bottom: none; }
+    .approval-title { font-size: 13px; font-weight: 600; }
+    .approval-meta { font-size: 11px; color: var(--text-muted); }
+    .approval-actions { display: flex; gap: 6px; }
+    .btn-approve { background: var(--success); color: #0a0e1a; border: none; border-radius: 6px; padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .btn-reject { background: var(--danger); color: #fff; border: none; border-radius: 6px; padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .btn-approve:hover, .btn-reject:hover { filter: brightness(1.1); }
+    .badge { background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-left: 8px; }
+
+    /* TABLE */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th { text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+    .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .data-table tr:hover { background: rgba(255,255,255,.02); }
+    .status-tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+    .status-tag.new { background: rgba(45,206,211,.15); color: var(--teal); }
+    .status-tag.sent { background: rgba(57,217,138,.15); color: var(--success); }
+    .status-tag.review { background: rgba(255,204,102,.15); color: var(--warning); }
+    .status-tag.error { background: rgba(255,92,119,.15); color: var(--danger); }
+
+    /* FORMS */
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+    .form-input { width: 100%; padding: 10px 14px; background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; }
+    .form-input:focus { border-color: var(--teal); }
+    .btn-primary { background: linear-gradient(135deg, var(--teal), var(--teal-dark)); border: none; border-radius: 8px; padding: 10px 20px; color: #0a0e1a; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-secondary { background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 10px 20px; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; }
+
+    /* PAGE HEADER */
+    .page-header { margin-bottom: 24px; }
+    .page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+    .page-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
   </style>
 </head>
 <body>
-  <div class="toast-container" id="toastContainer"></div>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
+  <div class="app">
+    <aside class="sidebar">
       <div class="brand">
-        <div class="logo-container">
-          <div class="logo" title="Trifecta">
-            <img src="./dashboard_assets/trifecta-logo.png" alt="Trifecta"
-                 onerror="this.parentElement.dataset.missing='trifecta-logo.png'; this.parentElement.innerHTML='<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:rgba(255,255,255,.9);background:linear-gradient(135deg,#00c2c7,#00a9ad);border-radius:12px;&quot;>T</div>';">
-          </div>
-          <div class="logo" title="Illuminate">
-            <img src="./dashboard_assets/illuminate-logo.png" alt="Illuminate"
-                 onerror="this.parentElement.dataset.missing='illuminate-logo.png'; this.parentElement.innerHTML='<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:rgba(255,255,255,.9);background:rgba(255,255,255,.08);border-radius:12px;&quot;>I</div>';">
-          </div>
-        </div>
-        <div class="brand-text">
-          <h1>Trifecta Admin Dashboard</h1>
-          <div class="subtitle">Mind • Body • Soul</div>
-        </div>
+        <div class="brand-icon">T</div>
+        <span class="brand-name">Trifecta</span>
       </div>
+      <ul class="nav-items">
+        <li class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">&#9783;</span> Dashboard</li>
+        <li class="nav-item" onclick="showPage('intake')"><span class="nav-icon">&#9998;</span> Client Intake</li>
+        <li class="nav-item" onclick="showPage('program')"><span class="nav-icon">&#9654;</span> Program Delivery</li>
+        <li class="nav-item" onclick="showPage('progress')"><span class="nav-icon">&#8635;</span> Progress Monitoring</li>
+        <li class="nav-item" onclick="showPage('marketing')"><span class="nav-icon">&#9733;</span> Marketing &amp; Sales</li>
+        <li class="nav-item" onclick="showPage('finance')"><span class="nav-icon">&#36;</span> Finance &amp; Invoicing</li>
+        <li class="nav-item" onclick="showPage('compliance')"><span class="nav-icon">&#9745;</span> Compliance</li>
+        <li class="nav-item" onclick="showPage('alumni')"><span class="nav-icon">&#9829;</span> Alumni Engagement</li>
+        <li class="nav-item" onclick="showPage('ai')"><span class="nav-icon">&#9881;</span> AI Support</li>
+        <li class="nav-item" onclick="showPage('analytics')"><span class="nav-icon">&#9776;</span> Analytics</li>
+        <li class="nav-item" onclick="showPage('settings')"><span class="nav-icon">&#9881;</span> Settings</li>
+      </ul>
+    </aside>
 
-      <div class="header-controls">
-        <div class="status-badge" id="apiStatus">
-          <span class="status-dot" id="apiDot"></span>
-          <span id="apiLabel">Checking...</span>
-        </div>
-        <div class="api-input-group">
-          <input type="password" id="authToken" class="api-input short" placeholder="Auth Token" />
-          <input type="text" id="apiBase" class="api-input" placeholder="http://localhost:5000" />
-          <button class="btn" id="useLocal">Local</button>
-          <button class="btn" id="useProd">Azure</button>
-          <button class="btn btn-primary" id="pingBtn">Health</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Notice -->
-    <div class="notice" id="assetNotice">
-      <strong>Brand assets missing.</strong> Add logos to <code>dashboard_assets/</code>: <span id="assetNoticeList"></span>
-    </div>
-
-    <!-- Service Status -->
-    <div class="services-grid" id="servicesGrid"></div>
-
-    <section class="mission-shell">
-      <div class="mission-top">
-        <div class="mission-hero">
-          <div class="eyebrow">Mission Control OS</div>
-          <h2 class="mission-headline" id="missionHeadline">Loading board room...</h2>
-          <p class="mission-copy" id="missionCopy">Pulling live pipeline, client operations, and founder priority signals from your current stack.</p>
-        </div>
-        <div class="mission-focus" id="missionFocus">
-          <div class="focus-card"><strong>Focus</strong>Waiting for live founder priorities.</div>
-        </div>
-      </div>
-
-      <div class="pulse-grid" id="pulseGrid">
-        <div class="pulse-card">
-          <div class="pulse-label">Loading</div>
-          <div class="pulse-value">--</div>
-          <div class="pulse-detail">Mission control metrics are loading.</div>
-        </div>
-      </div>
-
-      <div class="agent-grid" id="agentGrid"></div>
-      <div class="recent-grid" id="recentGrid"></div>
-    </section>
-
-    <!-- Main Content Grid -->
-    <div class="main-grid">
-      <!-- Chat -->
-      <div class="card" data-accent="chat" data-card="chat">
-        <div class="card-header">
-          <div>
-            <div class="card-title">AI Chat (Claude)</div>
-            <div class="card-desc">Chat with your AI agent</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="chatBtn">Send</button>
-            <button class="card-toggle" onclick="toggleCard('chat')">&#9660;</button>
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-title">AI Agention Center</div>
+        <div class="topbar-right">
+          <input type="text" class="search-box" placeholder="Search leads, clients, content..." />
+          <div class="user-info">
+            <span>Danielle C</span>
+            <div class="avatar">DC</div>
           </div>
         </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="chatMsg">Message</label>
-            <textarea id="chatMsg">Hello — can you explain Trifecta services and the 28-day program?</textarea>
-          </div>
-          <div class="output-box">
-            <div class="output-header">
-              <span id="chatMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="chatOut">Result will appear here.</pre>
-            </div>
-          </div>
-        </div>
-      </div>
+      </header>
 
-      <!-- Skills -->
-      <div class="card" data-card="skills">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Skills</div>
-            <div class="card-desc">Loaded agent skills</div>
+      <div class="content">
+        <!-- ========== DASHBOARD PAGE ========== -->
+        <div id="page-dashboard" class="page active">
+          <div class="kpi-row">
+            <div class="kpi-card"><div class="kpi-value" id="kpiLeads">--</div><div class="kpi-label">Total Leads <span class="kpi-badge" id="kpiLeadsDelta"></span></div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiQualified">--</div><div class="kpi-label">Emails Sent (Week)</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiRevenue">--</div><div class="kpi-label">Active Clients</div></div>
+            <div class="kpi-card"><div class="kpi-value" id="kpiConversion">--</div><div class="kpi-label">Conversion Rate</div></div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn mr-sm" id="skillsReloadBtn">Reload</button>
-            <button class="btn btn-primary" id="skillsBtn">Load</button>
-            <button class="card-toggle" onclick="toggleCard('skills')">&#9660;</button>
+          <div class="grid-3">
+            <div class="card"><div class="card-title">Client Activity</div><div id="clientActivity">Loading...</div></div>
+            <div class="card"><div class="card-title">Upcoming Appointments</div><div id="appointments">Loading...</div></div>
+            <div class="card"><div class="card-title">Alerts</div><div id="alerts">Loading...</div></div>
           </div>
-        </div>
-        <div class="card-body">
-          <div class="output-box">
-            <div class="output-header">
-              <span id="skillsMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="skillsOut">Result will appear here.</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Leads Pipeline -->
-      <div class="card" data-accent="leads" data-card="leads">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Leads Pipeline</div>
-            <div class="card-desc">Live workflow board with stale and missed-lead detection</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="leadsLoadBtn">Sync Board</button>
-            <button class="card-toggle" onclick="toggleCard('leads')">&#9660;</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="lead-toolbar">
-            <div class="lead-sync-meta" id="leadSyncMeta">Last synced: never</div>
-            <div class="lead-sync-meta" id="leadAlertMeta">Monitoring GoDaddy, Dialpad, Outlook, and manual leads.</div>
-          </div>
-
-          <div class="lead-stats" id="leadStats">
-            <div class="lead-stat"><div class="lead-stat-count" id="statTotal">--</div><div class="lead-stat-label">Total Leads</div></div>
-            <div class="lead-stat"><div class="lead-stat-count" id="statNeedsResponse" style="color:var(--danger)">--</div><div class="lead-stat-label">Needs Response</div></div>
-            <div class="lead-stat"><div class="lead-stat-count" id="statAwaitingHuman" style="color:var(--teal)">--</div><div class="lead-stat-label">Awaiting Human</div></div>
-            <div class="lead-stat"><div class="lead-stat-count" id="statAwaitingEmail" style="color:var(--warning)">--</div><div class="lead-stat-label">Awaiting Email</div></div>
-            <div class="lead-stat"><div class="lead-stat-count" id="statReady" style="color:var(--warning)">--</div><div class="lead-stat-label">Draft Ready</div></div>
-            <div class="lead-stat"><div class="lead-stat-count" id="statSent" style="color:var(--success)">--</div><div class="lead-stat-label">Program Info Sent</div></div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="leadStaleAfterHours">Stale Threshold (hours)</label>
-              <input type="number" id="leadStaleAfterHours" value="48" min="1" max="168" />
-            </div>
-            <div class="form-group">
-              <label for="leadSourceFilter">Source</label>
-              <select id="leadSourceFilter">
-                <option value="">All</option>
-                <option value="MANUAL">MANUAL</option>
-                <option value="GODADDY_CHAT">GODADDY_CHAT</option>
-                <option value="DIALPAD_SMS">DIALPAD_SMS</option>
-                <option value="DIALPAD_CALL">DIALPAD_CALL</option>
-                <option value="OUTLOOK_FORM">OUTLOOK_FORM</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="leadLimit">Limit</label>
-              <input type="number" id="leadLimit" value="20" min="1" max="200" />
-            </div>
-            <div class="form-group">
-              <label for="leadOffset">Offset</label>
-              <input type="number" id="leadOffset" value="0" min="0" />
-            </div>
-          </div>
-
-          <div class="lead-alerts" id="leadAlerts">
-            <div class="lead-alert warn">
-              <strong>Board syncing</strong>
-              Waiting for the first live pipeline refresh.
-            </div>
-          </div>
-
-          <div class="lead-board" id="leadBoard">
-            <div class="lead-column">
-              <div class="lead-column-header">
-                <span class="lead-column-title">Awaiting Human Response</span>
-                <span class="lead-column-count">--</span>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">Revenue Trend</div>
+              <div class="chart-container">
+                <svg class="chart-svg" viewBox="0 0 500 160" preserveAspectRatio="none">
+                  <defs><linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#2dced3"/><stop offset="100%" stop-color="#8affd8"/></linearGradient></defs>
+                  <polyline fill="none" stroke="url(#cg)" stroke-width="3" stroke-linecap="round" points="0,140 60,130 120,100 180,110 240,70 300,60 360,40 420,50 500,20"/>
+                </svg>
               </div>
-              <div class="lead-column-body"><div class="lead-empty">Sync the board to load leads.</div></div>
+              <div class="chart-labels"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
             </div>
+            <div class="card"><div class="card-title">Approval Queue <span class="badge" id="approvalBadge"></span></div><div id="approvalQueue">Loading...</div></div>
           </div>
+        </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="leadActor">Actor</label>
-              <input type="text" id="leadActor" value="dashboard-operator" />
+        <!-- ========== CLIENT INTAKE PAGE ========== -->
+        <div id="page-intake" class="page">
+          <div class="page-header"><h1 class="page-title">Client Intake</h1><p class="page-subtitle">New lead submissions and intake pipeline</p></div>
+          <div class="grid-2" style="margin-bottom:24px">
+            <div class="card">
+              <div class="card-title">New Lead Form</div>
+              <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="intakeName" placeholder="Enter client name"></div>
+              <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="intakeEmail" placeholder="client@email.com"></div>
+              <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="intakePhone" placeholder="(403) 555-1234"></div>
+              <div class="form-group"><label class="form-label">Source</label><input class="form-input" id="intakeSource" placeholder="GoDaddy Chat, Referral, Website..."></div>
+              <div class="form-group"><label class="form-label">Initial Question / Notes</label><textarea class="form-input" id="intakeNotes" rows="3" placeholder="What are they looking for?"></textarea></div>
+              <button class="btn-primary" onclick="submitIntake()">Add Lead</button>
+              <span id="intakeStatus" style="margin-left:12px;font-size:13px;"></span>
             </div>
-            <div class="form-group">
-              <label for="leadRejectReason">Reject Reason</label>
-              <input type="text" id="leadRejectReason" value="Requires manual rewrite" />
-            </div>
+            <div class="card"><div class="card-title">Recent Leads</div><div id="intakeLeadsList">Loading...</div></div>
           </div>
+        </div>
 
-          <div class="lead-detail-grid">
-            <div>
-              <label>Lead Summary</label>
-              <div id="leadDetailSummary" class="lead-detail-summary">
-                <div class="lead-empty">Select a lead card to inspect details.</div>
-              </div>
-            </div>
-            <div>
-              <label>Lead JSON</label>
-              <div id="leadDetail" class="lead-detail">
-                <pre id="leadDetailPre">Select a lead to view detail.</pre>
-              </div>
-            </div>
+        <!-- ========== PROGRAM DELIVERY PAGE ========== -->
+        <div id="page-program" class="page">
+          <div class="page-header"><h1 class="page-title">Program Delivery</h1><p class="page-subtitle">Active client programs and session tracking</p></div>
+          <div class="card"><div class="card-title">Active Clients</div><div id="programClients">Loading...</div></div>
+        </div>
+
+        <!-- ========== PROGRESS MONITORING PAGE ========== -->
+        <div id="page-progress" class="page">
+          <div class="page-header"><h1 class="page-title">Progress Monitoring</h1><p class="page-subtitle">Lead pipeline status and agent activity</p></div>
+          <div class="kpi-row" id="progressKpis"></div>
+          <div class="card"><div class="card-title">Pipeline by Status</div><div id="pipelineStatus">Loading...</div></div>
+        </div>
+
+        <!-- ========== MARKETING & SALES PAGE ========== -->
+        <div id="page-marketing" class="page">
+          <div class="page-header"><h1 class="page-title">Marketing &amp; Sales</h1><p class="page-subtitle">Content queue, social posts, and campaign tracking</p></div>
+          <div class="grid-2">
+            <div class="card"><div class="card-title">Content Approval Queue</div><div id="marketingApprovals">Loading...</div></div>
+            <div class="card"><div class="card-title">Email Drafts</div><div id="marketingDrafts">Loading...</div></div>
           </div>
+        </div>
 
-          <div class="lead-actions">
-            <button class="btn" id="leadRefreshBtn" disabled>Refresh Lead</button>
-            <button class="btn btn-primary" id="leadApproveSendBtn" disabled>Approve + Send</button>
-            <button class="btn" id="leadRejectBtn" disabled>Reject</button>
-            <button class="btn" id="leadAuditBtn" disabled>View Audit</button>
+        <!-- ========== FINANCE & INVOICING PAGE ========== -->
+        <div id="page-finance" class="page">
+          <div class="page-header"><h1 class="page-title">Finance &amp; Invoicing</h1><p class="page-subtitle">Invoices, payments, and financial overview</p></div>
+          <div class="card"><div class="card-title">Recent Invoices</div><div id="financeInvoices">Loading...</div></div>
+        </div>
+
+        <!-- ========== COMPLIANCE PAGE ========== -->
+        <div id="page-compliance" class="page">
+          <div class="page-header"><h1 class="page-title">Compliance</h1><p class="page-subtitle">HIPAA compliance, audit logs, and documentation</p></div>
+          <div class="card"><div class="card-title">Audit Log</div><div id="complianceAudit">Loading...</div></div>
+        </div>
+
+        <!-- ========== ALUMNI ENGAGEMENT PAGE ========== -->
+        <div id="page-alumni" class="page">
+          <div class="page-header"><h1 class="page-title">Alumni Engagement</h1><p class="page-subtitle">Past clients and follow-up tracking</p></div>
+          <div class="card"><div class="card-title">Alumni / Completed Clients</div><div id="alumniList">Loading...</div></div>
+        </div>
+
+        <!-- ========== AI SUPPORT PAGE ========== -->
+        <div id="page-ai" class="page">
+          <div class="page-header"><h1 class="page-title">AI Support</h1><p class="page-subtitle">Chat with Claude AI and manage agent skills</p></div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title">Chat with AI</div>
+              <div id="aiChatMessages" style="max-height:300px;overflow-y:auto;margin-bottom:12px;font-size:13px;color:var(--text-muted);"></div>
+              <div style="display:flex;gap:8px"><input class="form-input" id="aiChatInput" placeholder="Ask anything..." style="flex:1" onkeydown="if(event.key==='Enter')sendAiChat()"><button class="btn-primary" onclick="sendAiChat()">Send</button></div>
+            </div>
+            <div class="card"><div class="card-title">Loaded Skills</div><div id="aiSkills">Loading...</div></div>
           </div>
+        </div>
 
-          <div class="output-box">
-            <div class="output-header">
-              <span id="leadsMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="leadsOut">Lead query and action results appear here.</pre>
-            </div>
+        <!-- ========== ANALYTICS PAGE ========== -->
+        <div id="page-analytics" class="page">
+          <div class="page-header"><h1 class="page-title">Analytics</h1><p class="page-subtitle">System metrics, scheduler status, and performance</p></div>
+          <div class="grid-2">
+            <div class="card"><div class="card-title">Scheduler Jobs</div><div id="analyticsScheduler">Loading...</div></div>
+            <div class="card"><div class="card-title">System Health</div><div id="analyticsHealth">Loading...</div></div>
+          </div>
+        </div>
+
+        <!-- ========== SETTINGS PAGE ========== -->
+        <div id="page-settings" class="page">
+          <div class="page-header"><h1 class="page-title">Settings</h1><p class="page-subtitle">API configuration and system settings</p></div>
+          <div class="card">
+            <div class="card-title">API Connection</div>
+            <div class="form-group"><label class="form-label">Flask API URL</label><input class="form-input" id="settingsApiUrl" value="http://localhost:5000"></div>
+            <button class="btn-primary" onclick="testConnection()">Test Connection</button>
+            <span id="settingsStatus" style="margin-left:12px;font-size:13px;"></span>
           </div>
         </div>
       </div>
-
-      <!-- GoDaddy WebChat -->
-      <div class="card" data-accent="comms" data-card="godaddy">
-        <div class="card-header">
-          <div>
-            <div class="card-title">GoDaddy WebChat</div>
-            <div class="card-desc">Website chat conversations</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="godaddyBtn">Fetch</button>
-            <button class="card-toggle" onclick="toggleCard('godaddy')">&#9660;</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="godaddyLimit">Limit</label>
-              <input type="number" id="godaddyLimit" value="20" min="1" max="100" />
-            </div>
-            <div class="form-group">
-              <label for="godaddyStatus">Status</label>
-              <select id="godaddyStatus">
-                <option value="">All</option>
-                <option value="open">Open</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
-          </div>
-          <div class="output-box">
-            <div class="output-header">
-              <span id="godaddyMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="godaddyOut">Result will appear here.</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Portal Sync -->
-      <div class="card" data-card="portal">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Portal Sync</div>
-            <div class="card-desc">Client risk analysis</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="portalBtn">Run</button>
-            <button class="card-toggle" onclick="toggleCard('portal')">&#9660;</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="portalRisk">Risk Level</label>
-            <select id="portalRisk">
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
-          <div class="output-box">
-            <div class="output-header">
-              <span id="portalMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="portalOut">Result will appear here.</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Graph Clients -->
-      <div class="card" data-accent="comms" data-card="graph">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Microsoft Graph Clients</div>
-            <div class="card-desc">Azure AD client roster</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="graphBtn">Fetch</button>
-            <button class="card-toggle" onclick="toggleCard('graph')">&#9660;</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="output-box">
-            <div class="output-header">
-              <span id="graphMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="graphOut">Result will appear here.</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Dialpad Calls -->
-      <div class="card" data-accent="comms" data-card="dialpad">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Dialpad Calls</div>
-            <div class="card-desc">Recent call history</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="dialpadBtn">Fetch</button>
-            <button class="card-toggle" onclick="toggleCard('dialpad')">&#9660;</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="dialpadLimit">Limit</label>
-            <input type="number" id="dialpadLimit" value="10" min="1" max="200" />
-          </div>
-          <div class="output-box">
-            <div class="output-header">
-              <span id="dialpadMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="dialpadOut">Result will appear here.</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Dialpad Transcription -->
-      <div class="card" data-accent="comms" data-card="dialpadTrans">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Dialpad Transcription</div>
-            <div class="card-desc">Call transcription viewer</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="dialpadTransBtn">Get</button>
-            <button class="card-toggle" onclick="toggleCard('dialpadTrans')">&#9660;</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="dialpadCallId">Call ID</label>
-            <input type="text" id="dialpadCallId" placeholder="Enter call ID" />
-          </div>
-          <div class="output-box">
-            <div class="output-header">
-              <span id="dialpadTransMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="dialpadTransOut">Result will appear here.</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SharePoint Upload -->
-      <div class="card" data-accent="docs" data-card="sharepoint">
-        <div class="card-header">
-          <div>
-            <div class="card-title">SharePoint Upload</div>
-            <div class="card-desc">Upload documents to SharePoint</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="sharepointBtn">Upload</button>
-            <button class="card-toggle" onclick="toggleCard('sharepoint')">&#9660;</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="spClientName">Client Name</label>
-              <input type="text" id="spClientName" value="Test_Client" />
-            </div>
-            <div class="form-group">
-              <label for="spDocType">Document Type</label>
-              <select id="spDocType">
-                <option value="contract">Contract</option>
-                <option value="invoice">Invoice</option>
-                <option value="session_report">Session Report</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="spFilename">Filename</label>
-            <input type="text" id="spFilename" value="test_document.html" />
-          </div>
-          <div class="form-group">
-            <label for="spContent">Content</label>
-            <textarea id="spContent">&lt;html&gt;&lt;body&gt;&lt;h1&gt;Test Document&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;</textarea>
-          </div>
-          <div class="output-box">
-            <div class="output-header">
-              <span id="spMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="spOut">Result will appear here.</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Contract Generator -->
-      <div class="card" data-accent="docs" data-card="contract">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Contract Generator</div>
-            <div class="card-desc">Generate contracts and invoices</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="btn btn-primary" id="contractBtn">Generate</button>
-            <button class="card-toggle" onclick="toggleCard('contract')">&#9660;</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="clientId">Client ID</label>
-              <input type="text" id="clientId" value="test-client" />
-            </div>
-            <div class="form-group">
-              <label for="program">Program</label>
-              <select id="program">
-                <option value="28_DAY_VIRTUAL">28-Day Virtual</option>
-                <option value="14_DAY_INPATIENT">14-Day Inpatient</option>
-                <option value="28_DAY_INPATIENT">28-Day Inpatient</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="clientName">Client Name</label>
-              <input type="text" id="clientName" value="Demo Client" />
-            </div>
-            <div class="form-group">
-              <label for="clientEmail">Email</label>
-              <input type="email" id="clientEmail" value="demo@example.com" />
-            </div>
-          </div>
-          <div class="output-box">
-            <div class="output-header">
-              <span id="contractMeta">idle</span>
-              <span class="code">JSON</span>
-            </div>
-            <div class="output-content">
-              <pre id="contractOut">Result will appear here.</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div>Trifecta Command Center &mdash; <span class="code">v1.0</span></div>
     </div>
   </div>
 
   <script>
-    const STORAGE_KEY = 'trifecta_admin_api_base';
-    const TOKEN_KEY = 'trifecta_admin_auth_token';
-    const DEFAULT_LOCAL = window.location.origin;
-    const DEFAULT_LOCAL_ALT = 'http://localhost:5000';
+    const API = 'http://localhost:5000';
+    async function fetchApi(p){try{const r=await fetch(API+p,{headers:{'Content-Type':'application/json'}});return await r.json()}catch{return null}}
+    async function postApi(p,b){try{const r=await fetch(API+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return await r.json()}catch{return null}}
+    function timeAgo(d){if(!d)return'';const m=Math.floor((Date.now()-new Date(d).getTime())/60000);if(m<1)return'Just now';if(m<60)return m+' min ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';const dy=Math.floor(h/24);return dy===1?'Yesterday':dy+'d ago'}
+    function initials(n){return n?n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2):'?'}
+    function statusClass(s){if(!s)return'new';s=s.toLowerCase();if(s.includes('sent'))return'sent';if(s.includes('error')||s.includes('declined'))return'error';if(s.includes('review')||s.includes('draft'))return'review';return'new'}
 
-    function normalizeBase(url) {
-      if (!url) return DEFAULT_LOCAL;
-      url = url.trim();
-      if (url.endsWith('/')) url = url.slice(0, -1);
-      return url;
+    // NAV
+    function showPage(id){
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+      document.getElementById('page-'+id).classList.add('active');
+      event.currentTarget.classList.add('active');
+      if(pageLoaders[id])pageLoaders[id]();
     }
 
-    function getApiBase() {
-      return normalizeBase(localStorage.getItem(STORAGE_KEY) || DEFAULT_LOCAL);
+    // DASHBOARD
+    async function loadKPIs(){const r=await fetchApi('/api/kpi/live');if(!r||!r.data)return;const d=r.data;document.getElementById('kpiLeads').textContent=d.leads_total||0;document.getElementById('kpiLeadsDelta').textContent=d.leads_today>0?'+'+d.leads_today+' today':'';document.getElementById('kpiQualified').textContent=d.emails_sent_week||0;document.getElementById('kpiRevenue').textContent=d.active_clients||0;document.getElementById('kpiConversion').textContent=(d.conversion_rate||0)+'%'}
+
+    async function loadActivity(){const r=await fetchApi('/api/leads/board?limit=5&sync_live=0&stale_after_hours=48');const el=document.getElementById('clientActivity');if(!r||!r.leads||!r.leads.length){el.innerHTML='<div style="color:var(--text-subtle)">No recent activity</div>';return}el.innerHTML=r.leads.slice(0,5).map(l=>`<div class="activity-item"><div class="activity-avatar">${initials(l.name)}</div><div class="activity-info"><div class="activity-name">${l.name||l.email||'Unknown'}</div><div class="activity-desc">${(l.status||'').replace(/_/g,' ')}</div></div><div class="activity-time">${timeAgo(l.updated_at||l.created_at)}</div></div>`).join('')}
+
+    async function loadAppointments(){const r=await fetchApi('/api/calendar/upcoming?days=14');const el=document.getElementById('appointments');if(!r||!r.events||!r.events.length){el.innerHTML='<div style="color:var(--text-subtle)">No upcoming appointments</div>';return}el.innerHTML=r.events.slice(0,4).map(e=>{const d=new Date(e.start);return`<div class="appt-item"><div class="appt-icon">&#128197;</div><div class="appt-info"><div class="appt-date">${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div><div class="appt-who">${e.subject||e.organizer||''}</div></div><div class="appt-time">${d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</div></div>`}).join('')}
+
+    async function loadAlerts(){const r=await fetchApi('/api/approvals?status=pending');const el=document.getElementById('alerts');if(!r||!r.items||!r.items.length){el.innerHTML='<div style="color:var(--text-subtle)">No alerts</div>';return}el.innerHTML=r.items.slice(0,5).map(i=>`<div class="alert-item"><div class="alert-dot"></div><div><div class="alert-text">${i.title}</div><div class="alert-ago">${timeAgo(i.created_at)}</div></div></div>`).join('')}
+
+    async function loadApprovals(){const r=await fetchApi('/api/approvals?status=pending');const el=document.getElementById('approvalQueue');const b=document.getElementById('approvalBadge');if(!r||!r.items)return;b.textContent=r.items.length||'';if(!r.items.length){el.innerHTML='<div style="color:var(--success);padding:20px;text-align:center">All caught up!</div>';return}el.innerHTML=r.items.slice(0,6).map(i=>`<div class="approval-item"><div><div class="approval-title">${i.title}</div><div class="approval-meta">${i.category||''} &bull; ${timeAgo(i.created_at)}</div></div><div class="approval-actions"><button class="btn-approve" onclick="approveItem(${i.id})">Approve</button><button class="btn-reject" onclick="rejectItem(${i.id})">Reject</button></div></div>`).join('')}
+
+    async function approveItem(id){await postApi('/api/approvals/'+id+'/approve',{approved_by:'founder'});loadApprovals();loadAlerts()}
+    async function rejectItem(id){await postApi('/api/approvals/'+id+'/reject',{rejected_by:'founder'});loadApprovals();loadAlerts()}
+
+    // CLIENT INTAKE
+    async function loadIntake(){
+      const r=await fetchApi('/api/leads/board?limit=10&sync_live=0&stale_after_hours=999');
+      const el=document.getElementById('intakeLeadsList');
+      if(!r||!r.leads||!r.leads.length){el.innerHTML='<div style="color:var(--text-subtle)">No leads yet</div>';return}
+      el.innerHTML='<table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Source</th><th>When</th></tr></thead><tbody>'+r.leads.map(l=>`<tr><td>${l.name||'—'}</td><td>${l.email||'—'}</td><td><span class="status-tag ${statusClass(l.status)}">${(l.status||'').replace(/_/g,' ')}</span></td><td>${l.source||'—'}</td><td>${timeAgo(l.created_at)}</td></tr>`).join('')+'</tbody></table>'
+    }
+    async function submitIntake(){
+      const d={name:document.getElementById('intakeName').value,email:document.getElementById('intakeEmail').value,phone:document.getElementById('intakePhone').value,source:document.getElementById('intakeSource').value||'manual',initial_question:document.getElementById('intakeNotes').value};
+      if(!d.name&&!d.email){document.getElementById('intakeStatus').textContent='Name or email required';return}
+      const r=await postApi('/api/leads',d);
+      document.getElementById('intakeStatus').textContent=r&&r.lead?'Lead added!':'Error adding lead';
+      if(r&&r.lead){['intakeName','intakeEmail','intakePhone','intakeSource','intakeNotes'].forEach(id=>document.getElementById(id).value='');loadIntake()}
     }
 
-    function setApiBase(url) {
-      const normalized = normalizeBase(url);
-      localStorage.setItem(STORAGE_KEY, normalized);
-      document.getElementById('apiBase').value = normalized;
-      setApiStatus('unknown', `API: ${normalized}`);
+    // PROGRAM DELIVERY
+    async function loadProgram(){
+      const r=await fetchApi('/api/clients');
+      const el=document.getElementById('programClients');
+      if(!r||!r.clients||!r.clients.length){el.innerHTML='<div style="color:var(--text-subtle)">No active clients</div>';return}
+      el.innerHTML='<table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Program</th><th>Status</th></tr></thead><tbody>'+r.clients.map(c=>`<tr><td>${c.first_name||''} ${c.last_name||''}</td><td>${c.email||'—'}</td><td>${c.program_type||'—'}</td><td><span class="status-tag new">${c.status||'active'}</span></td></tr>`).join('')+'</tbody></table>'
     }
 
-    function setApiStatus(kind, label) {
-      const dot = document.getElementById('apiDot');
-      const text = document.getElementById('apiLabel');
-      dot.className = 'status-dot' + (kind ? (' ' + kind) : '');
-      text.textContent = label;
+    // PROGRESS MONITORING
+    async function loadProgress(){
+      const r=await fetchApi('/api/leads/metrics');
+      const el=document.getElementById('pipelineStatus');
+      const kEl=document.getElementById('progressKpis');
+      if(!r||!r.metrics){el.innerHTML='<div style="color:var(--text-subtle)">No data</div>';return}
+      const m=r.metrics;
+      kEl.innerHTML=`<div class="kpi-card"><div class="kpi-value">${m.total_leads||0}</div><div class="kpi-label">Total Leads</div></div><div class="kpi-card"><div class="kpi-value">${m.conversion_rate||0}%</div><div class="kpi-label">Conversion</div></div>`;
+      const bs=m.by_status||[];
+      el.innerHTML='<table class="data-table"><thead><tr><th>Status</th><th>Count</th></tr></thead><tbody>'+bs.map(s=>`<tr><td><span class="status-tag ${statusClass(s.status)}">${(s.status||'').replace(/_/g,' ')}</span></td><td>${s.count}</td></tr>`).join('')+'</tbody></table>'
     }
 
-    function showMissingBrandAssetsIfAny() {
-      const missing = Array.from(document.querySelectorAll('.logo[data-missing]'))
-        .map(el => el.dataset.missing)
-        .filter(Boolean);
-      if (!missing.length) return;
-      const notice = document.getElementById('assetNotice');
-      const list = document.getElementById('assetNoticeList');
-      list.textContent = missing.join(', ');
-      notice.style.display = 'block';
+    // MARKETING
+    async function loadMarketing(){
+      const r=await fetchApi('/api/approvals');const el=document.getElementById('marketingApprovals');
+      if(!r||!r.items){el.innerHTML='No items';return}
+      el.innerHTML=r.items.map(i=>`<div class="approval-item"><div><div class="approval-title">${i.title}</div><div class="approval-meta">${i.category} &bull; <span class="status-tag ${i.status==='pending'?'review':i.status==='approved'?'sent':'error'}">${i.status}</span></div></div>${i.status==='pending'?`<div class="approval-actions"><button class="btn-approve" onclick="approveItem(${i.id});loadMarketing()">Approve</button><button class="btn-reject" onclick="rejectItem(${i.id});loadMarketing()">Reject</button></div>`:''}</div>`).join('');
+      const d=await fetchApi('/api/email-drafts');const dEl=document.getElementById('marketingDrafts');
+      if(!d||!d.drafts){dEl.innerHTML='No drafts';return}
+      dEl.innerHTML=`<div style="margin-bottom:12px;font-size:13px;color:var(--text-muted)">Total: ${d.counts?.total||0} | Drafted: ${d.counts?.drafted||0} | Sent: ${d.counts?.sent||0}</div>`+d.drafts.slice(0,5).map(dr=>`<div class="activity-item"><div class="activity-info"><div class="activity-name">${dr.subject||'No subject'}</div><div class="activity-desc">${dr.lead_name||dr.lead_email||''} &bull; ${dr.state}</div></div><div class="activity-time">${timeAgo(dr.created_at)}</div></div>`).join('')
     }
 
-    function pretty(obj) {
-      try { return JSON.stringify(obj, null, 2); } catch { return String(obj); }
+    // FINANCE
+    async function loadFinance(){
+      const r=await fetchApi('/api/financial/invoices');const el=document.getElementById('financeInvoices');
+      if(!r||!r.invoices||!r.invoices.length){el.innerHTML='<div style="color:var(--text-subtle)">No invoices — QuickBooks integration needed</div>';return}
+      el.innerHTML='<table class="data-table"><thead><tr><th>Client</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>'+r.invoices.map(i=>`<tr><td>${i.client||'—'}</td><td>$${i.amount||0}</td><td>${i.status||'—'}</td><td>${i.date||'—'}</td></tr>`).join('')+'</tbody></table>'
     }
 
-    // --- Toast Notification System ---
-    function showToast(message, type = 'info', duration = 4000) {
-      const container = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      const icons = { success: '\u2713', error: '\u2717', info: '\u2139' };
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span>${message}</span>`;
-      toast.addEventListener('click', () => { toast.style.animation = 'toastOut .2s ease-in forwards'; setTimeout(() => toast.remove(), 200); });
-      container.appendChild(toast);
-      setTimeout(() => { if (toast.parentNode) { toast.style.animation = 'toastOut .2s ease-in forwards'; setTimeout(() => toast.remove(), 200); } }, duration);
+    // COMPLIANCE
+    async function loadCompliance(){
+      const el=document.getElementById('complianceAudit');
+      el.innerHTML='<div style="color:var(--text-muted);font-size:13px">Audit log tracks all lead status changes, email approvals, and data modifications. All actions are logged with timestamps and actor IDs for HIPAA compliance.</div><div style="margin-top:16px"><button class="btn-secondary" onclick="loadAuditSample()">Load Recent Audit Entries</button></div><div id="auditEntries" style="margin-top:12px"></div>'
+    }
+    async function loadAuditSample(){
+      const r=await fetchApi('/api/leads/board?limit=3&sync_live=0&stale_after_hours=999');
+      if(r&&r.leads&&r.leads[0]){const a=await fetchApi('/api/leads/'+r.leads[0].id+'/audit?limit=10');const el=document.getElementById('auditEntries');if(a&&a.audit)el.innerHTML=a.audit.map(e=>`<div class="activity-item"><div class="activity-info"><div class="activity-name">${e.action||''}</div><div class="activity-desc">${e.actor||''} &bull; ${e.object_type||''}</div></div><div class="activity-time">${timeAgo(e.timestamp)}</div></div>`).join('')}
     }
 
-    // --- Collapsible Cards ---
-    const CARD_STATE_KEY = 'trifecta_card_states';
-    function getCardStates() {
-      try { return JSON.parse(localStorage.getItem(CARD_STATE_KEY) || '{}'); } catch { return {}; }
-    }
-    function toggleCard(cardName) {
-      const card = document.querySelector(`[data-card="${cardName}"]`);
-      if (!card) return;
-      const body = card.querySelector('.card-body');
-      const toggle = card.querySelector('.card-toggle');
-      const states = getCardStates();
-      if (body.classList.contains('collapsed')) {
-        body.classList.remove('collapsed');
-        toggle.classList.remove('collapsed');
-        states[cardName] = 'open';
-      } else {
-        body.classList.add('collapsed');
-        toggle.classList.add('collapsed');
-        states[cardName] = 'collapsed';
-      }
-      localStorage.setItem(CARD_STATE_KEY, JSON.stringify(states));
-    }
-    function restoreCardStates() {
-      const states = getCardStates();
-      for (const [name, state] of Object.entries(states)) {
-        if (state === 'collapsed') {
-          const card = document.querySelector(`[data-card="${name}"]`);
-          if (!card) continue;
-          const body = card.querySelector('.card-body');
-          const toggle = card.querySelector('.card-toggle');
-          if (body) body.classList.add('collapsed');
-          if (toggle) toggle.classList.add('collapsed');
-        }
-      }
+    // ALUMNI
+    async function loadAlumni(){
+      const r=await fetchApi('/api/clients');const el=document.getElementById('alumniList');
+      if(!r||!r.clients){el.innerHTML='<div style="color:var(--text-subtle)">No alumni data</div>';return}
+      const alumni=r.clients.filter(c=>c.status==='completed'||c.status==='alumni'||c.status==='discharged');
+      if(!alumni.length){el.innerHTML='<div style="color:var(--text-muted)">'+r.clients.length+' total clients in system. Alumni tracking will populate as clients complete programs.</div>';return}
+      el.innerHTML='<table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Program</th></tr></thead><tbody>'+alumni.map(c=>`<tr><td>${c.first_name||''} ${c.last_name||''}</td><td>${c.email||''}</td><td>${c.program_type||''}</td></tr>`).join('')+'</tbody></table>'
     }
 
-    // --- Copy Button for Output Boxes ---
-    function addCopyButtons() {
-      document.querySelectorAll('.output-header').forEach(header => {
-        if (header.querySelector('.copy-btn')) return;
-        const btn = document.createElement('button');
-        btn.className = 'copy-btn';
-        btn.textContent = 'Copy';
-        btn.addEventListener('click', () => {
-          const pre = header.parentElement.querySelector('pre');
-          if (pre) {
-            navigator.clipboard.writeText(pre.textContent).then(() => {
-              btn.textContent = 'Copied!';
-              setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-            });
-          }
-        });
-        header.appendChild(btn);
-      });
+    // AI SUPPORT
+    async function loadAI(){
+      const r=await fetchApi('/api/skills');const el=document.getElementById('aiSkills');
+      if(!r||!r.skills){el.innerHTML='No skills loaded';return}
+      el.innerHTML=r.skills.map(s=>`<div class="activity-item"><div class="activity-info"><div class="activity-name">${s.name||s}</div><div class="activity-desc">${typeof s==='object'?(s.description||''):'Skill module'}</div></div></div>`).join('')
+    }
+    async function sendAiChat(){
+      const input=document.getElementById('aiChatInput');const msg=input.value.trim();if(!msg)return;
+      const msgs=document.getElementById('aiChatMessages');
+      msgs.innerHTML+=`<div style="margin-bottom:8px"><strong style="color:var(--teal)">You:</strong> ${msg}</div>`;
+      input.value='';msgs.scrollTop=msgs.scrollHeight;
+      const r=await postApi('/api/chat',{message:msg});
+      msgs.innerHTML+=`<div style="margin-bottom:8px"><strong style="color:var(--success)">AI:</strong> ${r&&r.response?r.response:(r&&r.error?r.error:'No response')}</div>`;
+      msgs.scrollTop=msgs.scrollHeight
     }
 
-    function setOut(metaEl, outEl, status, ms, body) {
-      metaEl.textContent = `status=${status}  time=${ms}ms`;
-      outEl.textContent = typeof body === 'string' ? body : pretty(body);
+    // ANALYTICS
+    async function loadAnalytics(){
+      const s=await fetchApi('/api/scheduler/status');const el=document.getElementById('analyticsScheduler');
+      if(s&&s.jobs)el.innerHTML='<table class="data-table"><thead><tr><th>Job</th><th>Next Run</th></tr></thead><tbody>'+s.jobs.map(j=>`<tr><td>${j.id}</td><td>${j.next_run?new Date(j.next_run).toLocaleString():'N/A'}</td></tr>`).join('')+'</tbody></table>';
+      const h=await fetchApi('/health');const hEl=document.getElementById('analyticsHealth');
+      if(h)hEl.innerHTML=`<div style="font-size:14px;color:var(--success);margin-bottom:12px">System Healthy</div><pre style="font-size:12px;color:var(--text-muted);white-space:pre-wrap">${JSON.stringify(h,null,2)}</pre>`
     }
 
-    let selectedLeadId = '';
-    let latestBoardLeads = [];
-    let leadBoardPollHandle = null;
-
-    function setLeadActionState(disabled) {
-      document.getElementById('leadRefreshBtn').disabled = disabled;
-      document.getElementById('leadApproveSendBtn').disabled = disabled;
-      document.getElementById('leadRejectBtn').disabled = disabled;
-      document.getElementById('leadAuditBtn').disabled = disabled;
+    // SETTINGS
+    async function testConnection(){
+      const r=await fetchApi('/health');
+      document.getElementById('settingsStatus').textContent=r?'Connected!':'Failed to connect';
+      document.getElementById('settingsStatus').style.color=r?'var(--success)':'var(--danger)'
     }
 
-    function workflowStageLabel(stage) {
-      const map = {
-        AWAITING_HUMAN_RESPONSE: 'Awaiting Human Response',
-        AWAITING_EMAIL: 'Awaiting Email',
-        PROGRAM_INFO_READY: 'Program Info Ready / Drafted',
-        PROGRAM_INFO_SENT: 'Program Info Sent',
-        NEEDS_REVIEW_ERROR: 'Needs Review / Error',
-        ARCHIVED_CLOSED: 'Archived / Closed',
-      };
-      return map[stage] || stage || 'Unknown';
-    }
+    // PAGE LOADERS
+    const pageLoaders={dashboard:()=>{loadKPIs();loadActivity();loadAppointments();loadAlerts();loadApprovals()},intake:loadIntake,program:loadProgram,progress:loadProgress,marketing:loadMarketing,finance:loadFinance,compliance:loadCompliance,alumni:loadAlumni,ai:loadAI,analytics:loadAnalytics,settings:()=>{}}
 
-    function renderLeadDetail(lead) {
-      const pre = document.getElementById('leadDetailPre');
-      pre.textContent = lead ? pretty(lead) : 'Select a lead to view detail.';
-      const summary = document.getElementById('leadDetailSummary');
-      if (!lead) {
-        summary.innerHTML = '<div class="lead-empty">Select a lead card to inspect details.</div>';
-        return;
-      }
-      summary.innerHTML = `
-        <h3>${lead.name || 'Unknown Lead'}</h3>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <span class="lead-status-badge ${statusBadgeClass(lead.status)}">${statusShortName(lead.status)}</span>
-          <span class="lead-chip">${workflowStageLabel(lead.workflow_stage)}</span>
-          ${lead.needs_response ? '<span class="lead-chip urgent">Needs response</span>' : ''}
-          ${lead.is_stale ? '<span class="lead-chip urgent">Stale</span>' : ''}
-        </div>
-        <div class="lead-detail-meta">
-          <div><strong>Source</strong><span>${lead.source || 'Unknown'}</span></div>
-          <div><strong>Contact</strong><span>${lead.email || lead.phone || 'No contact info yet'}</span></div>
-          <div><strong>Last Inbound</strong><span>${formatDateTime(lead.last_inbound_at)}</span></div>
-          <div><strong>Last Outbound</strong><span>${formatDateTime(lead.last_outbound_at)}</span></div>
-          <div><strong>Draft State</strong><span>${lead.latest_draft?.state || 'No draft'}</span></div>
-          <div><strong>Outbound</strong><span>${lead.latest_outbound?.status || 'No email sent'}</span></div>
-        </div>
-        <div style="margin-bottom:10px;font-size:12px;line-height:1.5;color:var(--text-muted);">
-          ${escapeHtml(lead.latest_message_preview || lead.initial_question || 'No inbound message preview captured yet.')}
-        </div>
-        <div class="lead-chip-row">
-          ${lead.program_interest ? `<span class="lead-chip">${escapeHtml(lead.program_interest)}</span>` : ''}
-          ${lead.has_contact ? '<span class="lead-chip">Has contact</span>' : '<span class="lead-chip">Missing contact</span>'}
-          ${lead.hours_since_activity != null ? `<span class="lead-chip">${lead.hours_since_activity}h since activity</span>` : ''}
-        </div>
-      `;
-    }
-
-    function statusBadgeClass(status) {
-      const map = { INQUIRY_RECEIVED: 'inquiry', DRAFT_CREATED: 'draft', NEEDS_HUMAN_REVIEW: 'review', PROGRAM_INFO_SENT: 'sent', ERROR: 'error', ARCHIVED: 'archived' };
-      return map[status] || '';
-    }
-
-    function statusShortName(status) {
-      const map = { INQUIRY_RECEIVED: 'New', DRAFT_CREATED: 'Draft', NEEDS_HUMAN_REVIEW: 'Review', PROGRAM_INFO_SENT: 'Sent', ERROR: 'Error', ARCHIVED: 'Archived' };
-      return map[status] || status;
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function formatDateTime(value) {
-      if (!value) return 'Not recorded';
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return value;
-      return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    }
-
-    function updateLeadStats(leads, workflowCounts = {}) {
-      const counts = workflowCounts || {};
-      document.getElementById('statTotal').textContent = Array.isArray(leads) ? leads.length : 0;
-      document.getElementById('statNeedsResponse').textContent = Array.isArray(leads) ? leads.filter((lead) => lead.needs_response).length : 0;
-      document.getElementById('statAwaitingHuman').textContent = counts['AWAITING_HUMAN_RESPONSE'] || 0;
-      document.getElementById('statAwaitingEmail').textContent = counts['AWAITING_EMAIL'] || 0;
-      document.getElementById('statReady').textContent = counts['PROGRAM_INFO_READY'] || 0;
-      document.getElementById('statSent').textContent = counts['PROGRAM_INFO_SENT'] || 0;
-    }
-
-    function renderLeadAlerts(reconciliation) {
-      const alertEl = document.getElementById('leadAlerts');
-      const stale = reconciliation?.stale_count || 0;
-      const missing = reconciliation?.missing_count || 0;
-      const mismatches = reconciliation?.mismatch_count || 0;
-      const upstreamCount = reconciliation?.upstream_count || 0;
-      alertEl.innerHTML = `
-        <div class="lead-alert ${missing ? 'danger' : 'ok'}">
-          <strong>Missing Upstream Leads</strong>
-          ${missing ? `${missing} upstream conversations are not in the pipeline.` : 'No missing upstream leads detected in the current reconciliation run.'}
-        </div>
-        <div class="lead-alert ${stale ? 'warn' : 'ok'}">
-          <strong>Stale Leads</strong>
-          ${stale ? `${stale} leads have been idle beyond the stale threshold.` : 'No stale leads right now.'}
-        </div>
-        <div class="lead-alert ${mismatches ? 'warn' : 'ok'}">
-          <strong>Activity Mismatches</strong>
-          ${mismatches ? `${mismatches} upstream records are newer than the pipeline snapshot.` : 'Pipeline activity is current for the records checked.'}
-        </div>
-        <div class="lead-alert ${upstreamCount ? 'ok' : 'warn'}">
-          <strong>Reconciliation Feed</strong>
-          ${upstreamCount ? `Checked ${upstreamCount} upstream conversation snapshots.` : 'No upstream snapshot feed attached yet; stale local leads are still being monitored.'}
-        </div>
-      `;
-      document.getElementById('leadAlertMeta').textContent = stale
-        ? `${stale} stale leads need attention.`
-        : 'No stale lead alerts right now.';
-    }
-
-    function renderLeadBoard(leads) {
-      const boardEl = document.getElementById('leadBoard');
-      const stageOrder = [
-        'AWAITING_HUMAN_RESPONSE',
-        'AWAITING_EMAIL',
-        'PROGRAM_INFO_READY',
-        'PROGRAM_INFO_SENT',
-        'NEEDS_REVIEW_ERROR',
-        'ARCHIVED_CLOSED',
-      ];
-      const grouped = Object.fromEntries(stageOrder.map((stage) => [stage, []]));
-      for (const lead of (leads || [])) {
-        const stage = grouped[lead.workflow_stage] ? lead.workflow_stage : 'AWAITING_HUMAN_RESPONSE';
-        grouped[stage].push(lead);
-      }
-
-      boardEl.innerHTML = stageOrder.map((stage) => {
-        const items = grouped[stage] || [];
-        const cards = items.length ? items.map((lead) => `
-          <button class="lead-board-card ${lead.id === selectedLeadId ? 'active' : ''}" type="button" data-lead-id="${escapeHtml(lead.id)}">
-            <div class="lead-board-card-top">
-              <span class="lead-board-name">${escapeHtml(lead.name || 'Unknown Lead')}</span>
-              <span class="lead-status-badge ${statusBadgeClass(lead.status)}">${escapeHtml(statusShortName(lead.status))}</span>
-            </div>
-            <div class="lead-board-card-sub">
-              <span>${escapeHtml(lead.source || 'Unknown')}</span>
-              <span>${escapeHtml(formatDateTime(lead.last_inbound_at || lead.updated_at))}</span>
-            </div>
-            <div class="lead-board-preview">${escapeHtml(lead.latest_message_preview || lead.initial_question || 'No message preview captured.')}</div>
-            <div class="lead-chip-row">
-              ${lead.needs_response ? '<span class="lead-chip urgent">Needs response</span>' : ''}
-              ${lead.is_stale ? '<span class="lead-chip urgent">Stale</span>' : ''}
-              ${lead.has_contact ? '<span class="lead-chip">Has contact</span>' : '<span class="lead-chip">Missing contact</span>'}
-            </div>
-          </button>
-        `).join('') : '<div class="lead-empty">No leads in this workflow stage.</div>';
-
-        return `
-          <div class="lead-column">
-            <div class="lead-column-header">
-              <span class="lead-column-title">${workflowStageLabel(stage)}</span>
-              <span class="lead-column-count">${items.length}</span>
-            </div>
-            <div class="lead-column-body">${cards}</div>
-          </div>
-        `;
-      }).join('');
-
-      boardEl.querySelectorAll('.lead-board-card').forEach((card) => {
-        card.addEventListener('click', () => loadLeadDetail(card.dataset.leadId));
-      });
-    }
-
-    async function fetchJson(path, options = {}) {
-      const apiBase = options.baseUrl || getApiBase();
-      const token = document.getElementById('authToken').value.trim();
-      const url = apiBase + path;
-      const timeoutMs = options.timeoutMs ?? 20000;
-      const controller = new AbortController();
-      const t0 = performance.now();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-      try {
-        const headers = {
-          'Content-Type': 'application/json',
-          ...(options.headers || {}),
-        };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const resp = await fetch(url, {
-          ...options,
-          signal: controller.signal,
-          headers,
-        });
-        const ms = Math.round(performance.now() - t0);
-        let data;
-        const text = await resp.text();
-        try { data = text ? JSON.parse(text) : null; }
-        catch { data = text; }
-        return { ok: resp.ok, status: resp.status, ms, data };
-      } catch (e) {
-        const ms = Math.round(performance.now() - t0);
-        return { ok: false, status: 0, ms, data: { error: e.name === 'AbortError' ? 'Request timed out' : e.message } };
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-
-    async function loadLeads() {
-      const source = document.getElementById('leadSourceFilter').value;
-      const limit = parseInt(document.getElementById('leadLimit').value || '20', 10);
-      const offset = parseInt(document.getElementById('leadOffset').value || '0', 10);
-      const staleAfterHours = parseInt(document.getElementById('leadStaleAfterHours').value || '48', 10);
-      let path = `/api/leads/board?limit=${encodeURIComponent(String(limit))}&offset=${encodeURIComponent(String(offset))}&stale_after_hours=${encodeURIComponent(String(staleAfterHours))}&sync_live=1`;
-      if (source) path += `&source=${encodeURIComponent(source)}`;
-      const res = await fetchJson(path, {
-        method: 'GET',
-        timeoutMs: 25000
-      });
-      setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
-      if (res.ok && res.data) {
-        const leads = res.data.leads || [];
-        latestBoardLeads = leads;
-        if (!selectedLeadId && leads.length) selectedLeadId = leads[0].id;
-        updateLeadStats(leads, res.data.workflow_counts || {});
-        renderLeadAlerts(res.data.reconciliation || {});
-        renderLeadBoard(leads);
-        const syncStamp = res.data.live_sync?.checked_at || res.data.timestamp;
-        const syncStatus = res.data.live_sync?.success === false ? ` | Live sync issue: ${res.data.live_sync.error}` : '';
-        document.getElementById('leadSyncMeta').textContent = `Last synced: ${formatDateTime(syncStamp)} • Auto-refresh every 30s${syncStatus}`;
-        if (selectedLeadId) {
-          await loadLeadDetail(selectedLeadId, false);
-        }
-      } else if (!res.ok) {
-        latestBoardLeads = [];
-      }
-      return res;
-    }
-
-    async function loadLeadDetail(leadId, updateOutput = true) {
-      if (!leadId) return { status: 400, ms: 0, data: { error: 'Lead id is required' } };
-      const res = await fetchJson(`/api/leads/${encodeURIComponent(leadId)}`, { method: 'GET', timeoutMs: 20000 });
-      if (updateOutput) {
-        setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
-      }
-      if (res.ok) {
-        selectedLeadId = leadId;
-        setLeadActionState(false);
-        renderLeadDetail(res.data);
-        const leadsSnapshot = Array.from(document.querySelectorAll('.lead-board-card'));
-        for (const row of leadsSnapshot) row.classList.remove('active');
-        const selected = leadsSnapshot.find((el) => el.dataset.leadId === leadId);
-        if (selected) selected.classList.add('active');
-      } else {
-        setLeadActionState(true);
-      }
-      return res;
-    }
-
-    let _actionInProgress = false;
-
-    async function approveSendSelectedLead() {
-      if (!selectedLeadId || _actionInProgress) return { status: 400, ms: 0, data: { error: 'No lead selected or action in progress' } };
-      _actionInProgress = true;
-      const btn = document.getElementById('leadApproveSendBtn');
-      btn.innerHTML = '<span class="spinner"></span>Sending...';
-      btn.disabled = true;
-      try {
-        const actor = document.getElementById('leadActor').value.trim() || 'dashboard-operator';
-        const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/approve-send`, {
-          method: 'POST',
-          body: JSON.stringify({ approved_by: actor }),
-          timeoutMs: 45000
-        });
-        setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
-        if (res.ok) {
-          showToast('Lead approved and program info sent!', 'success');
-          await loadLeads(); // refresh the full list
-        } else {
-          showToast(`Approve failed: ${res.data?.error || res.status}`, 'error');
-        }
-        return res;
-      } finally {
-        _actionInProgress = false;
-        btn.innerHTML = 'Approve + Send';
-        btn.disabled = !selectedLeadId;
-      }
-    }
-
-    async function rejectSelectedLead() {
-      if (!selectedLeadId || _actionInProgress) return { status: 400, ms: 0, data: { error: 'No lead selected or action in progress' } };
-      _actionInProgress = true;
-      const btn = document.getElementById('leadRejectBtn');
-      btn.innerHTML = '<span class="spinner"></span>Rejecting...';
-      btn.disabled = true;
-      try {
-        const actor = document.getElementById('leadActor').value.trim() || 'dashboard-operator';
-        const reason = document.getElementById('leadRejectReason').value.trim() || 'Requires manual rewrite';
-        const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/reject`, {
-          method: 'POST',
-          body: JSON.stringify({ rejected_by: actor, reason }),
-          timeoutMs: 30000
-        });
-        setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
-        if (res.ok) {
-          showToast('Lead rejected', 'info');
-          await loadLeads(); // refresh the full list
-        } else {
-          showToast(`Reject failed: ${res.data?.error || res.status}`, 'error');
-        }
-        return res;
-      } finally {
-        _actionInProgress = false;
-        btn.innerHTML = 'Reject';
-        btn.disabled = !selectedLeadId;
-      }
-    }
-
-    async function fetchSelectedLeadAudit() {
-      if (!selectedLeadId) return { status: 400, ms: 0, data: { error: 'No lead selected' } };
-      const res = await fetchJson(`/api/leads/${encodeURIComponent(selectedLeadId)}/audit?limit=25&offset=0`, {
-        method: 'GET',
-        timeoutMs: 25000
-      });
-      setOut(document.getElementById('leadsMeta'), document.getElementById('leadsOut'), res.status, res.ms, res.data);
-      if (res.ok) showToast('Audit trail loaded', 'info');
-      return res;
-    }
-
-    async function ping() {
-      const apiBase = getApiBase();
-      setApiStatus('warn', `Checking...`);
-      const res = await fetchJson('/health', { method: 'GET', timeoutMs: 6000 });
-      if (res.status === 0) {
-        // Try alternate port
-        const altRes = await fetchJson('/health', { method: 'GET', timeoutMs: 3000, baseUrl: DEFAULT_LOCAL_ALT });
-        if (altRes.status === 200 || altRes.status === 503) {
-          setApiBase(DEFAULT_LOCAL_ALT);
-          setApiStatus('ok', `API: ${DEFAULT_LOCAL_ALT} (online)`);
-          updateServicesStatus(altRes.data);
-          return altRes;
-        }
-        setApiStatus('danger', `API offline`);
-      } else if (res.ok || res.status === 503) {
-        setApiStatus('ok', `API: ${apiBase} (online)`);
-        updateServicesStatus(res.data);
-      } else if (res.status === 401 || res.status === 403) {
-        setApiStatus('warn', `Azure Connected (Auth Required)`);
-        document.getElementById('authToken').style.borderColor = 'var(--warning)';
-        document.getElementById('authToken').focus();
-      } else {
-        setApiStatus('warn', `API: ${apiBase} (error ${res.status})`);
-      }
-      return res;
-    }
-
-    function updateServicesStatus(healthData) {
-      if (!healthData || !healthData.services) return;
-      const grid = document.getElementById('servicesGrid');
-      grid.innerHTML = '';
-      const services = healthData.services;
-      const names = {
-        anthropic: 'Claude AI',
-        microsoft_graph: 'Microsoft Graph',
-        sharepoint: 'SharePoint',
-        dialpad: 'Dialpad',
-        quickbooks: 'QuickBooks',
-        skills: 'Skills'
-      };
-      for (const [key, enabled] of Object.entries(services)) {
-        const card = document.createElement('div');
-        card.className = 'service-card';
-        card.innerHTML = `
-          <div class="service-info">
-            <span class="status-dot ${enabled ? 'ok' : 'danger'}"></span>
-            <span class="service-name">${names[key] || key}</span>
-          </div>
-        `;
-        grid.appendChild(card);
-      }
-    }
-
-    function renderMissionControl(data) {
-      if (!data) return;
-      document.getElementById('missionHeadline').textContent = data.business?.headline || 'Trifecta Mission Control';
-      document.getElementById('missionCopy').textContent = data.business?.subhead || 'Live operating view for the current business.';
-
-      const focusEl = document.getElementById('missionFocus');
-      const focusItems = Array.isArray(data.focus) && data.focus.length ? data.focus : ['No focus items available yet.'];
-      focusEl.innerHTML = focusItems.map((item, index) => `
-        <div class="focus-card">
-          <strong>${index === 0 ? 'Founder Focus' : index === 1 ? 'Top Signal' : 'Model Readiness'}</strong>
-          ${item}
-        </div>
-      `).join('');
-
-      const pulseEl = document.getElementById('pulseGrid');
-      pulseEl.innerHTML = (data.pulse || []).map((item) => `
-        <div class="pulse-card" data-tone="${item.tone || 'steady'}">
-          <div class="pulse-label">${item.label || 'Metric'}</div>
-          <div class="pulse-value">${item.value || '--'}</div>
-          <div class="pulse-detail">${item.detail || ''}</div>
-        </div>
-      `).join('');
-
-      const agentEl = document.getElementById('agentGrid');
-      agentEl.innerHTML = (data.agents || []).map((agent) => `
-        <article class="agent-card" data-status="${agent.status || 'steady'}">
-          <div class="agent-top">
-            <div>
-              <div class="agent-lane">${agent.lane || 'Ops'}</div>
-              <div class="agent-name">${agent.name || 'Agent'}</div>
-            </div>
-            <div class="agent-badge">${agent.status || 'steady'}</div>
-          </div>
-          <div class="agent-copy">${agent.current_work || 'No current work reported.'}</div>
-          <div class="agent-meta">
-            <div class="agent-meta-item">
-              <strong>Queue</strong>
-              <span>${agent.queue ?? 0}</span>
-            </div>
-            <div class="agent-meta-item">
-              <strong>Model</strong>
-              <span>${agent.model || 'system'}</span>
-            </div>
-            <div class="agent-meta-item">
-              <strong>Target</strong>
-              <span>${agent.target || 'General operations'}</span>
-            </div>
-          </div>
-        </article>
-      `).join('');
-
-      const recentEl = document.getElementById('recentGrid');
-      recentEl.innerHTML = (data.recent_work || []).map((item) => `
-        <article class="recent-card">
-          <div class="recent-top">
-            <span>${item.title || 'Lead'}</span>
-            <span class="recent-status">${item.status || 'UNKNOWN'}</span>
-          </div>
-          <div class="pulse-label">${item.source || 'SOURCE'} • ${item.age || 'unknown'}</div>
-          <div class="recent-summary">${item.summary || 'No summary captured yet.'}</div>
-        </article>
-      `).join('');
-    }
-
-    async function loadMissionControl() {
-      const res = await fetchJson('/api/dashboard/mission-control', { method: 'GET', timeoutMs: 12000 });
-      if (res.ok) renderMissionControl(res.data);
-      return res;
-    }
-
-    // Helper to bind buttons to API actions
-    function bindAction(btnId, metaId, outId, loadingText, actionFn) {
-      const btn = document.getElementById(btnId);
-      if (!btn) return;
-      btn.addEventListener('click', async () => {
-        const meta = document.getElementById(metaId);
-        const out = document.getElementById(outId);
-        const origText = btn.innerHTML;
-        btn.innerHTML = `<span class="spinner"></span>${loadingText}`;
-        btn.disabled = true;
-        meta.textContent = loadingText;
-        try {
-          const res = await actionFn();
-          setOut(meta, out, res.status, res.ms, res.data);
-          if (res.ok) {
-            showToast(`${origText} completed (${res.ms}ms)`, 'success');
-          } else if (res.status > 0) {
-            showToast(`${origText} failed: ${res.data?.error || res.status}`, 'error');
-          }
-        } catch (err) {
-          setOut(meta, out, 0, 0, { error: err.message });
-          showToast(`Error: ${err.message}`, 'error');
-        } finally {
-          btn.innerHTML = origText;
-          btn.disabled = false;
-        }
-      });
-    }
-
-    // Wire UI
-    document.getElementById('apiBase').value = getApiBase();
-    document.getElementById('apiBase').addEventListener('change', () => setApiBase(document.getElementById('apiBase').value));
-    
-    // Auth Token Persistence
-    const savedToken = localStorage.getItem(TOKEN_KEY);
-    if (savedToken) document.getElementById('authToken').value = savedToken;
-    document.getElementById('authToken').addEventListener('input', (e) => localStorage.setItem(TOKEN_KEY, e.target.value));
-
-    document.getElementById('useLocal').addEventListener('click', () => setApiBase(DEFAULT_LOCAL));
-    document.getElementById('useProd').addEventListener('click', () => {
-      const current = getApiBase();
-      const isDefault = current.includes('localhost') || current.includes('YOUR-APP');
-      const hint = isDefault ? 'https://YOUR-APP.azurewebsites.net' : current;
-      const next = prompt('Paste your Azure App Service URL', hint);
-      if (next) setApiBase(next);
-    });
-    document.getElementById('pingBtn').addEventListener('click', () => ping());
-    document.getElementById('leadsLoadBtn').addEventListener('click', () => loadLeads());
-    document.getElementById('leadRefreshBtn').addEventListener('click', () => loadLeadDetail(selectedLeadId));
-    document.getElementById('leadApproveSendBtn').addEventListener('click', () => approveSendSelectedLead());
-    document.getElementById('leadRejectBtn').addEventListener('click', () => rejectSelectedLead());
-    document.getElementById('leadAuditBtn').addEventListener('click', () => fetchSelectedLeadAudit());
-    setLeadActionState(true);
-
-    ['leadSourceFilter', 'leadLimit', 'leadOffset', 'leadStaleAfterHours'].forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('change', () => loadLeads());
-    });
-
-    // Chat
-    bindAction('chatBtn', 'chatMeta', 'chatOut', 'sending...', async () => {
-      const message = document.getElementById('chatMsg').value;
-      return await fetchJson('/api/chat', { method: 'POST', body: JSON.stringify({ message }), timeoutMs: 30000 });
-    });
-
-    // Skills
-    bindAction('skillsBtn', 'skillsMeta', 'skillsOut', 'loading...', async () => {
-      return await fetchJson('/api/skills', { method: 'GET', timeoutMs: 12000 });
-    });
-
-    bindAction('skillsReloadBtn', 'skillsMeta', 'skillsOut', 'reloading...', async () => {
-      return await fetchJson('/api/skills/reload', { method: 'POST', timeoutMs: 12000 });
-    });
-
-    // GoDaddy
-    bindAction('godaddyBtn', 'godaddyMeta', 'godaddyOut', 'fetching...', async () => {
-      const limit = document.getElementById('godaddyLimit').value;
-      const status = document.getElementById('godaddyStatus').value;
-      let path = `/api/godaddy/conversations?limit=${limit}`;
-      if (status) path += `&status=${encodeURIComponent(status)}`;
-      return await fetchJson(path, { method: 'GET', timeoutMs: 20000 });
-    });
-
-    // Portal Sync
-    bindAction('portalBtn', 'portalMeta', 'portalOut', 'running...', async () => {
-      const risk = document.getElementById('portalRisk').value;
-      return await fetchJson(`/api/portal-sync?risk=${encodeURIComponent(risk)}`, { method: 'GET', timeoutMs: 45000 });
-    });
-
-    // Graph Clients
-    bindAction('graphBtn', 'graphMeta', 'graphOut', 'fetching...', async () => {
-      return await fetchJson('/api/graph/clients', { method: 'GET', timeoutMs: 20000 });
-    });
-
-    // Dialpad Calls
-    bindAction('dialpadBtn', 'dialpadMeta', 'dialpadOut', 'fetching...', async () => {
-      const limit = parseInt(document.getElementById('dialpadLimit').value || '10', 10);
-      return await fetchJson(`/api/dialpad/calls?limit=${encodeURIComponent(String(limit))}`, { method: 'GET', timeoutMs: 20000 });
-    });
-
-    // Dialpad Transcription
-    bindAction('dialpadTransBtn', 'dialpadTransMeta', 'dialpadTransOut', 'fetching...', async () => {
-      const callId = document.getElementById('dialpadCallId').value.trim();
-      if (!callId) return { status: 400, ms: 0, data: { error: 'Call ID is required' } };
-      return await fetchJson(`/api/dialpad/transcription/${encodeURIComponent(callId)}`, { method: 'GET', timeoutMs: 20000 });
-    });
-
-    // SharePoint Upload
-    bindAction('sharepointBtn', 'spMeta', 'spOut', 'uploading...', async () => {
-      const clientName = document.getElementById('spClientName').value.trim();
-      const docType = document.getElementById('spDocType').value;
-      const filename = document.getElementById('spFilename').value.trim();
-      const content = document.getElementById('spContent').value;
-      if (!clientName || !filename || !content) return { status: 400, ms: 0, data: { error: 'Client name, filename, and content are required' } };
-      return await fetchJson('/api/sharepoint/upload', {
-        method: 'POST',
-        body: JSON.stringify({ client_name: clientName, document_type: docType, filename, content }),
-        timeoutMs: 30000
-      });
-    });
-
-    // Contract Generation
-    bindAction('contractBtn', 'contractMeta', 'contractOut', 'generating...', async () => {
-      const clientId = document.getElementById('clientId').value.trim() || 'test-client';
-      const program = document.getElementById('program').value;
-      const client_name = document.getElementById('clientName').value;
-      const email = document.getElementById('clientEmail').value;
-      return await fetchJson(`/api/contract/${encodeURIComponent(clientId)}`, {
-        method: 'POST',
-        body: JSON.stringify({ program, client_name, email }),
-        timeoutMs: 60000
-      });
-    });
-
-    // Initialize
-    setApiBase(getApiBase());
-    restoreCardStates();
-    ping().then(() => {
-      loadMissionControl();
-      loadLeads(); // Auto-load leads on startup
-    });
-    setInterval(ping, 15000);
-    setInterval(loadMissionControl, 20000);
-    leadBoardPollHandle = setInterval(loadLeads, 30000);
-    window.addEventListener('load', () => {
-      showMissingBrandAssetsIfAny();
-      addCopyButtons();
-    });
+    // INIT
+    loadKPIs();loadActivity();loadAppointments();loadAlerts();loadApprovals();
+    setInterval(loadKPIs,15000);setInterval(loadActivity,30000);setInterval(loadApprovals,30000);setInterval(loadAlerts,30000);
   </script>
 </body>
 </html>

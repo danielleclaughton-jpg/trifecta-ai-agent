@@ -95,12 +95,14 @@ def run_cycle():
     write_scout_status("running")
     errors = []
 
-    # Step 1: Fetch new GoDaddy conversations
-    if not run_step("fetch_godaddy_leads.py"):
-        log_action("SKIPPING CYCLE: fetch failed")
-        errors.append("fetch_godaddy_leads failed")
-        write_scout_status("error", 0, errors)
-        return False
+    # Step 1: Fetch new GoDaddy conversations (API-first, no browser needed)
+    if not run_step("scout_godaddy_api.py"):
+        log_action("WARNING: Re:amaze API fetch failed, trying browser fallback...")
+        if not run_step("fetch_godaddy_leads.py"):
+            log_action("SKIPPING CYCLE: both fetch methods failed")
+            errors.append("fetch failed (API + browser)")
+            write_scout_status("error", 0, errors)
+            return False
 
     time.sleep(2)
 
@@ -126,9 +128,20 @@ def run_cycle():
     return True
 
 if __name__ == "__main__":
-    log_action("Automated reply loop starting...")
-    
-    # Run single cycle for testing
-    run_cycle()
-    
-    log_action("Auto-reply loop shutdown.")
+    INTERVAL_SECONDS = int(os.environ.get('AUTO_REPLY_INTERVAL', '300'))  # 5 min default
+    log_action(f"Automated reply loop starting (interval: {INTERVAL_SECONDS}s, continuous mode)...")
+
+    while True:
+        try:
+            run_cycle()
+        except KeyboardInterrupt:
+            log_action("Auto-reply loop stopped by user.")
+            break
+        except Exception as e:
+            log_action(f"CYCLE ERROR (will retry next interval): {e}")
+        log_action(f"Sleeping {INTERVAL_SECONDS}s until next cycle...")
+        try:
+            time.sleep(INTERVAL_SECONDS)
+        except KeyboardInterrupt:
+            log_action("Auto-reply loop stopped by user.")
+            break

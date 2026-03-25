@@ -36,7 +36,7 @@ from io import BytesIO
 # --- Real-time Dashboard Integration ---
 # Emit events to Lamby Command Center Socket.IO server
 # so the dashboard updates in < 1 second, not 30s
-DASHBOARD_URL = os.environ.get('DASHBOARD_URL', 'http://localhost:3000').rstrip('/')
+DASHBOARD_URL = os.environ.get('DASHBOARD_URL', 'http://localhost:3015').rstrip('/')
 
 def emit_to_dashboard(event_type, message, data=None):
     """
@@ -260,6 +260,7 @@ class Config:
     # On Azure, use persistent storage mount; locally, use app directory
     _default_db_dir = '/home/data' if bool(os.environ.get('WEBSITE_SITE_NAME')) else os.path.dirname(os.path.abspath(__file__))
     LEAD_DB_PATH = os.environ.get('LEAD_DB_PATH', os.path.join(_default_db_dir, 'lead_pipeline.db'))
+    OIL_GAS_LEAD_DB_PATH = os.environ.get('OIL_GAS_LEAD_DB_PATH', os.path.join(_default_db_dir, 'oil_gas_leads.db'))
     LEAD_PROMPT_VERSION = os.environ.get('LEAD_PROMPT_VERSION', 'lead-intake-v1')
     LEAD_DRAFT_CONFIDENCE_THRESHOLD = float(os.environ.get('LEAD_DRAFT_CONFIDENCE_THRESHOLD', '0.70'))
     LEAD_AUTO_DRAFT_ON_INGEST = os.environ.get('LEAD_AUTO_DRAFT_ON_INGEST', '0') == '1'
@@ -403,7 +404,11 @@ def parse_iso_datetime(value):
         return None
     try:
         normalized = value.replace('Z', '+00:00')
-        return datetime.fromisoformat(normalized)
+        dt = datetime.fromisoformat(normalized)
+        # Ensure timezone-aware (assume UTC if naive)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
     except ValueError:
         return None
 
@@ -1336,6 +1341,23 @@ class GraphClient:
     def create_calendar_event(self, user_id, event_data):
         """Create calendar event for user."""
         return self.request('POST', f'/users/{user_id}/events', json=event_data)
+
+    def get_calendar_events(self, user_id, days_ahead=7):
+        """Get upcoming calendar events for user."""
+        start = datetime.now(timezone.utc).isoformat()
+        end = (datetime.now(timezone.utc) + timedelta(days=days_ahead)).isoformat()
+        return self.request(
+            'GET',
+            f'/users/{user_id}/calendarView?startDateTime={start}&endDateTime={end}&$top=50&$orderby=start/dateTime'
+        )
+
+    def get_inbox_messages(self, user_id, top=10, unread_only=True):
+        """Get recent inbox messages for user."""
+        filter_str = "&$filter=isRead eq false" if unread_only else ""
+        return self.request(
+            'GET',
+            f'/users/{user_id}/mailFolders/inbox/messages?$top={top}&$orderby=receivedDateTime desc{filter_str}'
+        )
 
     def send_mail(self, sender_user_id, to_email, subject, html_body, text_body=None):
         """Send Outlook email via Microsoft Graph application permissions."""
@@ -4353,6 +4375,90 @@ def update_email_draft(draft_id):
         return jsonify({"error": str(e)}), 500
 
 
+# =============================================================================
+# APPROVAL QUEUE ENDPOINTS
+# =============================================================================
+
+@app.route('/api/approvals', methods=['GET'])
+def list_approvals():
+    """List approval items, optionally filtered by status."""
+    try:
+        status_filter = request.args.get('status')
+        conn = lead_store._connect()
+        if status_filter:
+            rows = conn.execute(
+                "SELECT * FROM approvals WHERE status = ? ORDER BY priority DESC, created_at ASC",
+                (status_filter,)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM approvals ORDER BY priority DESC, created_at ASC"
+            ).fetchall()
+        items = [dict(r) for r in rows]
+        counts = {}
+        for s in ['pending', 'approved', 'rejected', 'sent']:
+            counts[s] = conn.execute("SELECT COUNT(*) FROM approvals WHERE status = ?", (s,)).fetchone()[0]
+        conn.close()
+        return jsonify({"success": True, "items": items, "counts": counts})
+    except Exception as e:
+        logger.error(f"Error listing approvals: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/approvals/<approval_id>/approve', methods=['POST'])
+def approve_approval(approval_id):
+    """One-tap approve a content or email item."""
+    try:
+        body = request.get_json(silent=True) or {}
+        actor = body.get('approved_by', 'founder')
+        now = utcnow_iso()
+        conn = lead_store._connect()
+        row = conn.execute("SELECT * FROM approvals WHERE id = ?", (approval_id,)).fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"error": "Approval not found"}), 404
+        conn.execute(
+            "UPDATE approvals SET status = 'approved', updated_at = ? WHERE id = ?",
+            (now, approval_id)
+        )
+        conn.commit()
+        updated = dict(conn.execute("SELECT * FROM approvals WHERE id = ?", (approval_id,)).fetchone())
+        conn.close()
+        emit_to_dashboard("approval:approved", f"Approved: {updated.get('title', '')}", {"id": approval_id})
+        logger.info(f"[Approval] Approved by {actor}: {updated.get('title')}")
+        return jsonify({"success": True, "item": updated})
+    except Exception as e:
+        logger.error(f"Error approving {approval_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/approvals/<approval_id>/reject', methods=['POST'])
+def reject_approval(approval_id):
+    """One-tap reject a content or email item."""
+    try:
+        body = request.get_json(silent=True) or {}
+        actor = body.get('rejected_by', 'founder')
+        now = utcnow_iso()
+        conn = lead_store._connect()
+        row = conn.execute("SELECT * FROM approvals WHERE id = ?", (approval_id,)).fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"error": "Approval not found"}), 404
+        conn.execute(
+            "UPDATE approvals SET status = 'rejected', updated_at = ? WHERE id = ?",
+            (now, approval_id)
+        )
+        conn.commit()
+        updated = dict(conn.execute("SELECT * FROM approvals WHERE id = ?", (approval_id,)).fetchone())
+        conn.close()
+        emit_to_dashboard("approval:rejected", f"Rejected: {updated.get('title', '')}", {"id": approval_id})
+        logger.info(f"[Approval] Rejected by {actor}: {updated.get('title')}")
+        return jsonify({"success": True, "item": updated})
+    except Exception as e:
+        logger.error(f"Error rejecting {approval_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/clients', methods=['POST'])
 def create_client():
     """Create a new client - called by MCP server."""
@@ -4632,12 +4738,141 @@ def _init_scheduler():
             except Exception as e:
                 logger.error(f"[CRON] Auto-draft check failed: {e}")
 
+    # --- Compute KPIs from real database data (every 5 min) ---
+    def compute_kpis_from_db():
+        """Compute live KPIs from actual database tables and write to live-kpis.json."""
+        with app.app_context():
+            try:
+                metrics = lead_store.status_metrics()
+                total_leads = metrics.get('total_leads', 0)
+                conversion_rate = metrics.get('conversion_rate', 0.0)
+
+                # Count today's leads
+                today_start = datetime.now(timezone.utc).strftime('%Y-%m-%dT00:00:00')
+                with lead_store._connect() as conn:
+                    leads_today = lead_store._fetchone(
+                        conn,
+                        "SELECT COUNT(*) AS count FROM leads WHERE created_at >= ?",
+                        (today_start,)
+                    )['count']
+
+                    # Count emails sent today and this week
+                    week_start = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+                    emails_sent_today = lead_store._fetchone(
+                        conn,
+                        "SELECT COUNT(*) AS count FROM outbound_messages WHERE status='sent' AND sent_at >= ?",
+                        (today_start,)
+                    )['count']
+                    emails_sent_week = lead_store._fetchone(
+                        conn,
+                        "SELECT COUNT(*) AS count FROM outbound_messages WHERE status='sent' AND sent_at >= ?",
+                        (week_start,)
+                    )['count']
+
+                    # Count content approved/sent (from approvals table if it exists)
+                    content_today = 0
+                    content_week = 0
+                    try:
+                        content_today = lead_store._fetchone(
+                            conn,
+                            "SELECT COUNT(*) AS count FROM approvals WHERE status IN ('approved','sent') AND updated_at >= ?",
+                            (today_start,)
+                        )['count']
+                        content_week = lead_store._fetchone(
+                            conn,
+                            "SELECT COUNT(*) AS count FROM approvals WHERE status IN ('approved','sent') AND updated_at >= ?",
+                            (week_start,)
+                        )['count']
+                    except Exception:
+                        pass  # approvals table may not exist yet
+
+                active_clients = lead_store.count_clients()
+
+                kpis = {
+                    "leads_today": leads_today,
+                    "leads_total": total_leads,
+                    "emails_sent_today": emails_sent_today,
+                    "emails_sent_week": emails_sent_week,
+                    "content_posted_today": content_today,
+                    "content_posted_week": content_week,
+                    "active_clients": active_clients,
+                    "conversion_rate": conversion_rate,
+                }
+                _save_kpis(kpis)
+                logger.info(f"[CRON] KPIs computed: leads_today={leads_today}, emails_sent_today={emails_sent_today}, active_clients={active_clients}")
+            except Exception as e:
+                logger.error(f"[CRON] KPI computation failed: {e}")
+
+    # --- Poll info@ inbox and notify Discord (every 2 min) ---
+    _last_seen_email_id_file = os.path.join(os.path.dirname(__file__), '.logs', 'last_inbox_id.txt')
+
+    def poll_inbox_and_notify():
+        """Check info@ inbox for new unread emails and send Discord notifications."""
+        with app.app_context():
+            try:
+                webhook = os.environ.get('DISCORD_WEBHOOK_URL', '')
+                if not webhook:
+                    return  # Discord not configured, skip
+
+                user_id = Config.OUTLOOK_SENDER_UPN
+                if not user_id:
+                    return
+
+                client = get_graph_client()
+                result = client.get_inbox_messages(user_id, top=5, unread_only=True)
+                messages = result.get('value', [])
+
+                if not messages:
+                    return
+
+                # Track last seen to avoid duplicate notifications
+                last_seen = ''
+                try:
+                    with open(_last_seen_email_id_file, 'r') as f:
+                        last_seen = f.read().strip()
+                except FileNotFoundError:
+                    pass
+
+                new_messages = []
+                for msg in messages:
+                    if msg['id'] == last_seen:
+                        break
+                    new_messages.append(msg)
+
+                if not new_messages:
+                    return
+
+                # Save newest ID
+                os.makedirs(os.path.dirname(_last_seen_email_id_file), exist_ok=True)
+                with open(_last_seen_email_id_file, 'w') as f:
+                    f.write(new_messages[0]['id'])
+
+                for msg in new_messages[:3]:  # Max 3 notifications per poll
+                    sender = msg.get('from', {}).get('emailAddress', {}).get('address', 'Unknown')
+                    subject = msg.get('subject', '(no subject)')
+                    preview = (msg.get('bodyPreview', '') or '')[:200]
+                    notification = f"**New Email** from `{sender}`\n**Subject:** {subject}\n> {preview}"
+                    send_discord_notification(notification)
+
+                logger.info(f"[CRON] Notified Discord of {len(new_messages)} new emails")
+
+            except Exception as e:
+                logger.error(f"[CRON] Inbox poll failed: {e}")
+
     scheduler.add_job(daily_lead_summary, 'cron', hour=8, minute=0, id='daily_lead_summary')
     scheduler.add_job(check_stale_leads, 'interval', hours=4, id='check_stale_leads')
     scheduler.add_job(auto_draft_undrafted, 'interval', minutes=30, id='auto_draft_undrafted')
+    scheduler.add_job(compute_kpis_from_db, 'interval', minutes=5, id='compute_kpis')
+    scheduler.add_job(poll_inbox_and_notify, 'interval', minutes=2, id='poll_inbox_discord')
 
     scheduler.start()
-    logger.info("[CRON] Scheduler started with 3 jobs: daily_lead_summary, check_stale_leads, auto_draft_undrafted")
+    logger.info("[CRON] Scheduler started with 5 jobs: daily_lead_summary, check_stale_leads, auto_draft_undrafted, compute_kpis, poll_inbox_discord")
+
+    # Compute KPIs immediately on startup
+    try:
+        compute_kpis_from_db()
+    except Exception as e:
+        logger.warning(f"[CRON] Initial KPI computation failed (will retry): {e}")
     return scheduler
 
 
@@ -5072,6 +5307,124 @@ def _log_startup_warnings():
 _log_startup_warnings()
 
 # =============================================================================
+# CALENDAR SYNC ENDPOINT
+# =============================================================================
+
+@app.route('/api/calendar/upcoming', methods=['GET'])
+def calendar_upcoming():
+    """Get upcoming calendar events from Outlook."""
+    try:
+        days = int(request.args.get('days', 7))
+        user_id = Config.OUTLOOK_SENDER_UPN
+        if not user_id:
+            return jsonify({"error": "OUTLOOK_SENDER_UPN not configured"}), 500
+        client = get_graph_client()
+        result = client.get_calendar_events(user_id, days_ahead=days)
+        events = result.get('value', [])
+        formatted = []
+        for ev in events:
+            formatted.append({
+                'id': ev.get('id'),
+                'subject': ev.get('subject'),
+                'start': ev.get('start', {}).get('dateTime'),
+                'end': ev.get('end', {}).get('dateTime'),
+                'location': ev.get('location', {}).get('displayName', ''),
+                'organizer': ev.get('organizer', {}).get('emailAddress', {}).get('name', ''),
+                'is_online': ev.get('isOnlineMeeting', False),
+            })
+        return jsonify({"success": True, "events": formatted, "count": len(formatted)})
+    except Exception as e:
+        logger.error(f"Calendar fetch failed: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# DISCORD NOTIFICATION HELPER
+# =============================================================================
+
+DISCORD_WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL', '')
+
+def send_discord_notification(content, username="Trifecta AI"):
+    """Send a notification to Discord via webhook."""
+    if not DISCORD_WEBHOOK_URL:
+        logger.debug("[Discord] No webhook URL configured, skipping notification")
+        return False
+    try:
+        resp = requests.post(
+            DISCORD_WEBHOOK_URL,
+            json={"content": content, "username": username},
+            timeout=10
+        )
+        return resp.status_code in (200, 204)
+    except Exception as e:
+        logger.warning(f"[Discord] Notification failed: {e}")
+        return False
+
+
+# =============================================================================
+# IMAGE GENERATION ENDPOINT (DALL-E 3)
+# =============================================================================
+
+@app.route('/api/content/generate-image', methods=['POST'])
+def generate_image():
+    """Generate an image using OpenAI DALL-E 3."""
+    try:
+        body = request.get_json() or {}
+        prompt = body.get('prompt')
+        if not prompt:
+            return jsonify({"error": "prompt is required"}), 400
+
+        openai_key = os.environ.get('OPENAI_API_KEY')
+        if not openai_key:
+            return jsonify({"error": "OPENAI_API_KEY not configured"}), 500
+
+        size = body.get('size', '1024x1024')
+        style = body.get('style', 'natural')
+
+        resp = requests.post(
+            'https://api.openai.com/v1/images/generations',
+            headers={
+                'Authorization': f'Bearer {openai_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'dall-e-3',
+                'prompt': prompt,
+                'n': 1,
+                'size': size,
+                'style': style
+            },
+            timeout=60
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        image_url = result['data'][0]['url']
+        revised_prompt = result['data'][0].get('revised_prompt', '')
+
+        # Save image locally
+        img_dir = os.path.join(os.path.dirname(__file__), 'trifecta', 'content-assets')
+        os.makedirs(img_dir, exist_ok=True)
+        img_filename = f"{uuid.uuid4().hex[:12]}.png"
+        img_path = os.path.join(img_dir, img_filename)
+
+        img_resp = requests.get(image_url, timeout=30)
+        with open(img_path, 'wb') as f:
+            f.write(img_resp.content)
+
+        logger.info(f"[Image Gen] Created {img_filename} for prompt: {prompt[:50]}...")
+        return jsonify({
+            "success": True,
+            "image_url": image_url,
+            "local_path": img_path,
+            "filename": img_filename,
+            "revised_prompt": revised_prompt
+        })
+    except Exception as e:
+        logger.error(f"Image generation failed: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
 # KPI LIVE DATA ENDPOINTS
 # =============================================================================
 
@@ -5130,6 +5483,234 @@ def kpi_update():
     _save_kpis(kpis)
     logger.info(f"[KPI] Updated: {updates}")
     return jsonify({"success": True, "data": kpis})
+
+# =============================================================================
+# OIL & GAS CAMPAIGN LEADS
+# =============================================================================
+def _oil_gas_db():
+    """Get a connection to the Oil & Gas leads SQLite database."""
+    db_path = Config.OIL_GAS_LEAD_DB_PATH
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+def _init_oil_gas_db():
+    """Create Oil & Gas leads tables if they don't exist."""
+    conn = _oil_gas_db()
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS oil_gas_leads (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                email TEXT,
+                phone TEXT,
+                source TEXT DEFAULT 'oil_gas_website',
+                platform TEXT,
+                enquiry_type TEXT,
+                lead_score INTEGER DEFAULT 0,
+                status TEXT DEFAULT 'INQUIRY_RECEIVED',
+                notes TEXT,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS oil_gas_events (
+                id TEXT PRIMARY KEY,
+                lead_id TEXT NOT NULL,
+                event_type TEXT,
+                source TEXT,
+                received_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (lead_id) REFERENCES oil_gas_leads(id)
+            )
+        """)
+        conn.commit()
+        logger.info("[OilGas] Database initialized")
+    finally:
+        conn.close()
+
+# Init on startup
+_init_oil_gas_db()
+
+@app.route('/api/oil-gas/leads', methods=['POST'])
+def create_oil_gas_lead():
+    """Create a new Oil & Gas campaign lead."""
+    try:
+        data = request.get_json() or {}
+        if not data.get('name'):
+            return jsonify({'error': 'Name is required'}), 400
+        lead_id = str(uuid.uuid4())
+        now = utcnow_iso()
+        conn = _oil_gas_db()
+        try:
+            conn.execute("""
+                INSERT INTO oil_gas_leads (id, name, email, phone, source, platform, enquiry_type, lead_score, status, notes, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'INQUIRY_RECEIVED', ?, ?, ?)
+            """, (
+                lead_id,
+                data.get('name', ''),
+                data.get('email', ''),
+                data.get('phone', ''),
+                data.get('source', 'oil_gas_website'),
+                data.get('platform', ''),
+                data.get('enquiry_type', ''),
+                int(data.get('lead_score', 0)),
+                data.get('notes', ''),
+                now,
+                now
+            ))
+            conn.commit()
+            # Emit to dashboard
+            emit_to_dashboard(
+                "oil_gas_lead:new",
+                f"Oil & Gas lead: {data.get('name')} from {data.get('platform', data.get('source', 'web'))}",
+                {"leadId": lead_id, "name": data.get('name'), "source": data.get('source', 'oil_gas_website'), "platform": data.get('platform', '')}
+            )
+            return jsonify({'success': True, 'id': lead_id, 'status': 'INQUIRY_RECEIVED'}), 201
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Create Oil & Gas lead error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/oil-gas/leads/query', methods=['POST'])
+def query_oil_gas_leads():
+    """Query Oil & Gas leads with optional filters."""
+    try:
+        data = request.get_json(silent=True) or {}
+        conn = _oil_gas_db()
+        try:
+            conditions = []
+            params = []
+            if data.get('status'):
+                conditions.append("status = ?")
+                params.append(data['status'])
+            if data.get('source'):
+                conditions.append("source = ?")
+                params.append(data['source'])
+            if data.get('platform'):
+                conditions.append("platform = ?")
+                params.append(data['platform'])
+            where = "WHERE " + " AND ".join(conditions) if conditions else ""
+            limit = min(int(data.get('limit', 100)), 500)
+            offset = int(data.get('offset', 0))
+            rows = conn.execute(
+                f"SELECT * FROM oil_gas_leads {where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                (*params, limit, offset)
+            ).fetchall()
+            total = conn.execute(
+                f"SELECT COUNT(*) as cnt FROM oil_gas_leads {where}", tuple(params)
+            ).fetchone()['cnt']
+            return jsonify({'leads': [dict(r) for r in rows], 'count': total})
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Query Oil & Gas leads error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/oil-gas/leads/stats', methods=['GET'])
+def oil_gas_leads_stats():
+    """Get Oil & Gas leads stats."""
+    try:
+        conn = _oil_gas_db()
+        try:
+            total = conn.execute("SELECT COUNT(*) as cnt FROM oil_gas_leads").fetchone()['cnt']
+            today = datetime.now().strftime('%Y-%m-%d')
+            new_today = conn.execute(
+                "SELECT COUNT(*) as cnt FROM oil_gas_leads WHERE date(created_at) = ?", (today,)
+            ).fetchone()['cnt']
+            hot_leads = conn.execute(
+                "SELECT COUNT(*) as cnt FROM oil_gas_leads WHERE lead_score >= 15"
+            ).fetchone()['cnt']
+            return jsonify({'total': total, 'newToday': new_today, 'hotLeads': hot_leads})
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Oil & Gas stats error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/oil-gas/leads/<lead_id>', methods=['GET'])
+def get_oil_gas_lead(lead_id):
+    """Get a single Oil & Gas lead."""
+    try:
+        conn = _oil_gas_db()
+        try:
+            lead = conn.execute("SELECT * FROM oil_gas_leads WHERE id = ?", (lead_id,)).fetchone()
+            if not lead:
+                return jsonify({'error': 'Lead not found'}), 404
+            events = conn.execute(
+                "SELECT * FROM oil_gas_events WHERE lead_id = ? ORDER BY received_at DESC LIMIT 20", (lead_id,)
+            ).fetchall()
+            return jsonify({**dict(lead), 'events': [dict(e) for e in events]})
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Get Oil & Gas lead error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/oil-gas/leads/<lead_id>', methods=['PATCH'])
+def update_oil_gas_lead(lead_id):
+    """Update an Oil & Gas lead."""
+    try:
+        data = request.get_json() or {}
+        allowed = ['name', 'email', 'phone', 'status', 'lead_score', 'notes', 'enquiry_type', 'platform']
+        fields = {k: v for k, v in data.items() if k in allowed}
+        if not fields:
+            return jsonify({'success': True})
+        fields['updated_at'] = utcnow_iso()
+        set_clause = ", ".join([f"{k} = ?" for k in fields])
+        conn = _oil_gas_db()
+        try:
+            conn.execute(
+                f"UPDATE oil_gas_leads SET {set_clause} WHERE id = ?",
+                (*fields.values(), lead_id)
+            )
+            conn.commit()
+            emit_to_dashboard("oil_gas_lead:updated", f"Oil & Gas lead updated", {"leadId": lead_id, "status": fields.get('status', '')})
+            return jsonify({'success': True})
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Update Oil & Gas lead error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/oil-gas/leads/<lead_id>/archive', methods=['POST'])
+def archive_oil_gas_lead(lead_id):
+    """Archive an Oil & Gas lead."""
+    try:
+        conn = _oil_gas_db()
+        try:
+            conn.execute(
+                "UPDATE oil_gas_leads SET status = ?, updated_at = ? WHERE id = ?",
+                ('ARCHIVED', utcnow_iso(), lead_id)
+            )
+            conn.commit()
+            emit_to_dashboard("oil_gas_lead:updated", "Oil & Gas lead archived", {"leadId": lead_id, "status": "ARCHIVED"})
+            return jsonify({'success': True})
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Archive Oil & Gas lead error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/oil-gas/leads/metrics', methods=['GET'])
+def oil_gas_leads_metrics():
+    """Get Oil & Gas leads metrics breakdown."""
+    try:
+        conn = _oil_gas_db()
+        try:
+            by_status = [dict(r) for r in conn.execute("SELECT status, COUNT(*) as count FROM oil_gas_leads GROUP BY status").fetchall()]
+            by_source = [dict(r) for r in conn.execute("SELECT source, COUNT(*) as count FROM oil_gas_leads GROUP BY source").fetchall()]
+            by_platform = [dict(r) for r in conn.execute("SELECT platform, COUNT(*) as count FROM oil_gas_leads GROUP BY platform").fetchall()]
+            return jsonify({'by_status': by_status, 'by_source': by_source, 'by_platform': by_platform})
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Oil & Gas metrics error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 
 # =============================================================================
 # MAIN
