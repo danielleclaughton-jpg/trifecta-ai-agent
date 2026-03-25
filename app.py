@@ -1385,8 +1385,15 @@ class GraphClient:
         resp.raise_for_status()
         return resp.json()
 
-# Global Graph client instance
-graph_client = GraphClient()
+# Global Graph client instance (lazy-loaded to prevent startup hang)
+graph_client = None
+
+def get_graph_client():
+    """Lazy-load the Graph client to avoid blocking Flask startup."""
+    global graph_client
+    if graph_client is None:
+        graph_client = GraphClient()
+    return graph_client
 # TODO: Wire MS Graph mail webhook (or poll /me/mailFolders/inbox/messages)
 # to call update_lead_status() when a reply is received from a known lead email address.
 # See: https://learn.microsoft.com/en-us/graph/webhooks
@@ -1588,7 +1595,7 @@ def dashboard_overview():
         }
         client_count = 0
         try:
-            users = graph_client.get_users()
+            users = get_graph_client().get_users()
             client_count = len(users.get('value', []))
         except Exception:
             pass
@@ -1798,7 +1805,7 @@ def agent_message():
 def get_clients():
     """Get clients list from Microsoft Graph."""
     try:
-        users = graph_client.get_users()
+        users = get_graph_client().get_users()
         clients = users.get('value', [])
         return jsonify({
             'count': len(clients),
@@ -1927,7 +1934,7 @@ def get_graph_clients():
         status = request.args.get('status')  # active, intake, alumni
 
         # Fetch users from Graph
-        users = graph_client.get_users()
+        users = get_graph_client().get_users()
         clients = users.get('value', [])
 
         # Get skill context for enrichment
@@ -1966,13 +1973,13 @@ def client_detail(client_id):
     """Get or update single client."""
     try:
         if request.method == 'GET':
-            client = graph_client.get_user(client_id)
+            client = get_graph_client().get_user(client_id)
             return jsonify(client), 200
 
         elif request.method == 'PATCH':
             data = request.get_json()
             # Update client in Graph (limited fields)
-            updated = graph_client.request('PATCH', f'/users/{client_id}', json=data)
+            updated = get_graph_client().request('PATCH', f'/users/{client_id}', json=data)
             return jsonify({'status': 'updated', 'client': updated}), 200
 
     except Exception as e:
@@ -2003,7 +2010,7 @@ def sharepoint_upload():
         folder_path = f"{client_name}/{document_type}s"
 
         # Upload to SharePoint
-        result = graph_client.upload_to_sharepoint(
+        result = get_graph_client().upload_to_sharepoint(
             folder_path=folder_path,
             filename=filename,
             content=content.encode() if isinstance(content, str) else content,
@@ -2774,7 +2781,7 @@ def send_outlook_with_retries(to_email, subject, html_body, text_body=None):
     last_exc = None
     for attempt in range(1, attempts + 1):
         try:
-            graph_client.send_mail(sender_user_id=Config.OUTLOOK_SENDER_UPN, to_email=to_email, subject=subject, html_body=html_body, text_body=text_body)
+            get_graph_client().send_mail(sender_user_id=Config.OUTLOOK_SENDER_UPN, to_email=to_email, subject=subject, html_body=html_body, text_body=text_body)
             return {'ok': True, 'attempts': attempt, 'provider': 'microsoft_graph'}
         except Exception as exc:
             last_exc = exc
@@ -3226,7 +3233,7 @@ def portal_sync():
             risk = request.args.get('risk', 'high')
 
             # Fetch clients from Graph
-            users = graph_client.get_users()
+            users = get_graph_client().get_users()
             clients = users.get('value', [])
 
             # Filter by risk (placeholder logic - would use actual risk scoring)
@@ -3278,7 +3285,7 @@ Format as JSON array."""
 
                 try:
                     # PATCH update to Graph
-                    result = graph_client.request('PATCH', f'/users/{client_id}', json=patch_data)
+                    result = get_graph_client().request('PATCH', f'/users/{client_id}', json=patch_data)
                     results.append({'client_id': client_id, 'status': 'updated'})
                 except Exception as e:
                     results.append({'client_id': client_id, 'status': 'failed', 'error': str(e)})
@@ -3341,7 +3348,7 @@ def generate_contract(client_id):
     try:
         if request.method == 'GET':
             try:
-                client = graph_client.get_user(client_id)
+                client = get_graph_client().get_user(client_id)
             except Exception:
                 client = {'displayName': 'Demo Client', 'mail': 'demo@example.com'}
 
@@ -3363,7 +3370,7 @@ def generate_contract(client_id):
         program = PROGRAMS.get(program_code, PROGRAMS['28_DAY_VIRTUAL'])
 
         try:
-            client = graph_client.get_user(client_id)
+            client = get_graph_client().get_user(client_id)
         except Exception:
             client = {'displayName': data.get('client_name', 'Client'), 'mail': data.get('email', '')}
 
@@ -3422,7 +3429,7 @@ def generate_contract(client_id):
                 ('Invoice', invoice_pdf, 'application/pdf'),
             ]:
                 filename = f"{doc_type}_{now.strftime('%Y%m%d')}_{program_code}.pdf"
-                result = graph_client.upload_to_sharepoint(
+                result = get_graph_client().upload_to_sharepoint(
                     folder_path=f"{client_folder}/Documents",
                     filename=filename,
                     content=content,
@@ -3480,7 +3487,7 @@ def generate_invoice_pdf(client_id):
         now = datetime.now(timezone.utc)
 
         try:
-            client = graph_client.get_user(client_id)
+            client = get_graph_client().get_user(client_id)
         except Exception:
             client = {'displayName': data.get('client_name', 'Client'), 'mail': data.get('email', '')}
 
@@ -4361,7 +4368,7 @@ def get_client(client_id):
     if not client:
         # Try Graph API as fallback
         try:
-            graph_client.get_user(client_id)
+            get_graph_client().get_user(client_id)
             return jsonify({'id': client_id, 'source': 'graph'}), 200
         except Exception:
             pass
