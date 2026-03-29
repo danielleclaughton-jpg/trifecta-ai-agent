@@ -149,8 +149,20 @@ CORS(app, resources={r"/api/*": {"origins": [
     "http://localhost:5000",
     "http://127.0.0.1:5000",
     "http://localhost:3015",
-    "http://127.0.0.1:3015"
+    "http://127.0.0.1:3015",
+    "http://localhost:3000",
+    "http://localhost:3003",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3003",
 ]}})
+
+# Register content drafts blueprint
+try:
+    from content_api import content_bp
+    app.register_blueprint(content_bp)
+    logger.info("Content drafts API registered at /api/content")
+except Exception as _e:
+    logger.warning(f"Failed to register content_api blueprint: {_e}")
 
 # --- Dashboard (served from Flask in production) ---
 @app.route('/dashboard')
