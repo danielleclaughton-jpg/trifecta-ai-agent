@@ -156,6 +156,10 @@ CORS(app, resources={r"/api/*": {"origins": [
     "http://127.0.0.1:3003",
 ]}})
 
+# Configure logging (must be before blueprint registration)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Register content drafts blueprint
 try:
     from content_api import content_bp
