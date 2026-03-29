@@ -5497,6 +5497,125 @@ def kpi_update():
     return jsonify({"success": True, "data": kpis})
 
 # =============================================================================
+# =============================================================================
+# DAILY BRIEF ENDPOINT
+# =============================================================================
+
+@app.route('/api/brief', methods=['GET'])
+def daily_brief():
+    """
+    Returns a structured daily brief for Lamby/Danielle:
+    - Today's calendar events (via Microsoft Graph)
+    - Active leads needing action (from lead_pipeline.db)
+    - Content queue status (from content_drafts table or content-queue/)
+    """
+    brief = {
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'date': datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+        'calendar': [],
+        'leads': [],
+        'content_queue': {},
+        'errors': []
+    }
+
+    # --- Calendar Events via Microsoft Graph ---
+    try:
+        if Config.MS_CLIENT_ID and Config.MS_CLIENT_SECRET and Config.MS_TENANT_ID:
+            graph = GraphClient()
+            token = graph._get_token()
+            now_utc = datetime.now(timezone.utc)
+            start = now_utc.strftime('%Y-%m-%dT00:00:00Z')
+            end = now_utc.strftime('%Y-%m-%dT23:59:59Z')
+            user_email = os.environ.get('MS_USER_EMAIL', 'info@trifectaaddictionservices.com')
+            resp = requests.get(
+                f"{graph.base_url}/users/{user_email}/calendarView",
+                headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
+                params={'startDateTime': start, 'endDateTime': end, '$select': 'subject,start,end,location,organizer', '$top': '20'},
+                timeout=10
+            )
+            if resp.status_code == 200:
+                events = resp.json().get('value', [])
+                brief['calendar'] = [
+                    {
+                        'subject': e.get('subject', 'Untitled'),
+                        'start': e.get('start', {}).get('dateTime', ''),
+                        'end': e.get('end', {}).get('dateTime', ''),
+                        'location': e.get('location', {}).get('displayName', '')
+                    }
+                    for e in events
+                ]
+            else:
+                brief['errors'].append(f'Calendar fetch failed: {resp.status_code}')
+        else:
+            brief['errors'].append('Microsoft Graph not configured')
+    except Exception as e:
+        brief['errors'].append(f'Calendar error: {str(e)}')
+
+    # --- Active Leads Needing Action ---
+    try:
+        db_path = Config.LEAD_DB_PATH if hasattr(Config, 'LEAD_DB_PATH') else os.path.join(
+            os.environ.get('HOME', '/home'), 'data', 'lead_pipeline.db'
+        )
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            # Leads that are active/new and haven't been contacted recently
+            cur.execute("""
+                SELECT id, name, email, phone, status, source, created_at, last_contacted_at, notes
+                FROM leads
+                WHERE status NOT IN ('closed', 'converted', 'rejected', 'unsubscribed')
+                ORDER BY
+                    CASE status
+                        WHEN 'new' THEN 0
+                        WHEN 'hot' THEN 1
+                        WHEN 'warm' THEN 2
+                        WHEN 'contacted' THEN 3
+                        ELSE 4
+                    END,
+                    created_at DESC
+                LIMIT 10
+            """)
+            rows = cur.fetchall()
+            brief['leads'] = [dict(r) for r in rows]
+            conn.close()
+        else:
+            brief['errors'].append(f'Lead DB not found at {db_path}')
+    except Exception as e:
+        brief['errors'].append(f'Leads error: {str(e)}')
+
+    # --- Content Queue Status ---
+    try:
+        db_path = Config.LEAD_DB_PATH if hasattr(Config, 'LEAD_DB_PATH') else os.path.join(
+            os.environ.get('HOME', '/home'), 'data', 'lead_pipeline.db'
+        )
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            # Content drafts summary
+            cur.execute("SELECT status, COUNT(*) as count FROM content_drafts GROUP BY status")
+            draft_stats = {row['status']: row['count'] for row in cur.fetchall()}
+            # Approvals summary
+            cur.execute("SELECT status, COUNT(*) as count FROM approvals GROUP BY status")
+            approval_stats = {row['status']: row['count'] for row in cur.fetchall()}
+            conn.close()
+            brief['content_queue'] = {
+                'drafts': draft_stats,
+                'approvals': approval_stats,
+                'pending_approvals': approval_stats.get('pending', 0)
+            }
+        # Also scan filesystem content-queue/
+        queue_dir = os.path.join(os.path.dirname(__file__), 'trifecta', 'content-queue')
+        if os.path.isdir(queue_dir):
+            md_files = [f for f in os.listdir(queue_dir) if f.endswith('.md')]
+            brief['content_queue']['filesystem_queue'] = md_files
+    except Exception as e:
+        brief['errors'].append(f'Content queue error: {str(e)}')
+
+    return jsonify({'success': True, 'data': brief}), 200
+
+
 # OIL & GAS CAMPAIGN LEADS
 # =============================================================================
 def _oil_gas_db():
