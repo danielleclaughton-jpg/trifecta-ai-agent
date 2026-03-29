@@ -1,13 +1,11 @@
 {
-  "updated": "2026-03-24T20:00:00Z",
   "leads_today": 0,
-  "leads_total": 117,
-  "emails_sent_today": 4,
-  "emails_sent_week": 12,
+  "leads_total": 205,
+  "emails_sent_today": 0,
+  "emails_sent_week": 5,
   "content_posted_today": 0,
-  "content_posted_week": 3,
-  "active_clients": 3,
-  "monthly_revenue": 7777,
-  "conversion_rate": 8.5,
-  "pipeline_value": 55000
+  "content_posted_week": 0,
+  "active_clients": 20,
+  "conversion_rate": 0.98,
+  "updated": "2026-03-26T03:02:29Z"
 }
