@@ -99,7 +99,7 @@ def rate_limit(f):
         return f(*args, **kwargs)
     return decorated
 
-# Azure SDK imports (optional — not needed for local dev)
+# Azure SDK imports (optional - not needed for local dev)
 try:
     from azure.identity import DefaultAzureCredential, ClientSecretCredential
     from azure.keyvault.secrets import SecretClient
@@ -1470,7 +1470,7 @@ class DialpadClient:
 
     def send_sms(self, to_number, message, from_number=None):
         """Send SMS message via Dialpad API.
-        
+
         Dialpad requires to_numbers as an array. from_number should be
         the Trifecta main line: +14039070996
         """
@@ -2115,7 +2115,7 @@ def dialpad_calls():
 @app.route('/api/sms/send', methods=['POST'])
 def send_sms_endpoint():
     """Send SMS via Dialpad to a lead or any number.
-    
+
     Body (JSON):
       to_number   - E.164 format phone number (e.g. +14031234567)
       message     - SMS text content
@@ -3593,7 +3593,7 @@ def generate_invoice_pdf(client_id):
 # =============================================================================
 @app.route('/api/quickbooks/connect', methods=['GET'])
 def quickbooks_connect():
-    """Start QuickBooks OAuth2 flow — redirects to Intuit login."""
+    """Start QuickBooks OAuth2 flow - redirects to Intuit login."""
     if not all([Config.QUICKBOOKS_CLIENT_ID, Config.QUICKBOOKS_CLIENT_SECRET]):
         return jsonify({'error': 'QuickBooks credentials not configured',
                         'hint': 'Add QUICKBOOKS_CLIENT_ID and QUICKBOOKS_CLIENT_SECRET to env vars'}), 500
@@ -4482,7 +4482,7 @@ def create_client():
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-        
+
         client_id = data.get('id', f"TFC-{datetime.now().strftime('%Y%m%d')}")
         client = {
             'id': client_id,
@@ -4526,7 +4526,7 @@ def create_session():
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-        
+
         session_id = str(uuid.uuid4())[:8]
         session = {
             'id': session_id,
@@ -4557,7 +4557,7 @@ def create_appointment():
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
-        
+
         appointment_id = str(uuid.uuid4())[:8]
         appointment = {
             'id': appointment_id,
@@ -4883,12 +4883,7 @@ def _init_scheduler():
 
     scheduler.start()
     logger.info("[CRON] Scheduler started with 5 jobs: daily_lead_summary, check_stale_leads, auto_draft_undrafted, compute_kpis, poll_inbox_discord")
-
-    # Compute KPIs immediately on startup
-    try:
-        compute_kpis_from_db()
-    except Exception as e:
-        logger.warning(f"[CRON] Initial KPI computation failed (will retry): {e}")
+    # Note: removed immediate startup KPI computation to prevent gunicorn worker timeout
     return scheduler
 
 
@@ -5089,7 +5084,7 @@ def client_sessions():
 @app.route('/api/client/documents', methods=['GET'])
 @require_portal_auth
 def client_documents():
-    """Client documents list. Currently returns empty — wire to SharePoint or Azure Blob."""
+    """Client documents list. Currently returns empty - wire to SharePoint or Azure Blob."""
     return jsonify([]), 200
 
 
@@ -5970,7 +5965,7 @@ if __name__ == '__main__':
     app._scheduler = _init_scheduler()
     app.run(host='0.0.0.0', port=port, debug=debug)
 else:
-    # Production (gunicorn) — start scheduler on import
+    # Production (gunicorn) - start scheduler on import
     app._scheduler = _init_scheduler()
 
 
