@@ -1,5 +1,2 @@
-[config]
-command = bash -c "python3 -m pip install -r requirements.txt"
-
 [deployment]
 ignore = [.git, .venv, __pycache__, *.pyc, .pytest_cache, .vscode, node_modules, *.zip, .env, .env.*, trifecta-client-portal*.zip, Interactive-*.ipynb, *.db]
