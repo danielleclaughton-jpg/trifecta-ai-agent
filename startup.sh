@@ -22,16 +22,15 @@ else
     python3 -c "import flask; print('[startup] Flask OK')" 2>&1 || echo "[startup] WARNING: Flask not found on system Python!"
 fi
 
-# Confirm packages are available before starting
+# Confirm core packages are available before starting
 python3 -c "import flask, gunicorn; print('[startup] Core packages verified')" 2>&1
 
-# Start gunicorn — single worker to avoid scheduler duplication
-# APScheduler starts at module import (production mode), 1 worker = 1 scheduler
+# Start gunicorn — NO --preload to prevent blocking port bind on cold start
+# APScheduler starts per-worker; only 1 worker to prevent duplicate schedulers
 exec gunicorn --bind=0.0.0.0:8000 \
          --workers=1 \
          --threads=8 \
          --timeout=120 \
-         --preload \
          --access-logfile=- \
          --error-logfile=- \
          --log-level=info \
