@@ -5521,7 +5521,7 @@ def daily_brief():
     try:
         if Config.MS_CLIENT_ID and Config.MS_CLIENT_SECRET and Config.MS_TENANT_ID:
             graph = GraphClient()
-            token = graph._get_token()
+            token = graph.get_token()
             now_utc = datetime.now(timezone.utc)
             start = now_utc.strftime('%Y-%m-%dT00:00:00Z')
             end = now_utc.strftime('%Y-%m-%dT23:59:59Z')
