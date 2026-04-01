@@ -1,4 +1,4 @@
-﻿"""
+"""
 Trifecta AI Agent - Production Flask Application
 Flask-based AI agent API with Azure integrations, Microsoft Graph, SharePoint, Dialpad
 Version: 1.0.0 | Updated: 2026-01-10
@@ -1640,7 +1640,7 @@ def api_docs():
 # =============================================================================
 @app.route('/api/dashboard/overview', methods=['GET'])
 def dashboard_overview():
-    """Real-time dashboard overview â€" called by dashboard_index.html."""
+    """Real-time dashboard overview ?EUR" called by dashboard_index.html."""
     try:
         llm_ready = bool(Config.OPENROUTER_API_KEY or Config.OPENAI_API_KEY or Config.ANTHROPIC_API_KEY)
         service_status = {
@@ -1858,7 +1858,7 @@ def agent_status():
 
 @app.route('/api/agent/message', methods=['POST'])
 def agent_message():
-    """Agent message endpoint â€" proxies to /api/chat for dashboard compatibility."""
+    """Agent message endpoint ?EUR" proxies to /api/chat for dashboard compatibility."""
     return chat()
 
 @app.route('/api/clients', methods=['GET'])
@@ -3281,8 +3281,8 @@ def update_kpi_from_sent_log():
 def portal_sync():
     """
     Sync portal data with Claude analysis.
-    GET: Fetch high-risk clients â†' Claude analysis â†' return recommendations
-    POST: Apply Claude recommendations â†' PATCH updates to Graph
+    GET: Fetch high-risk clients ?+' Claude analysis ?+' return recommendations
+    POST: Apply Claude recommendations ?+' PATCH updates to Graph
     Uses: trifecta-ai-agent-orchestration
     """
     try:
@@ -3616,7 +3616,7 @@ def quickbooks_connect():
 @app.route('/api/quickbooks/callback', methods=['GET'])
 def quickbooks_callback():
     """
-    QuickBooks OAuth2 callback â€" run this ONCE during initial setup.
+    QuickBooks OAuth2 callback ?EUR" run this ONCE during initial setup.
     Visit: https://developer.intuit.com/app/developer/playground to get auth code.
     Then Azure will redirect here after OAuth consent.
     """
@@ -4350,7 +4350,7 @@ def archive_lead(lead_id):
     return jsonify({'status': 'archived', 'lead_id': lead_id, 'lead': _serialize_lead(after)}), 200
 
 
-# ── Email Drafts ─────────────────────────────────────────────────────
+# -- Email Drafts -----------------------------------------------------
 @app.route('/api/email-drafts', methods=['GET'])
 def get_email_drafts():
     try:
