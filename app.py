@@ -4875,11 +4875,19 @@ def _init_scheduler():
             except Exception as e:
                 logger.error(f"[CRON] Inbox poll failed: {e}")
 
+    # Add startup_delay to prevent jobs from firing before gunicorn finishes startup
+    # Azure probes the app within 230s; we need a clean window to boot first
+    from datetime import datetime as _dt_sched
+    _now = _dt_sched.now()
+    _delay_2m = dict(start_date=_dt_sched.fromtimestamp(_now.timestamp() + 120))   # 2 min delay
+    _delay_5m = dict(start_date=_dt_sched.fromtimestamp(_now.timestamp() + 300))   # 5 min delay
+    _delay_3m = dict(start_date=_dt_sched.fromtimestamp(_now.timestamp() + 180))   # 3 min delay
+
     scheduler.add_job(daily_lead_summary, 'cron', hour=8, minute=0, id='daily_lead_summary')
-    scheduler.add_job(check_stale_leads, 'interval', hours=4, id='check_stale_leads')
-    scheduler.add_job(auto_draft_undrafted, 'interval', minutes=30, id='auto_draft_undrafted')
-    scheduler.add_job(compute_kpis_from_db, 'interval', minutes=5, id='compute_kpis')
-    scheduler.add_job(poll_inbox_and_notify, 'interval', minutes=2, id='poll_inbox_discord')
+    scheduler.add_job(check_stale_leads, 'interval', hours=4, id='check_stale_leads', **_delay_5m)
+    scheduler.add_job(auto_draft_undrafted, 'interval', minutes=30, id='auto_draft_undrafted', **_delay_5m)
+    scheduler.add_job(compute_kpis_from_db, 'interval', minutes=5, id='compute_kpis', **_delay_3m)
+    scheduler.add_job(poll_inbox_and_notify, 'interval', minutes=2, id='poll_inbox_discord', **_delay_5m)
 
     scheduler.start()
     logger.info("[CRON] Scheduler started with 5 jobs: daily_lead_summary, check_stale_leads, auto_draft_undrafted, compute_kpis, poll_inbox_discord")

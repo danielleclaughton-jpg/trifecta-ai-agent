@@ -27,11 +27,15 @@ python3 -c "import flask, gunicorn; print('[startup] Core packages verified')" 2
 
 # Start gunicorn — NO --preload to prevent blocking port bind on cold start
 # APScheduler starts per-worker; only 1 worker to prevent duplicate schedulers
+# --timeout=600: Azure probe allows 230s; worker needs time to init + handle first request
+# --graceful-timeout=30: allow in-flight requests to finish on restart
 exec gunicorn --bind=0.0.0.0:8000 \
          --workers=1 \
          --threads=8 \
-         --timeout=120 \
+         --timeout=600 \
+         --graceful-timeout=30 \
+         --keep-alive=5 \
          --access-logfile=- \
          --error-logfile=- \
-         --log-level=info \
+         --log-level=debug \
          app:app
